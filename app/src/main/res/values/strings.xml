@@ -1,0 +1,47 @@
+<resources>
+    <string name="app_name">NextCash Wallet</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_add_wallet">Add Wallet</string>
+
+    <string name="main_channel_name">Main</string>
+    <string name="synchronizing">Synchronizing</string>
+
+    <string name="title_settings">Settings</string>
+
+    <string name="title_notifications">Notifications</string>
+    <string name="title_transactions">Transactions</string>
+    <string name="off">Off</string>
+    <string name="on">On</string>
+
+    <string name="title_sync_frequency">Sync Frequency</string>
+    <string name="description_sync_frequency">
+        How often to synchronize the block chain with peer nodes when not on WiFi. This involves
+        connecting to peer nodes and downloading block headers and transactions. This is just
+        referring to background synchronizing. Whenever the application is opened it will attempt to
+        synchronize as well.
+    </string>
+    <string-array name="sync_frequency_titles">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>3 hours</item>
+        <item>6 hours</item>
+        <item>Never</item>
+    </string-array>
+    <integer-array name="sync_frequency_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>180</item>
+        <item>360</item>
+        <item>-1</item>
+    </integer-array>
+
+    <string name="title_information">Information</string>
+    <string name="title_node_user_agent">Node User Agent</string>
+    <string name="nextcash_link">https://nextcash.tech</string>
+    <string name="title_network_name">Network Name</string>
+
+    <string name="title_add_wallet">Add Wallet</string>
+
+</resources>

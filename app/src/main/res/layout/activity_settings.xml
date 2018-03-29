@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="tech.nextcash.nextcashwallet.SettingsActivity">
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/action_bar_height"
+        android:background="@color/colorPrimary"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:popupTheme="@style/AppTheme.PopupOverlay"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/notifyTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawableLeft="@drawable/ic_notifications_black_24dp"
+                android:drawablePadding="5dp"
+                android:text="@string/title_notifications"
+                android:layout_marginTop="20dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="20dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
+
+            <Switch
+                android:id="@+id/notifyTransactionsToggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="10dp"
+                android:switchPadding="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:text="@string/title_transactions"
+                android:showText="true"
+                android:switchTextAppearance="@style/TextAppearance.AppCompat.Small"
+                android:textOff="@string/off"
+                android:textOn="@string/on"/>
+
+            <TextView
+                android:id="@+id/syncFrequencyTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawableLeft="@drawable/ic_sync_black_24dp"
+                android:drawablePadding="5dp"
+                android:text="@string/title_sync_frequency"
+                android:layout_marginTop="20dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
+
+            <TextView
+                android:id="@+id/syncFrequencyDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/description_sync_frequency"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="10dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1"/>
+
+            <Spinner
+                android:id="@+id/syncFrequencySpinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="10dp">
+
+            </Spinner>
+
+            <TextView
+                android:id="@+id/informationTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawableLeft="@drawable/ic_info_outline_black_24dp"
+                android:drawablePadding="5dp"
+                android:text="@string/title_information"
+                android:layout_marginTop="20dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
+
+            <TextView
+                android:id="@+id/nodeUserAgentTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/title_node_user_agent"
+                android:layout_marginTop="10dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/nodeUserAgentValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Unknown:0.8.0"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"/>
+
+            <TextView
+                android:id="@+id/nextCashLink"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/nextcash_link"
+                android:autoLink="web"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"/>
+
+            <TextView
+                android:id="@+id/networkTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/title_network_name"
+                android:layout_marginTop="10dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/networkValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="TESTNET"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"/>
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
