@@ -15,32 +15,28 @@ public class MainService extends JobService implements Runnable
     private JobParameters mJobParameters;
     private static Thread mMainThread;
     private int mCurrentJobID;
+    private String mPath;
+    private boolean mIsJob;
+
+    // Used to load the native libraries on application startup.
+    static
+    {
+        System.loadLibrary("nextcash");
+        System.loadLibrary("bitcoin");
+        System.loadLibrary("nextcash_jni");
+    }
+
+    public MainService()
+    {
+        mIsJob = false;
+    }
 
     @Override
     public boolean onStartJob(JobParameters pParams)
     {
-        if(mMainThread != null && mMainThread.isAlive())
-        {
-            if(pParams.getJobId() == MONITOR_JOB_ID && mCurrentJobID == UPDATE_JOB_ID)
-            {
-                // Upgrade to monitor
-                mCurrentJobID = MONITOR_JOB_ID;
-                Bitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
-
-                Log.i(logTag, "Upgraded to monitoring");
-            }
-            Log.i(logTag, "Main thread already running");
-            return false;
-        }
-        else
-        {
-            Log.i(logTag, "Starting main thread");
-            mJobParameters = pParams;
-            mCurrentJobID = pParams.getJobId();
-            mMainThread = new Thread(this, "MainServiceThread");
-            mMainThread.start();
-            return true;
-        }
+        mIsJob = true;
+        mJobParameters = pParams;
+        return start(getFilesDir().getPath(), pParams.getJobId());
     }
 
     @Override
@@ -58,13 +54,45 @@ public class MainService extends JobService implements Runnable
         return true;
     }
 
+    public boolean start(String pPath, int pJobID)
+    {
+        if(mMainThread != null && mMainThread.isAlive())
+        {
+            if(pJobID == MONITOR_JOB_ID && mCurrentJobID == UPDATE_JOB_ID)
+            {
+                // Upgrade to monitor
+                mCurrentJobID = pJobID;
+                Bitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
+
+                Log.i(logTag, "Upgraded to monitoring");
+            }
+            Log.i(logTag, "Main thread already running");
+            return false;
+        }
+        else
+        {
+            Log.i(logTag, "Starting main thread");
+            mCurrentJobID = pJobID;
+            mPath = pPath;
+            mMainThread = new Thread(this, "MainServiceThread");
+            mMainThread.start();
+            return true;
+        }
+    }
+
+    public void stopMonitoring()
+    {
+        mCurrentJobID = UPDATE_JOB_ID;
+        Bitcoin.setFinishMode(Bitcoin.FINISH_ON_SYNC);
+    }
+
     @Override
     public void run()
     {
         Log.i(logTag, "Bitcoin thread starting");
 
         // Set path
-        Bitcoin.setPath(getFilesDir().getPath());
+        Bitcoin.setPath(mPath);
 
         // Set IP to "unknown" value
         byte[] ip = new byte[16];
@@ -83,6 +111,7 @@ public class MainService extends JobService implements Runnable
             finishMode = Bitcoin.FINISH_ON_SYNC;
         Bitcoin.run(finishMode);
         Log.i(logTag, "Bitcoin thread finished");
-        jobFinished(mJobParameters, false);
+        if(mIsJob)
+            jobFinished(mJobParameters, false);
     }
 }

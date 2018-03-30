@@ -4,7 +4,16 @@
     <string name="action_add_wallet">Add Wallet</string>
 
     <string name="main_channel_name">Main</string>
+
+    <string name="inactive">Inactive</string>
+    <string name="loading">Loading</string>
     <string name="synchronizing">Synchronizing</string>
+    <string name="synchronized_text">Synchronized</string>
+    <string name="finding_peers">Finding Peers</string>
+    <string name="connecting_to_peers">Connecting to Peers</string>
+    <string name="looking_for_transactions">Looking for transactions</string>
+
+    <string name="blocks">Blocks</string>
 
     <string name="title_settings">Settings</string>
 

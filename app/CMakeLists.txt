@@ -27,3 +27,17 @@ set( bitcoin_lib_build_dir ../../../bitcoin/build )
 add_subdirectory( ${bitcoin_lib_src_dir}
                   ${bitcoin_lib_build_dir} )
 
+
+# Setup JNI Code
+include_directories( ../../../nextcash/src/base
+                     ../../../nextcash/src/io
+                     ../../../nextcash/src/crypto
+                     ../../../nextcash/src/dev
+                     ../../../secp256k1/include
+                     ../../../bitcoin/src
+                     src/main/cpp )
+
+add_library( nextcash_jni STATIC SHARED
+             src/main/cpp/nextcash_jni.cpp )
+
+target_link_libraries( nextcash_jni bitcoin nextcash )
