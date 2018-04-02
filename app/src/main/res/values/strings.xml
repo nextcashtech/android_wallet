@@ -50,6 +50,10 @@
     <string name="title_node_user_agent">Node User Agent</string>
     <string name="nextcash_link">https://nextcash.tech</string>
     <string name="title_network_name">Network Name</string>
+    <string name="title_open_source">Open Source Licenses</string>
+    <string name="secp256k1">
+        Cryptographic Library - secp256k1 Copyright &#169; 2013 Pieter Wuille
+    </string>
 
     <string name="title_add_wallet">Add Wallet</string>
 

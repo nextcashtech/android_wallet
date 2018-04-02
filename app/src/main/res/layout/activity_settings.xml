@@ -23,7 +23,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingBottom="20dp">
 
             <TextView
                 android:id="@+id/notifyTitle"
@@ -45,11 +46,13 @@
                 android:layout_marginRight="10dp"
                 android:switchPadding="10dp"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-                android:text="@string/title_transactions"
-                android:showText="true"
-                android:switchTextAppearance="@style/TextAppearance.AppCompat.Small"
-                android:textOff="@string/off"
-                android:textOn="@string/on"/>
+                android:text="@string/title_transactions"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="2dip"
+                android:layout_marginTop="20dp"
+                android:background="#ddd" />
 
             <TextView
                 android:id="@+id/syncFrequencyTitle"
@@ -82,6 +85,12 @@
                 android:layout_marginRight="10dp">
 
             </Spinner>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="2dip"
+                android:layout_marginTop="20dp"
+                android:background="#ddd" />
 
             <TextView
                 android:id="@+id/informationTitle"
@@ -144,6 +153,27 @@
                 android:layout_marginLeft="20dp"
                 android:layout_marginRight="10dp"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"/>
+
+            <TextView
+                android:id="@+id/openSourceTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/title_open_source"
+                android:layout_marginTop="10dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/openSourceLicense_1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/secp256k1"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Small"/>
+
         </LinearLayout>
     </ScrollView>
 
