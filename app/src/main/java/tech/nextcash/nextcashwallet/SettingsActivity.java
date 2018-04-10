@@ -87,6 +87,7 @@ public class SettingsActivity extends AppCompatActivity
         else
         {
             Settings.getInstance(getFilesDir()).setIntValue("sync_frequency", frequencyValues[pPos]);
+            setResult(1);
             if(frequencyValues[pPos] == -1)
                 Log.i(logTag, "Sync frequency set to never.");
             else if(frequencyValues[pPos] >= 60)

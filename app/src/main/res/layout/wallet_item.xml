@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    android:padding="10dp"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/walletHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="10dp"
+        android:background="@drawable/wallet_item_background"
+        android:onClick="onClick">
+
+        <ImageView
+            android:id="@+id/walletExpand"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_expand_more_black_24dp"
+            android:gravity="center_vertical"
+            android:padding="5dp"
+            android:contentDescription="@string/expand_compress"/>
+
+        <TextView
+            android:id="@+id/walletBalance"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textStyle="bold"
+            android:gravity="center_vertical"
+            android:padding="5dp"
+            android:textColor="#fff"/>
+
+        <TextView
+            android:id="@+id/walletName"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:gravity="center_vertical"
+            android:padding="5dp"
+            android:textColor="#fff"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/walletDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/walletControls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="4dp"
+            android:gravity="end">
+
+            <ImageView
+                android:id="@+id/walletSend"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_send_black_24dp"
+                android:padding="5dp"
+                android:contentDescription="@string/send"
+                android:onClick="onClick"/>
+
+            <ImageView
+                android:id="@+id/walletReceive"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_add_circle_black_24dp"
+                android:padding="5dp"
+                android:contentDescription="@string/receive"
+                android:onClick="onClick"/>
+
+            <ImageView
+                android:id="@+id/walletHistory"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_history_black_24dp"
+                android:padding="5dp"
+                android:contentDescription="@string/history"
+                android:onClick="onClick"/>
+
+            <ImageView
+                android:id="@+id/walletEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_edit_black_24dp"
+                android:padding="5dp"
+                android:contentDescription="@string/edit"
+                android:onClick="onClick"/>
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/walletRecentTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/recent_transactions"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
+
+        <LinearLayout
+            android:id="@+id/walletRecent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>
