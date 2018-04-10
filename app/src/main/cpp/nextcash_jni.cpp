@@ -13,6 +13,11 @@
 
 extern "C"
 {
+    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_NextCash_destroy(JNIEnv *pEnvironment)
+    {
+        NextCash::Log::destroy();
+    }
+
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_userAgent(JNIEnv *pEnvironment)
     {
         return pEnvironment->NewStringUTF(BITCOIN_USER_AGENT);
@@ -40,16 +45,6 @@ extern "C"
         pEnvironment->ReleaseStringUTFChars(pPath, newPath);
     }
 
-    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setIP(JNIEnv *pEnvironment,
-                                                                           jclass pClass,
-                                                                           jbyteArray pIP)
-    {
-        jbyte *newIP = pEnvironment->GetByteArrayElements(pIP, NULL);
-        BitCoin::Info::instance().ip = new uint8_t[16];
-        std::memcpy(BitCoin::Info::instance().ip, (uint8_t *)newIP, 16);
-        pEnvironment->ReleaseByteArrayElements(pIP, newIP, 0);
-    }
-
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_load(JNIEnv *pEnvironment)
     {
         return (jboolean)BitCoin::Daemon::instance().load();
@@ -60,13 +55,24 @@ extern "C"
         return (jboolean)BitCoin::Daemon::instance().isLoaded();
     }
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isRunning(JNIEnv *pEnvironment)
+    {
+        return (jboolean)BitCoin::Daemon::instance().isRunning();
+    }
+
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_run(JNIEnv *pEnvironment, jclass pClass, jint pMode)
     {
         BitCoin::Daemon::instance().setFinishMode(pMode);
         BitCoin::Daemon::instance().run(false);
     }
 
-    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_stop(JNIEnv *pEnvironment)
+    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_destroy(JNIEnv *pEnvironment)
+    {
+        BitCoin::Daemon::destroy();
+        BitCoin::Info::destroy();
+    }
+
+    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_stopDaemon(JNIEnv *pEnvironment)
     {
         BitCoin::Daemon::instance().requestStop();
     }
@@ -98,6 +104,8 @@ extern "C"
                 return 4;
             case BitCoin::Daemon::SYNCHRONIZED:
                 return 5;
+            case BitCoin::Daemon::FINDING_TRANSACTIONS:
+                return 6;
         }
     }
 
@@ -114,5 +122,56 @@ extern "C"
     JNIEXPORT jlong JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_balance(JNIEnv *pEnvironment)
     {
         return BitCoin::Daemon::instance().monitor()->balance();
+    }
+
+    // Keys
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_addKey(JNIEnv *pEnvironment,
+                                                                                jclass pClass,
+                                                                                jstring pKey,
+                                                                                jint pDerivationMethod)
+    {
+        bool success = false;
+        const char *newPath = pEnvironment->GetStringUTFChars(pKey, NULL);
+        NextCash::Buffer buffer;
+        buffer.writeString(newPath);
+
+        BitCoin::Daemon &daemon = BitCoin::Daemon::instance();
+        if(daemon.keyStore()->loadKeys(&buffer) && daemon.saveKeyStore())
+        {
+            daemon.monitor()->setKeyStore(daemon.keyStore());
+            daemon.saveMonitor();
+            success = true;
+        }
+
+        pEnvironment->ReleaseStringUTFChars(pKey, newPath);
+        return (jboolean)success;
+    }
+
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_keyCount(JNIEnv *pEnvironment)
+    {
+        return (jint)BitCoin::Daemon::instance().keyStore()->size();
+    }
+
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_keyIsPrivate(JNIEnv *pEnvironment,
+                                                                                      jclass pClass,
+                                                                                      jint pKeyOffset)
+    {
+        BitCoin::KeyStore *keyStore = BitCoin::Daemon::instance().keyStore();
+        if(keyStore != NULL && keyStore->size() > pKeyOffset)
+            return (jboolean)keyStore->at(pKeyOffset)->isPrivate();
+        else
+            return JNI_FALSE;
+    }
+
+    JNIEXPORT jlong JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_keyBalance(JNIEnv *pEnvironment,
+                                                                                 jclass pClass,
+                                                                                 jint pKeyOffset,
+                                                                                 jboolean pIncludePending)
+    {
+        BitCoin::Daemon &daemon = BitCoin::Daemon::instance();
+        if(pKeyOffset >= daemon.keyStore()->size())
+            return 0L;
+        BitCoin::Key *key = (*daemon.keyStore())[pKeyOffset];
+        return (jlong)daemon.monitor()->balance(key, pIncludePending);
     }
 }
