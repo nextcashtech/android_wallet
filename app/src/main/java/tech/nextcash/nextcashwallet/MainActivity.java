@@ -2,11 +2,11 @@ package tech.nextcash.nextcashwallet;
 
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -28,32 +28,25 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity
 {
     public static final String logTag = "MainActivity";
-    public static final int ADD_WALLET_REQUEST_CODE = 10;
     public static final int SETTINGS_REQUEST_CODE = 20;
 
     private Handler mStatusUpdateHandler;
     private Runnable mStatusUpdateRunnable;
 
-    private enum Mode { LOADING, WALLETS, ADD_WALLETS, SETUP };
+    private enum Mode { LOADING, WALLETS, ADD_WALLET, SETUP }
     private Mode mMode;
     private long mTotalBalance;
-
-    // Used to load the native libraries on application startup.
-    static
-    {
-        System.loadLibrary("nextcash");
-        System.loadLibrary("bitcoin");
-        System.loadLibrary("nextcash_jni");
-    }
+    private Bitcoin mBitcoin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        mBitcoin = ((MainApp)getApplication()).bitcoin;
         mStatusUpdateHandler = new Handler();
         mStatusUpdateRunnable = new Runnable() { public void run() { updateStatus(); } };
         mMode = Mode.LOADING;
@@ -82,10 +75,14 @@ public class MainActivity extends AppCompatActivity
                 if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N)
                 {
                     JobInfo current = jobScheduler.getPendingJob(BitcoinJob.SYNC_JOB_ID);
-                    if(current == null || !current.isPeriodic() ||
-                      current.getIntervalMillis() != syncFrequency * 60 * 1000 ||
-                      current.getNetworkType() != JobInfo.NETWORK_TYPE_ANY)
+                    if(current == null)
                         scheduleNeeded = true;
+                    else if(!current.isPeriodic() || current.getIntervalMillis() != syncFrequency * 60 * 1000 ||
+                      current.getNetworkType() != JobInfo.NETWORK_TYPE_ANY)
+                    {
+                        jobScheduler.cancel(BitcoinJob.SYNC_JOB_ID);
+                        scheduleNeeded = true;
+                    }
                 }
                 else
                 {
@@ -93,14 +90,14 @@ public class MainActivity extends AppCompatActivity
                     scheduleNeeded = true;
                 }
 
-                if(scheduleNeeded)
-                {
-                    JobInfo.Builder updateJobInfoBuilder = new JobInfo.Builder(BitcoinJob.SYNC_JOB_ID,
-                      new ComponentName(this, BitcoinJob.class));
-                    updateJobInfoBuilder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
-                    updateJobInfoBuilder.setPeriodic(syncFrequency * 60 * 1000);
-                    jobScheduler.schedule(updateJobInfoBuilder.build());
-                }
+//                if(scheduleNeeded)
+//                {
+//                    JobInfo.Builder updateJobInfoBuilder = new JobInfo.Builder(BitcoinJob.SYNC_JOB_ID,
+//                      new ComponentName(this, BitcoinJob.class));
+//                    updateJobInfoBuilder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+//                    updateJobInfoBuilder.setPeriodic(syncFrequency * 60 * 1000);
+//                    jobScheduler.schedule(updateJobInfoBuilder.build());
+//                }
             }
 
             return true;
@@ -111,89 +108,42 @@ public class MainActivity extends AppCompatActivity
     public void onStart()
     {
         super.onStart();
-
-        Bitcoin.start(getFilesDir().getPath(), Bitcoin.FINISH_ON_REQUEST);
-
-        updateStatus();
+        if(!mBitcoin.start(Bitcoin.FINISH_ON_REQUEST))
+            mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
     }
 
     @Override
     public void onResume()
     {
-        Bitcoin.start(getFilesDir().getPath(), Bitcoin.FINISH_ON_REQUEST);
+        updateStatus();
         super.onResume();
+    }
+
+    @Override
+    public void onPause()
+    {
+        mStatusUpdateHandler.removeCallbacks(mStatusUpdateRunnable);
+        super.onPause();
     }
 
     @Override
     public void onStop()
     {
-        mStatusUpdateHandler.removeCallbacks(mStatusUpdateRunnable);
+        mBitcoin.setFinishMode(Bitcoin.FINISH_ON_SYNC);
         super.onStop();
     }
 
     @Override
     protected void onDestroy()
     {
-        Bitcoin.waitForStop();
-        Bitcoin.destroy();
-        NextCash.destroy();
         super.onDestroy();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu)
-    {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item)
-    {
-        switch(item.getItemId())
-        {
-        case R.id.action_settings:
-        {
-            Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
-            startActivityForResult(intent, SETTINGS_REQUEST_CODE);
-            return true;
-        }
-        case R.id.action_add_wallet:
-        {
-            Intent intent = new Intent(getApplicationContext(), AddWalletActivity.class);
-            startActivityForResult(intent, ADD_WALLET_REQUEST_CODE);
-            return true;
-        }
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void onActivityResult(int pRequestCode, int pResultCode, Intent pData)
-    {
-        switch(pRequestCode)
-        {
-        case ADD_WALLET_REQUEST_CODE:
-            if(pResultCode > 0) // Wallet added
-                updateWallets();
-            break;
-        case SETTINGS_REQUEST_CODE:
-            if(pResultCode > 0) // Sync frequency updated
-                scheduleJobs();
-            break;
-        default:
-            super.onActivityResult(pRequestCode, pResultCode, pData);
-            break;
-        }
     }
 
     private void updateStatus()
     {
         TextView status = findViewById(R.id.status);
 
-        switch(Bitcoin.status())
+        switch(mBitcoin.status())
         {
             default:
             case 0: // Inactive
@@ -220,20 +170,26 @@ public class MainActivity extends AppCompatActivity
         }
 
         TextView blocks = findViewById(R.id.blockHeight);
-        blocks.setText(String.format(Locale.getDefault(), "%,d / %,d", Bitcoin.merkleHeight(),
-          Bitcoin.blockHeight()));
+        if(mBitcoin.isLoaded())
+            blocks.setText(String.format(Locale.getDefault(), "%,d / %,d", mBitcoin.merkleHeight(),
+              mBitcoin.blockHeight()));
+        else
+            blocks.setText("- / -");
 
         switch(mMode)
         {
         case LOADING:
-            if(Bitcoin.isLoaded())
+            if(mBitcoin.isLoaded())
                 updateWallets();
             break;
         case WALLETS:
-            if(mTotalBalance != Bitcoin.balance())
+            if(mTotalBalance != mBitcoin.balance())
+            {
+                // TODO Notify of new transactions. Possibly disable wallets in recovery mode that haven't synced yet.
                 updateWallets();
+            }
             break;
-        case ADD_WALLETS:
+        case ADD_WALLET:
             break;
         case SETUP:
             break;
@@ -247,35 +203,68 @@ public class MainActivity extends AppCompatActivity
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup content = findViewById(R.id.content);
-        View wallet;
+        View view;
+        boolean addButtonNeeded = false, addView;
 
         if(mMode != Mode.WALLETS)
+        {
+            // Rebuild all wallets
+            addButtonNeeded = true;
             content.removeAllViews();
 
-        for(int i=0;i<Bitcoin.keyCount();i++)
-        {
-            wallet = null;
-
-            if(mMode == Mode.WALLETS)
-                wallet = content.findViewWithTag(i);
-
-            if(wallet == null)
+            // Setup action bar
+            ActionBar actionBar = getSupportActionBar();
+            if(actionBar != null)
             {
-                // Add wallet
-                wallet = inflater.inflate(R.layout.wallet_item, content, true);
-                wallet.setTag(i);
+                actionBar.setIcon(null);
+                actionBar.setTitle(getResources().getString(R.string.app_name));
+                actionBar.setDisplayHomeAsUpEnabled(false); // Show the Up button in the action bar.
             }
-
-            ((TextView)wallet.findViewById(R.id.walletBalance)).setText(String.format(Locale.getDefault(), "%,.2f",
-              Bitcoin.bitcoins(Bitcoin.keyBalance(i, true))));
-
-            ((TextView)wallet.findViewById(R.id.walletName)).setText(String.format(Locale.getDefault(),
-              "Wallet %d", i));
-
-            //TODO Add/Update recent transactions
         }
 
-        mTotalBalance = Bitcoin.balance();
+        for(int i=0;i<mBitcoin.keyCount();i++)
+        {
+            addView = false;
+            view = null;
+
+            if(mMode == Mode.WALLETS)
+                view = content.findViewWithTag(i);
+
+            if(view == null)
+            {
+                // Remove add wallet button
+                view = content.findViewWithTag(R.id.addWallet);
+                if(view != null)
+                    content.removeView(view);
+                addButtonNeeded = true;
+
+                // Add wallet
+                view = inflater.inflate(R.layout.wallet_item, content, false);
+                view.setTag(i);
+                addView = true;
+            }
+
+            ((TextView)view.findViewById(R.id.walletBalance)).setText(String.format(Locale.getDefault(), "%,.5f",
+              Bitcoin.bitcoins(mBitcoin.keyBalance(i, true))));
+
+            ((TextView)view.findViewById(R.id.walletName)).setText(String.format(Locale.getDefault(),
+              "Wallet %d", i + 1));
+
+            //TODO Add/Update recent transactions
+
+            if(addView)
+                content.addView(view);
+        }
+
+        if(addButtonNeeded)
+        {
+            view = inflater.inflate(R.layout.button, content, false);
+            view.setTag(R.id.addWallet);
+            ((TextView)view.findViewById(R.id.title)).setText(R.string.add_wallet);
+            content.addView(view);
+        }
+
+        mTotalBalance = mBitcoin.balance();
         mMode = Mode.WALLETS;
     }
 
@@ -290,37 +279,142 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+        switch(item.getItemId())
+        {
+            case android.R.id.home:
+                updateWallets();
+                return true;
+            case R.id.action_settings:
+            {
+                Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
+                startActivityForResult(intent, SETTINGS_REQUEST_CODE);
+                return true;
+            }
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int pRequestCode, int pResultCode, Intent pData)
+    {
+        switch(pRequestCode)
+        {
+            case SETTINGS_REQUEST_CODE:
+                if(pResultCode > 0) // Sync frequency updated
+                    scheduleJobs();
+                break;
+            default:
+                super.onActivityResult(pRequestCode, pResultCode, pData);
+                break;
+        }
+    }
+
     public void onClick(View pView)
     {
-        LayoutInflater inflater = getLayoutInflater();
-        ViewGroup contentView = findViewById(R.id.content);
-
         switch(pView.getId())
         {
-        case R.id.createNewWallet:
+        default:
             break;
-        case R.id.recoverWallet:
-            break;
-        case R.id.importBIP32Key: // Show dialog for entering BIP-0032 encoded key
-        {
-            contentView.removeAllViews();
-            inflater.inflate(R.layout.import_bip32_key, contentView);
-            focusOnText(R.id.importText);
+        case R.id.button:
+            int tag = 0;
+            if(pView.getTag() != null)
+                tag = (Integer)pView.getTag();
 
-            Spinner derivationMethod = findViewById(R.id.derivationMethodSpinner);
-            ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-              R.array.derivation_methods, android.R.layout.simple_spinner_item);
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            derivationMethod.setAdapter(adapter);
+            switch(tag)
+            {
+                default:
+                    break;
+                case R.id.addWallet:
+                {
+                    // Display options for adding wallets
+                    View button;
+                    LayoutInflater inflater = getLayoutInflater();
+                    ViewGroup contentView = findViewById(R.id.content);
+
+                    contentView.removeAllViews();
+
+                    button = inflater.inflate(R.layout.button, contentView, false);
+                    button.setTag(R.id.createWallet);
+                    ((TextView)button.findViewById(R.id.title)).setText(R.string.create_new_key);
+                    contentView.addView(button);
+
+                    button = inflater.inflate(R.layout.button, contentView, false);
+                    button.setTag(R.id.recoverWallet);
+                    ((TextView)button.findViewById(R.id.title)).setText(R.string.recover_wallet);
+                    contentView.addView(button);
+
+                    button = inflater.inflate(R.layout.button, contentView, false);
+                    button.setTag(R.id.importWallet);
+                    ((TextView)button.findViewById(R.id.title)).setText(R.string.import_bip0032_key);
+                    contentView.addView(button);
+
+                    ActionBar actionBar = getSupportActionBar();
+                    if(actionBar != null)
+                    {
+                        actionBar.setIcon(R.drawable.ic_add_black_24dp);
+                        actionBar.setTitle(" " + getResources().getString(R.string.title_add_wallet));
+                        actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+                    }
+
+                    mMode = Mode.ADD_WALLET;
+                    break;
+                }
+                case R.id.createWallet:
+                    break;
+                case R.id.recoverWallet:
+                    break;
+                case R.id.importWallet:
+                {
+                    LayoutInflater inflater = getLayoutInflater();
+                    ViewGroup contentView = findViewById(R.id.content);
+
+                    contentView.removeAllViews();
+                    inflater.inflate(R.layout.import_bip32_key, contentView, true);
+                    focusOnText(R.id.importText);
+
+                    Spinner derivationMethod = findViewById(R.id.derivationMethodSpinner);
+                    ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                      R.array.derivation_methods, android.R.layout.simple_spinner_item);
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    derivationMethod.setAdapter(adapter);
+                    break;
+                }
+            }
             break;
-        }
         case R.id.importButton: // Import BIP-0032 encoded key
         {
             String encodedKey = ((EditText)findViewById(R.id.importText)).getText().toString();
-            if(Bitcoin.addKey(encodedKey, ((Spinner)findViewById(R.id.derivationMethodSpinner)).getSelectedItemPosition()))
-                updateWallets(); // Rebuild view showing wallets
-            else
-                Toast.makeText(this, R.string.failed_key_import, Toast.LENGTH_LONG).show();
+            switch(mBitcoin.addKey(encodedKey,
+              ((Spinner)findViewById(R.id.derivationMethodSpinner)).getSelectedItemPosition()))
+            {
+                case 0: // Success
+                    updateWallets(); // Rebuild view showing wallets
+                    break;
+                case 1: // Unknown error
+                    Toast.makeText(this, R.string.failed_key_import, Toast.LENGTH_LONG).show();
+                    break;
+                case 2: // Invalid format
+                    Toast.makeText(this, R.string.failed_key_import_format, Toast.LENGTH_LONG).show();
+                    break;
+                case 3: // Already exists
+                    Toast.makeText(this, R.string.failed_key_import_exists, Toast.LENGTH_LONG).show();
+                    break;
+                case 4: // Invalid derivation method
+                    Toast.makeText(this, R.string.failed_key_import_method, Toast.LENGTH_LONG).show();
+                    break;
+            }
             break;
         }
         case R.id.walletHeader: // Expand/Compress wallet
@@ -352,8 +446,18 @@ public class MainActivity extends AppCompatActivity
         {
             break;
         }
-        default:
-            break;
+        }
+    }
+
+    @Override
+    public void onBackPressed()
+    {
+        if(mMode == Mode.ADD_WALLET)
+            updateWallets(); // Go back to main wallets view
+        else
+        {
+            mBitcoin.stop();
+            super.onBackPressed();
         }
     }
 }

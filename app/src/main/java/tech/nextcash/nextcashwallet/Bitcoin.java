@@ -3,6 +3,7 @@ package tech.nextcash.nextcashwallet;
 
 import android.util.Log;
 
+
 // Define Top Level Bitcoin JNI Interface Functions.
 public class Bitcoin
 {
@@ -14,124 +15,64 @@ public class Bitcoin
         System.loadLibrary("nextcash_jni");
     }
 
+    private static final String logTag = "Bitcoin";
+    private static Thread sMainThread;
+
+    private long mHandle;
+    private String mPath;
+
     public static final int FINISH_ON_REQUEST = 0; // Continue running until stop is requested.
     public static final int FINISH_ON_SYNC = 1; // Finish when block chain is in sync.
 
-    private static final String logTag = "Bitcoin";
-    private static Thread sMainThread, sGCThread;
-    private static boolean sStop = false;
-    private static int sFinishMode = FINISH_ON_REQUEST;
+    public static native String userAgent();
+    public static native String networkName();
 
-    private static Runnable sMainRunnable = new Runnable()
+    public static float bitcoins(long pValue)
     {
-        @Override
-        public void run()
-        {
-            Log.i(logTag, "Bitcoin thread starting");
-            Bitcoin.run(sFinishMode);
-            Log.i(logTag, "Bitcoin thread finished");
-            if(sFinishMode == FINISH_ON_SYNC)
-                Bitcoin.destroy();
-        }
-    };
+        return (float)pValue / 100000000;
+    }
 
-    private static Runnable sGCRunnable = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            Log.i(logTag, "Garbage Collection thread starting");
-            while(!sStop)
-            {
-                try
-                {
-                    Thread.sleep(250);
-                }
-                catch(InterruptedException pException)
-                {
-                    Log.d(logTag, String.format("Garbage collection sleep exception : %s", pException.toString()));
-                }
-                //System.gc(); // Manually run GC to clean up C++ memory
-            }
-            Log.i(logTag, "Garbage Collection thread finished");
-        }
-    };
+    Bitcoin(String pPath) { mHandle = 0; mPath = pPath; }
 
-    private static synchronized Thread getThread(boolean pCreate)
+    private synchronized Thread getThread(boolean pCreate, int pFinishMode)
     {
         if((sMainThread == null || !sMainThread.isAlive()) && pCreate)
-            sMainThread = new Thread(sMainRunnable, "BitcoinThread");
+            sMainThread = new Thread(new BitcoinRunnable(this, mPath, pFinishMode), "BitcoinDaemon");
         return sMainThread;
     }
 
-    private static synchronized Thread getGCThread(boolean pCreate)
-    {
-        if((sGCThread == null || !sGCThread.isAlive()) && pCreate)
-            sGCThread = new Thread(sGCRunnable, "GarbageCollectionThread");
-        return sGCThread;
-    }
-
-    public static synchronized boolean start(String pPath, int pFinishMode)
+    public synchronized boolean start(int pFinishMode)
     {
         boolean result = true;
-        Thread thread = getThread(true);
+        Thread thread = getThread(true, pFinishMode);
         if(!thread.isAlive())
-        {
-            Log.i(logTag, "Starting main thread");
-            Bitcoin.setPath(pPath);
-            sFinishMode = pFinishMode;
             thread.start();
-        }
         else
+        {
+            Log.v(logTag, "Bitcoin daemon already running");
             result = false;
-
-        try
-        {
-            Thread.sleep(100);
-        }
-        catch(InterruptedException pException)
-        {
-            Log.d(logTag, String.format("Wait for start sleep exception : %s", pException.toString()));
-        }
-
-        Thread gcThread = getGCThread(true);
-        if(!gcThread.isAlive())
-        {
-            Log.i(logTag, "Starting garbage collection thread");
-            sStop = false;
-            gcThread.start();
         }
 
         return result;
     }
 
-    public static synchronized boolean requestStop()
+    public synchronized boolean requestStop()
     {
-        boolean result = true;
-        Thread thread = getThread(false);
+        Thread thread = getThread(false,0);
         if(thread != null && thread.isAlive())
         {
-            Log.i(logTag, "Stopping main thread");
-            Bitcoin.stopDaemon();
+            stop();
+            return true;
         }
         else
-            result = false;
-
-        Thread gcThread = getGCThread(false);
-        if(gcThread != null && gcThread.isAlive())
-        {
-            Log.i(logTag, "Stopping garbage collection thread");
-            sStop = true;
-        }
-
-        return result;
+            return false;
     }
 
-    public static void waitForStop()
+    public void waitForStop()
     {
         requestStop();
 
-        while(Bitcoin.isRunning())
+        while(isRunning())
         {
             try
             {
@@ -144,72 +85,63 @@ public class Bitcoin
         }
     }
 
-    public static native String userAgent();
-    public static native String networkName();
+    public native void destroy();
 
-    public static native void setPath(String pPath);
-    public static native void setIP(byte pIP[]);
+    public native void setPath(String pPath);
 
-    // Load the Bitcoin static instance.
-    public static native boolean load();
-    public static native boolean isLoaded();
-    public static native boolean isRunning();
-    public static native void destroy();
+    public native boolean load();
+
+    public native boolean isLoaded();
+
+    public native boolean isRunning();
+
+    public native void setFinishMode(int pFinishMode);
 
     // Run the daemon process.
-    public static native void run(int pFinishMode);
+    public native void run(int pFinishMode);
 
     // Request the daemon process stop.
-    public static native void stopDaemon();
-
-    // Set the finish mode of a currently running daemon.
-    public static native void setFinishMode(int pMode);
+    public native void stop();
 
     // Return the number of peers connected to
-    public static native int peerCount();
+    public native int peerCount();
 
     // Return true if this node is "in sync" with it's peers
-    public static native int status();
+    public native int status();
 
     // Block height of block chain.
-    public static native int blockHeight();
+    public native int blockHeight();
 
     // Block height of latest key monitoring pass.
-    public static native int merkleHeight();
+    public native int merkleHeight();
 
     // Total balance of all keys.
-    public static native long balance();
+    public native long balance();
 
     // Add a key, from BIP-0032 encoded text to be monitored.
     public static final int SIMPLE_DERIVATION = 2;
     public static final int BIP0032_DERIVATION = 1;
     public static final int BIP0044_DERIVATION = 0;
-    public static native boolean addKey(String pEncodedKey, int pDerivationPath);
+    public native int addKey(String pEncodedKey, int pDerivationPath);
 
     // Return the number of keys in the key store
-    public static native int keyCount();
+    public native int keyCount();
 
     // Return the balance of the key at the specified offset in the key store
-    public static native long keyBalance(int pKeyOffset, boolean pIncludePending);
+    public native long keyBalance(int pKeyOffset, boolean pIncludePending);
 
     // Return transactions for key
     // public static native Transaction[] getTransactions(int pKeyOffset);
 
     // Generate a mnemonic sentence that can be used to create an HD key.
-    public static native String generateMnemonic();
+    //public native String generateMnemonic();
 
     // Create an HD key from the mnemonic sentence and add it to be monitored.
     // If pRecovered is true then the entire block chain will be searched for related transactions.
-    public static native void addKeyFromMnemonic(String pMnemonic, boolean pRecovered);
+    //public native void addKeyFromMnemonic(String pMnemonic, boolean pRecovered);
 
     //TODO Bitcoin JNI Functions
     // Get Transactions for key
     // Get New Transactions
-    // Add Key
     // Get Keys
-
-    public static float bitcoins(long pValue)
-    {
-        return (float)pValue / 100000000;
-    }
 }

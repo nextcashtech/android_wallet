@@ -5,16 +5,14 @@ import android.app.job.JobService;
 import android.util.Log;
 
 
-/***********************************************************************************************************************
- * This is the main service for running the Bitcoin SPV node. It can be used directly as just a background thread by
- * calling start from the main activity, or as a job service by scheduling it with the job scheduler.
- **********************************************************************************************************************/
+// This is the periodic job for synchronizing the Bitcoin SPV node.
 public class BitcoinJob extends JobService
 {
     private static final String logTag = "BitcoinJob";
 
     public static final int SYNC_JOB_ID = 92; // Sync to latest block and exit (background only)
 
+    Bitcoin mBitcoin;
     JobParameters mJobParameters;
     Thread mWaitForStopThread;
 
@@ -23,7 +21,7 @@ public class BitcoinJob extends JobService
         @Override
         public void run()
         {
-            while(Bitcoin.isRunning())
+            while(mBitcoin.isRunning())
             {
                 try
                 {
@@ -43,7 +41,14 @@ public class BitcoinJob extends JobService
     public boolean onStartJob(JobParameters pParams)
     {
         Log.i(logTag, "Starting job");
-        return Bitcoin.start(getFilesDir().getPath(), pParams.getJobId());
+        mBitcoin = ((MainApp)getApplication()).bitcoin;
+        if(mBitcoin.start(pParams.getJobId()))
+            return true;
+        else
+        {
+            mBitcoin.destroy();
+            return false;
+        }
     }
 
     @Override
@@ -51,7 +56,7 @@ public class BitcoinJob extends JobService
     {
         Log.i(logTag, "Stopping job");
         mJobParameters = pParams;
-        if(Bitcoin.requestStop())
+        if(mBitcoin.requestStop())
         {
             mWaitForStopThread = new Thread(mWaitForStopRunnable, "BitcoinJobWaitForStopThread");
             mWaitForStopThread.start();

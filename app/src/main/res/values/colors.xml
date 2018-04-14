@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#ff32bd53</color>
-    <color name="colorPrimaryDark">#ff4c32bd</color>
-    <color name="colorAccent">#ff9f33</color>
-    <color name="colorProgress">#5532bd53</color>
+    <color name="colorPrimary">#f3b5</color>
+    <color name="colorPrimaryDark">#f294</color>
+    <color name="colorPrimaryButton">#f13b</color>
+    <color name="colorAccent">#f93</color>
+    <color name="colorProgress">#53b5</color>
 </resources>

@@ -4,13 +4,6 @@
       tools:context="tech.nextcash.nextcashwallet.MainActivity">
 
     <item
-        android:id="@+id/action_add_wallet"
-        android:orderInCategory="99"
-        android:icon="@drawable/ic_add_black_24dp"
-        android:title="@string/action_add_wallet"
-        app:showAsAction="ifRoom"/>
-
-    <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
         android:icon="@drawable/ic_settings_black_24dp"

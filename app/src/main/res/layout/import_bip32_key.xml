@@ -4,17 +4,28 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent">
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="5dp"
+        android:textAlignment="center"
+        android:text="@string/title_import_bip0032_key"
+        android:labelFor="@id/importText"/>
+
     <EditText
         android:id="@+id/importText"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:inputType="textNoSuggestions|textMultiLine"/>
 
     <Spinner
         android:id="@+id/derivationMethodSpinner"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
-    </Spinner>
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"/>
 
     <Button
         android:id="@+id/importButton"

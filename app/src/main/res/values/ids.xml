@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="addWallet" />
+    <item type="id" name="createWallet" />
+    <item type="id" name="recoverWallet" />
+    <item type="id" name="importWallet" />
+</resources>
