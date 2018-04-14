@@ -1,4 +1,5 @@
 <resources>
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="action_bar_height">50dp</dimen>
+    <dimen name="text_size_small">14sp</dimen>
 </resources>

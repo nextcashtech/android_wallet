@@ -5,4 +5,6 @@
     <color name="colorPrimaryButton">#f13b</color>
     <color name="colorAccent">#f93</color>
     <color name="colorProgress">#53b5</color>
+    <color name="colorPositive">#f4b4</color>
+    <color name="colorNegative">#fc66</color>
 </resources>

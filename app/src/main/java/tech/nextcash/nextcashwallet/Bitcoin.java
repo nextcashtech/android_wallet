@@ -96,6 +96,7 @@ public class Bitcoin
     public native boolean isRunning();
 
     public native void setFinishMode(int pFinishMode);
+    public native void setFinishModeNoCreate(int pFinishMode);
 
     // Run the daemon process.
     public native void run(int pFinishMode);
@@ -127,6 +128,11 @@ public class Bitcoin
     // Return the number of keys in the key store
     public native int keyCount();
 
+    public native String keyName(int pKeyOffset);
+    public native boolean setKeyName(int pKeyOffset, String pName);
+    public native String keySeed(int pKeyOffset);
+    public native boolean setKeySeed(int pKeyOffset, String pSeed);
+
     // Return the balance of the key at the specified offset in the key store
     public native long keyBalance(int pKeyOffset, boolean pIncludePending);
 
@@ -144,4 +150,6 @@ public class Bitcoin
     // Get Transactions for key
     // Get New Transactions
     // Get Keys
+
+    public native Transaction[] transactions(int pKeyOffset);
 }

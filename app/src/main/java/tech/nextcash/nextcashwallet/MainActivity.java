@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,7 +34,7 @@ public class MainActivity extends AppCompatActivity
     private Handler mStatusUpdateHandler;
     private Runnable mStatusUpdateRunnable;
 
-    private enum Mode { LOADING, WALLETS, ADD_WALLET, SETUP }
+    private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, SETUP }
     private Mode mMode;
     private long mTotalBalance;
     private Bitcoin mBitcoin;
@@ -129,7 +130,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onStop()
     {
-        mBitcoin.setFinishMode(Bitcoin.FINISH_ON_SYNC);
+        mBitcoin.setFinishModeNoCreate(Bitcoin.FINISH_ON_SYNC);
         super.onStop();
     }
 
@@ -170,11 +171,18 @@ public class MainActivity extends AppCompatActivity
         }
 
         TextView blocks = findViewById(R.id.blockHeight);
+        TextView peerCount = findViewById(R.id.peerCount);
         if(mBitcoin.isLoaded())
+        {
             blocks.setText(String.format(Locale.getDefault(), "%,d / %,d", mBitcoin.merkleHeight(),
               mBitcoin.blockHeight()));
+            peerCount.setText(String.format(Locale.getDefault(), "%,d", mBitcoin.peerCount()));
+        }
         else
+        {
             blocks.setText("- / -");
+            peerCount.setText("-");
+        }
 
         switch(mMode)
         {
@@ -202,9 +210,11 @@ public class MainActivity extends AppCompatActivity
     public void updateWallets()
     {
         LayoutInflater inflater = getLayoutInflater();
-        ViewGroup content = findViewById(R.id.content);
-        View view;
-        boolean addButtonNeeded = false, addView;
+        ViewGroup content = findViewById(R.id.content), recentView, pendingView, transactionViewGroup;
+        View view, transactionView;
+        boolean addButtonNeeded = false, addView, pendingFound;
+        int recentCount;
+        String name;
 
         if(mMode != Mode.WALLETS)
         {
@@ -247,10 +257,84 @@ public class MainActivity extends AppCompatActivity
             ((TextView)view.findViewById(R.id.walletBalance)).setText(String.format(Locale.getDefault(), "%,.5f",
               Bitcoin.bitcoins(mBitcoin.keyBalance(i, true))));
 
-            ((TextView)view.findViewById(R.id.walletName)).setText(String.format(Locale.getDefault(),
-              "Wallet %d", i + 1));
+            name = mBitcoin.keyName(i);
+            if(name == null || name.length() == 0)
+                ((TextView)view.findViewById(R.id.walletName)).setText(String.format(Locale.getDefault(),
+                  "Wallet %d", i + 1));
+            else
+                ((TextView)view.findViewById(R.id.walletName)).setText(name);
 
-            //TODO Add/Update recent transactions
+            // Add/Update recent transactions
+            recentView = view.findViewById(R.id.walletRecent);
+            recentView.removeAllViews();
+            pendingView = view.findViewById(R.id.walletPending);
+            pendingView.removeAllViews();
+
+            pendingFound = false;
+            recentCount = 0;
+
+            Transaction[] transactions = mBitcoin.transactions(i);
+            TextView amountText;
+            for(Transaction transaction : transactions)
+            {
+                if(transaction.block == null)
+                {
+                    transactionViewGroup = pendingView;
+                    pendingFound = true;
+                }
+                else
+                {
+                    transactionViewGroup = recentView;
+                    recentCount++;
+                    if(recentCount > 3)
+                        continue;
+                }
+
+                transactionView = inflater.inflate(R.layout.wallet_transaction, transactionViewGroup, false);
+
+                amountText = transactionView.findViewById(R.id.amount);
+                amountText.setText(String.format(Locale.getDefault(),
+                  "%+,.5f", Bitcoin.bitcoins(transaction.amount)));
+                if(transaction.amount > 0)
+                    amountText.setTextColor(getResources().getColor(R.color.colorPositive));
+                else
+                    amountText.setTextColor(getResources().getColor(R.color.colorNegative));
+
+                ((TextView)transactionView.findViewById(R.id.date)).setText(String.format(Locale.getDefault(),
+                  "%1$tD %1$tr", transaction.date * 1000));
+
+                ((TextView)transactionView.findViewById(R.id.hash)).setText(String.format(Locale.getDefault(),
+                  "%s...", transaction.hash.substring(0, 8)));
+
+                transactionViewGroup.addView(transactionView);
+            }
+
+            if(pendingFound)
+            {
+                view.findViewById(R.id.walletPendingTitle).setVisibility(View.VISIBLE);
+                pendingView.setVisibility(View.VISIBLE);
+            }
+            else
+            {
+                view.findViewById(R.id.walletPendingTitle).setVisibility(View.GONE);
+                pendingView.setVisibility(View.GONE);
+            }
+
+            if(recentCount > 0)
+            {
+                view.findViewById(R.id.walletRecentTitle).setVisibility(View.VISIBLE);
+                recentView.setVisibility(View.VISIBLE);
+            }
+            else
+            {
+                view.findViewById(R.id.walletRecentTitle).setVisibility(View.GONE);
+                recentView.setVisibility(View.GONE);
+            }
+
+            if(pendingFound || recentCount > 0)
+                view.findViewById(R.id.walletNoTransTitle).setVisibility(View.GONE);
+            else
+                view.findViewById(R.id.walletNoTransTitle).setVisibility(View.VISIBLE);
 
             if(addView)
                 content.addView(view);
@@ -321,6 +405,46 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    public void displayEditWallet(int pKeyOffset)
+    {
+        View button;
+        ViewGroup editName;
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup contentView = findViewById(R.id.content);
+
+        contentView.removeAllViews();
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_edit_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.title_edit_wallet));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        // Edit Name
+        editName = (ViewGroup)inflater.inflate(R.layout.edit_name, contentView, false);
+        ((EditText)editName.findViewById(R.id.name)).setText(mBitcoin.keyName(pKeyOffset));
+        editName.findViewById(R.id.name).setTag(pKeyOffset);
+
+        contentView.addView(editName);
+
+        // Update button
+        button = inflater.inflate(R.layout.button, contentView, false);
+        button.setTag(R.id.updateWallet);
+        ((TextView)button.findViewById(R.id.title)).setText(R.string.update_wallet);
+        contentView.addView(button);
+
+        // Backup button
+        button = inflater.inflate(R.layout.button, contentView, false);
+        button.setTag(R.id.backupWallet);
+        ((TextView)button.findViewById(R.id.title)).setText(R.string.backup_wallet);
+        contentView.addView(button);
+
+        mMode = Mode.EDIT_WALLET;
+    }
+
     public void onClick(View pView)
     {
         switch(pView.getId())
@@ -363,7 +487,7 @@ public class MainActivity extends AppCompatActivity
                     ActionBar actionBar = getSupportActionBar();
                     if(actionBar != null)
                     {
-                        actionBar.setIcon(R.drawable.ic_add_black_24dp);
+                        actionBar.setIcon(R.drawable.ic_add_black_36dp);
                         actionBar.setTitle(" " + getResources().getString(R.string.title_add_wallet));
                         actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
                     }
@@ -391,6 +515,20 @@ public class MainActivity extends AppCompatActivity
                     derivationMethod.setAdapter(adapter);
                     break;
                 }
+                case R.id.updateWallet:
+                {
+                    ViewGroup contentView = findViewById(R.id.content);
+                    EditText nameView = contentView.findViewById(R.id.name);
+                    String name = nameView.getText().toString();
+                    if(mBitcoin.setKeyName((int)nameView.getTag(), name))
+                        updateWallets();
+                    else
+                        Toast.makeText(this, R.string.failed_update_name, Toast.LENGTH_LONG).show();
+                    break;
+                }
+                case R.id.backupWallet:
+                    //TODO Provide seed to user
+                    break;
             }
             break;
         case R.id.importButton: // Import BIP-0032 encoded key
@@ -427,9 +565,15 @@ public class MainActivity extends AppCompatActivity
                 {
                     int visibility = walletDetails.getVisibility();
                     if(visibility == View.GONE)
+                    {
+                        ((ImageView)pView.findViewById(R.id.walletExpand)).setImageResource(R.drawable.ic_expand_less_white_36dp);
                         walletDetails.setVisibility(View.VISIBLE);
+                    }
                     else
+                    {
+                        ((ImageView)pView.findViewById(R.id.walletExpand)).setImageResource(R.drawable.ic_expand_more_white_36dp);
                         walletDetails.setVisibility(View.GONE);
+                    }
                 }
             }
             break;
@@ -446,13 +590,17 @@ public class MainActivity extends AppCompatActivity
         {
             break;
         }
+        case R.id.walletEdit:
+            ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
+            displayEditWallet((int)wallet.getTag());
+            break;
         }
     }
 
     @Override
     public void onBackPressed()
     {
-        if(mMode == Mode.ADD_WALLET)
+        if(mMode != Mode.WALLETS)
             updateWallets(); // Go back to main wallets view
         else
         {

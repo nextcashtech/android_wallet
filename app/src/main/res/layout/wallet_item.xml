@@ -21,7 +21,7 @@
             android:id="@+id/walletExpand"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:src="@drawable/ic_expand_more_black_24dp"
+            android:src="@drawable/ic_expand_more_white_36dp"
             android:gravity="center_vertical"
             android:padding="5dp"
             android:contentDescription="@string/expand_compress"/>
@@ -60,15 +60,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="4dp"
+            android:padding="5dp"
             android:gravity="end">
 
             <ImageView
                 android:id="@+id/walletSend"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:src="@drawable/ic_send_black_24dp"
+                android:src="@drawable/ic_send_black_36dp"
                 android:padding="5dp"
+                android:layout_marginEnd="5dp"
                 android:contentDescription="@string/send"
                 android:onClick="onClick"/>
 
@@ -76,8 +77,9 @@
                 android:id="@+id/walletReceive"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:src="@drawable/ic_add_circle_black_24dp"
+                android:src="@drawable/ic_add_circle_black_36dp"
                 android:padding="5dp"
+                android:layout_marginEnd="5dp"
                 android:contentDescription="@string/receive"
                 android:onClick="onClick"/>
 
@@ -85,8 +87,9 @@
                 android:id="@+id/walletHistory"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:src="@drawable/ic_history_black_24dp"
+                android:src="@drawable/ic_history_black_36dp"
                 android:padding="5dp"
+                android:layout_marginEnd="5dp"
                 android:contentDescription="@string/history"
                 android:onClick="onClick"/>
 
@@ -94,25 +97,58 @@
                 android:id="@+id/walletEdit"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:src="@drawable/ic_edit_black_24dp"
+                android:src="@drawable/ic_edit_black_36dp"
                 android:padding="5dp"
+                android:layout_marginEnd="5dp"
                 android:contentDescription="@string/edit"
                 android:onClick="onClick"/>
 
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/walletRecentTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/recent_transactions"
-            android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
-
         <LinearLayout
-            android:id="@+id/walletRecent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingStart="10dp">
+
+            <TextView
+                android:id="@+id/walletPendingTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/pending_transactions"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
+
+            <LinearLayout
+                android:id="@+id/walletPending"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="10dp"
+                android:orientation="vertical">
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/walletRecentTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/recent_transactions"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
+
+            <LinearLayout
+                android:id="@+id/walletRecent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="10dp"
+                android:orientation="vertical">
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/walletNoTransTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/no_transactions"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
 
         </LinearLayout>
 

@@ -72,7 +72,7 @@ public class SettingsActivity extends AppCompatActivity
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
         {
-            actionBar.setIcon(R.drawable.ic_settings_black_24dp);
+            actionBar.setIcon(R.drawable.ic_settings_black_36dp);
             actionBar.setTitle(" " + getResources().getString(R.string.title_settings));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
