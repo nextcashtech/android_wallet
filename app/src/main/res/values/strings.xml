@@ -57,6 +57,7 @@
 
     <string name="title_add_wallet">Add Wallet</string>
     <string name="title_edit_wallet">Edit Wallet</string>
+    <string name="title_wallet_history">Wallet History</string>
     <string name="add_wallet">Add Wallet</string>
     <string name="create_new_key">Create New Wallet</string>
     <string name="recover_wallet">Recover Wallet</string>
@@ -87,6 +88,7 @@
     <string name="edit">Edit</string>
     <string name="pending_transactions">Pending Transactions</string>
     <string name="recent_transactions">Recent Transactions</string>
+    <string name="confirmed_transactions">Confirmed Transactions</string>
     <string name="no_transactions">No Transactions</string>
     <string name="peers">Peers</string>
     <string name="name">Name</string>

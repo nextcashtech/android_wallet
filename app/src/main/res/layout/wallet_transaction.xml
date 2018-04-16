@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/walletTransaction"
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="5dp">
+    android:layout_margin="5dp"
+    android:onClick="onClick">
 
     <TextView
         android:id="@+id/amount"
@@ -11,7 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="5dp"
         android:layout_marginEnd="5dp"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Small"
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
         android:textStyle="bold"/>
 
     <TextView
@@ -20,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="5dp"
         android:layout_marginEnd="5dp"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Small"/>
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
 
     <TextView
         android:id="@+id/hash"
@@ -28,8 +30,6 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="5dp"
         android:layout_marginEnd="5dp"
-        android:typeface="monospace"
-        android:fontFamily="sans-serif "
-        android:textSize="@dimen/text_size_small"/>
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
 
 </LinearLayout>

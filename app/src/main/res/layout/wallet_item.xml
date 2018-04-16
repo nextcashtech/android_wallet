@@ -126,6 +126,7 @@
             android:text="@string/locked_message"/>
 
         <LinearLayout
+            android:id="@+id/walletTransactions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -136,7 +137,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/pending_transactions"
-                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Headline"/>
 
             <LinearLayout
                 android:id="@+id/walletPending"
@@ -152,7 +153,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/recent_transactions"
-                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Headline"/>
 
             <LinearLayout
                 android:id="@+id/walletRecent"
@@ -168,7 +169,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/no_transactions"
-                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Headline"/>
 
         </LinearLayout>
 

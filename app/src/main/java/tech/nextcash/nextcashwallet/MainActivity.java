@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity
     private Handler mStatusUpdateHandler;
     private Runnable mStatusUpdateRunnable;
 
-    private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, SETUP }
+    private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, HISTORY, SETUP }
     private Mode mMode;
     private Bitcoin mBitcoin;
 
@@ -201,10 +201,9 @@ public class MainActivity extends AppCompatActivity
     public void updateWallets()
     {
         LayoutInflater inflater = getLayoutInflater();
-        ViewGroup content = findViewById(R.id.content), recentView, pendingView, transactionViewGroup;
-        View view, transactionView;
-        boolean addButtonNeeded = false, addView, pendingFound;
-        int recentCount;
+        ViewGroup content = findViewById(R.id.content);
+        View view;
+        boolean addButtonNeeded = false, addView;
         String name;
 
         if(mMode != Mode.WALLETS)
@@ -267,77 +266,8 @@ public class MainActivity extends AppCompatActivity
                     view.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
                 }
 
-                // Add/Update recent transactions
-                recentView = view.findViewById(R.id.walletRecent);
-                recentView.removeAllViews();
-                pendingView = view.findViewById(R.id.walletPending);
-                pendingView.removeAllViews();
-
-                pendingFound = false;
-                recentCount = 0;
-
-                TextView amountText;
-                for(Transaction transaction : wallet.transactions)
-                {
-                    if(transaction.block == null)
-                    {
-                        transactionViewGroup = pendingView;
-                        pendingFound = true;
-                    }
-                    else
-                    {
-                        transactionViewGroup = recentView;
-                        recentCount++;
-                        if(recentCount > 3)
-                            continue;
-                    }
-
-                    transactionView = inflater.inflate(R.layout.wallet_transaction, transactionViewGroup,
-                      false);
-
-                    amountText = transactionView.findViewById(R.id.amount);
-                    amountText.setText(String.format(Locale.getDefault(), "%+,.5f",
-                      Bitcoin.bitcoins(transaction.amount)));
-                    if(transaction.amount > 0)
-                        amountText.setTextColor(getResources().getColor(R.color.colorPositive));
-                    else
-                        amountText.setTextColor(getResources().getColor(R.color.colorNegative));
-
-                    ((TextView)transactionView.findViewById(R.id.date)).setText(String.format(Locale.getDefault(),
-                      "%1$tD %1$tr", transaction.date * 1000));
-
-                    ((TextView)transactionView.findViewById(R.id.hash)).setText(String.format(Locale.getDefault(),
-                      "%s...", transaction.hash.substring(0, 8)));
-
-                    transactionViewGroup.addView(transactionView);
-                }
-
-                if(pendingFound)
-                {
-                    view.findViewById(R.id.walletPendingTitle).setVisibility(View.VISIBLE);
-                    pendingView.setVisibility(View.VISIBLE);
-                }
-                else
-                {
-                    view.findViewById(R.id.walletPendingTitle).setVisibility(View.GONE);
-                    pendingView.setVisibility(View.GONE);
-                }
-
-                if(recentCount > 0)
-                {
-                    view.findViewById(R.id.walletRecentTitle).setVisibility(View.VISIBLE);
-                    recentView.setVisibility(View.VISIBLE);
-                }
-                else
-                {
-                    view.findViewById(R.id.walletRecentTitle).setVisibility(View.GONE);
-                    recentView.setVisibility(View.GONE);
-                }
-
-                if(pendingFound || recentCount > 0)
-                    view.findViewById(R.id.walletNoTransTitle).setVisibility(View.GONE);
-                else
-                    view.findViewById(R.id.walletNoTransTitle).setVisibility(View.VISIBLE);
+                populateTransactions((ViewGroup)view.findViewById(R.id.walletTransactions), wallet.transactions,
+                  3);
 
                 if(addView)
                     content.addView(view);
@@ -454,6 +384,125 @@ public class MainActivity extends AppCompatActivity
         contentView.addView(button);
 
         mMode = Mode.EDIT_WALLET;
+    }
+
+    public void populateTransactions(ViewGroup pView, Transaction[] pTransactions, int pLimit)
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        int pendingCount, recentCount;
+        ViewGroup recentView, pendingView, transactionViewGroup;
+        View transactionView;
+
+        // Add/Update transactions
+        recentView = pView.findViewById(R.id.walletRecent);
+        recentView.removeAllViews();
+        pendingView = pView.findViewById(R.id.walletPending);
+        pendingView.removeAllViews();
+
+        pendingCount = 0;
+        recentCount = 0;
+
+        TextView amountText;
+        for(Transaction transaction : pTransactions)
+        {
+            if(transaction.block == null)
+            {
+                transactionViewGroup = pendingView;
+                pendingCount++;
+            }
+            else
+            {
+                transactionViewGroup = recentView;
+                recentCount++;
+                if(recentCount > pLimit)
+                    continue;
+            }
+
+            transactionView = inflater.inflate(R.layout.wallet_transaction, transactionViewGroup,
+              false);
+
+            amountText = transactionView.findViewById(R.id.amount);
+            amountText.setText(String.format(Locale.getDefault(), "%+,.5f",
+              Bitcoin.bitcoins(transaction.amount)));
+            if(transaction.amount > 0)
+                amountText.setTextColor(getResources().getColor(R.color.colorPositive));
+            else
+                amountText.setTextColor(getResources().getColor(R.color.colorNegative));
+
+            ((TextView)transactionView.findViewById(R.id.date)).setText(String.format(Locale.getDefault(),
+              "%1$tD %1$tr", transaction.date * 1000));
+
+            ((TextView)transactionView.findViewById(R.id.hash)).setText(String.format(Locale.getDefault(),
+              "%s...", transaction.hash.substring(0, 8)));
+
+            // Set tag with transaction offset
+            if(transaction.block == null)
+                transactionView.setTag(pendingCount - 1);
+            else
+                transactionView.setTag(recentCount - 1);
+
+            transactionViewGroup.addView(transactionView);
+        }
+
+        if(pendingCount > 0)
+        {
+            pView.findViewById(R.id.walletPendingTitle).setVisibility(View.VISIBLE);
+            pendingView.setVisibility(View.VISIBLE);
+        }
+        else
+        {
+            pView.findViewById(R.id.walletPendingTitle).setVisibility(View.GONE);
+            pendingView.setVisibility(View.GONE);
+        }
+
+        if(recentCount > 0)
+        {
+            pView.findViewById(R.id.walletRecentTitle).setVisibility(View.VISIBLE);
+            recentView.setVisibility(View.VISIBLE);
+        }
+        else
+        {
+            pView.findViewById(R.id.walletRecentTitle).setVisibility(View.GONE);
+            recentView.setVisibility(View.GONE);
+        }
+
+        if(pendingCount > 0 || recentCount > 0)
+            pView.findViewById(R.id.walletNoTransTitle).setVisibility(View.GONE);
+        else
+            pView.findViewById(R.id.walletNoTransTitle).setVisibility(View.VISIBLE);
+    }
+
+    public void displayWalletHistory(int pOffset)
+    {
+        if(pOffset >= mBitcoin.wallets.length)
+            return;
+
+        ViewGroup historyView;
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup contentView = findViewById(R.id.content);
+
+        contentView.removeAllViews();
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_history_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.title_wallet_history));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        Wallet wallet = mBitcoin.wallets[pOffset];
+
+        historyView = (ViewGroup)inflater.inflate(R.layout.wallet_history, contentView, false);
+        ((TextView)historyView.findViewById(R.id.title)).setText(wallet.name);
+
+        populateTransactions((ViewGroup)historyView.findViewById(R.id.walletTransactions), wallet.transactions,
+          100);
+
+        contentView.addView(historyView);
+
+        mMode = Mode.HISTORY;
     }
 
     public void onClick(View pView)
@@ -603,6 +652,8 @@ public class MainActivity extends AppCompatActivity
         }
         case R.id.walletHistory:
         {
+            ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
+            displayWalletHistory((int)wallet.getTag());
             break;
         }
         case R.id.walletEdit:
@@ -611,6 +662,9 @@ public class MainActivity extends AppCompatActivity
             break;
         case R.id.walletLocked:
             Toast.makeText(this, R.string.locked_message, Toast.LENGTH_LONG).show();
+            break;
+        case R.id.walletTransaction:
+            // TODO Show transaction details
             break;
         }
     }
