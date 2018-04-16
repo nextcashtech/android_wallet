@@ -16,7 +16,7 @@ set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions -fstack-protector" 
 add_definitions( "-DANDROID -DLOW_MEM" )
 
 # Disable multi-threading
-add_definitions( "-DSINGLE_THREAD" )
+#add_definitions( "-DSINGLE_THREAD" )
 
 
 # Setup NextCash Base library
