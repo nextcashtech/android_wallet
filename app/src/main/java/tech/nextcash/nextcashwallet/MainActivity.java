@@ -31,12 +31,13 @@ public class MainActivity extends AppCompatActivity
     public static final String logTag = "MainActivity";
     public static final int SETTINGS_REQUEST_CODE = 20;
 
-    private Handler mStatusUpdateHandler;
-    private Runnable mStatusUpdateRunnable;
+    private Handler mDelayHandler;
+    private Runnable mStatusUpdateRunnable, mClearFinishOnBack;
 
     private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, HISTORY, SETUP }
     private Mode mMode;
     private Bitcoin mBitcoin;
+    private boolean mFinishOnBack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -47,9 +48,11 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         mBitcoin = ((MainApp)getApplication()).bitcoin;
-        mStatusUpdateHandler = new Handler();
-        mStatusUpdateRunnable = new Runnable() { public void run() { updateStatus(); } };
+        mDelayHandler = new Handler();
+        mStatusUpdateRunnable = new Runnable() { @Override public void run() { updateStatus(); } };
+        mClearFinishOnBack = new Runnable() { @Override public void run() { mFinishOnBack = false; } };
         mMode = Mode.LOADING;
+        mFinishOnBack = false;
 
         scheduleJobs();
     }
@@ -121,7 +124,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onPause()
     {
-        mStatusUpdateHandler.removeCallbacks(mStatusUpdateRunnable);
+        mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
         super.onPause();
     }
 
@@ -195,7 +198,7 @@ public class MainActivity extends AppCompatActivity
         }
 
         // Run again in 2 seconds
-        mStatusUpdateHandler.postDelayed(mStatusUpdateRunnable, 2000);
+        mDelayHandler.postDelayed(mStatusUpdateRunnable, 2000);
     }
 
     public void updateWallets()
@@ -262,7 +265,7 @@ public class MainActivity extends AppCompatActivity
                 if(!wallet.isPrivate)
                 {
                     view.findViewById(R.id.walletLocked).setVisibility(View.VISIBLE);
-                    view.findViewById(R.id.walletSend).setEnabled(false);
+                    view.findViewById(R.id.walletSend).setVisibility(View.GONE);
                     view.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
                 }
 
@@ -657,9 +660,11 @@ public class MainActivity extends AppCompatActivity
             break;
         }
         case R.id.walletEdit:
+        {
             ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
             displayEditWallet((int)wallet.getTag());
             break;
+        }
         case R.id.walletLocked:
             Toast.makeText(this, R.string.locked_message, Toast.LENGTH_LONG).show();
             break;
@@ -674,10 +679,16 @@ public class MainActivity extends AppCompatActivity
     {
         if(mMode != Mode.WALLETS)
             updateWallets(); // Go back to main wallets view
-        else
+        else if(mFinishOnBack)
         {
             mBitcoin.stop();
             super.onBackPressed();
+        }
+        else
+        {
+            mFinishOnBack = true;
+            Toast.makeText(this, R.string.press_back, Toast.LENGTH_SHORT).show();
+            mDelayHandler.postDelayed(mClearFinishOnBack, 1000);
         }
     }
 }

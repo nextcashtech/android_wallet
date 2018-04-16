@@ -96,5 +96,6 @@
     <string name="send_pending">Send Pending</string>
     <string name="receive_confirmed">Receive Confirmed</string>
     <string name="send_confirmed">Send Confirmed</string>
+    <string name="press_back">Press Back again to exit.</string>
 
 </resources>
