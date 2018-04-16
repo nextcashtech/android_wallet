@@ -8,9 +8,16 @@ public class Transaction
     public long date; // Date/Time in seconds since epoch of transaction
     public long amount; // Amount of transaction in satoshis. Negative for send.
 
-    Transaction()
+    public Transaction()
     {
         date = 0;
         amount = 0;
+    }
+
+    private static native void setupJNI();
+
+    static
+    {
+        setupJNI();
     }
 }
