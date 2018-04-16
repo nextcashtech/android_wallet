@@ -92,6 +92,7 @@ public class MainActivity extends AppCompatActivity
                     scheduleNeeded = true;
                 }
 
+                //TODO Re-enable background synchronization
 //                if(scheduleNeeded)
 //                {
 //                    JobInfo.Builder updateJobInfoBuilder = new JobInfo.Builder(BitcoinJob.SYNC_JOB_ID,
@@ -119,6 +120,12 @@ public class MainActivity extends AppCompatActivity
     {
         updateStatus();
         super.onResume();
+    }
+
+    @Override
+    public void onNewIntent(Intent pIntent)
+    {
+        super.onNewIntent(pIntent);
     }
 
     @Override
@@ -190,7 +197,7 @@ public class MainActivity extends AppCompatActivity
         {
         case LOADING:
         case WALLETS:
-            if(isLoaded && mBitcoin.update())
+            if(isLoaded && mBitcoin.update(getApplicationContext()))
                 updateWallets();
             break;
         default:
@@ -405,7 +412,6 @@ public class MainActivity extends AppCompatActivity
         pendingCount = 0;
         recentCount = 0;
 
-        TextView amountText;
         for(Transaction transaction : pTransactions)
         {
             if(transaction.block == null)
@@ -424,19 +430,7 @@ public class MainActivity extends AppCompatActivity
             transactionView = inflater.inflate(R.layout.wallet_transaction, transactionViewGroup,
               false);
 
-            amountText = transactionView.findViewById(R.id.amount);
-            amountText.setText(String.format(Locale.getDefault(), "%+,.5f",
-              Bitcoin.bitcoins(transaction.amount)));
-            if(transaction.amount > 0)
-                amountText.setTextColor(getResources().getColor(R.color.colorPositive));
-            else
-                amountText.setTextColor(getResources().getColor(R.color.colorNegative));
-
-            ((TextView)transactionView.findViewById(R.id.date)).setText(String.format(Locale.getDefault(),
-              "%1$tD %1$tr", transaction.date * 1000));
-
-            ((TextView)transactionView.findViewById(R.id.hash)).setText(String.format(Locale.getDefault(),
-              "%s...", transaction.hash.substring(0, 8)));
+            transaction.updateView(this, transactionView);
 
             // Set tag with transaction offset
             if(transaction.block == null)
@@ -687,7 +681,7 @@ public class MainActivity extends AppCompatActivity
         else
         {
             mFinishOnBack = true;
-            Toast.makeText(this, R.string.press_back, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.double_tap_back, Toast.LENGTH_SHORT).show();
             mDelayHandler.postDelayed(mClearFinishOnBack, 1000);
         }
     }

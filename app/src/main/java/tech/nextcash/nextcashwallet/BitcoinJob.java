@@ -45,10 +45,7 @@ public class BitcoinJob extends JobService
         if(mBitcoin.start(pParams.getJobId()))
             return true;
         else
-        {
-            mBitcoin.destroy();
             return false;
-        }
     }
 
     @Override

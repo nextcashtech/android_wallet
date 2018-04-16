@@ -90,12 +90,29 @@
     <string name="recent_transactions">Recent Transactions</string>
     <string name="confirmed_transactions">Confirmed Transactions</string>
     <string name="no_transactions">No Transactions</string>
+    <string name="peer">Peer</string>
     <string name="peers">Peers</string>
+    <string name="confirm">Confirm</string>
+    <string name="confirms">Confirms</string>
     <string name="name">Name</string>
     <string name="receive_pending">Receive Pending</string>
     <string name="send_pending">Send Pending</string>
     <string name="receive_confirmed">Receive Confirmed</string>
     <string name="send_confirmed">Send Confirmed</string>
-    <string name="press_back">Press Back again to exit.</string>
+    <string name="double_tap_back">Double tap back to exit.</string>
+
+    <string name="channel_transactions_name">Transactions</string>
+    <string name="channel_transactions_description">
+        Notifications when new transactions are found.
+    </string>
+    <string name="pending_receive_title">Pending Receive</string>
+    <string name="pending_send_title">Pending Send</string>
+    <string name="confirmed_receive_title">Confirmed Receive</string>
+    <string name="confirmed_send_title">Confirmed Send</string>
+    <string name="receive_description_start">Transaction receiving</string>
+    <string name="send_description_start">Transaction sending</string>
+    <string name="pending_notification_description_end">is pending.</string>
+    <string name="confirmed_notification_description_end">has been confirmed.</string>
+    <string name="nodes">Nodes</string>
 
 </resources>

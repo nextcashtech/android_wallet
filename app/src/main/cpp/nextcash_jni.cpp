@@ -21,10 +21,11 @@ extern "C"
     jclass sWalletClass = NULL;
     jfieldID sWalletLastUpdatedID = NULL;
     jfieldID sWalletTransactionsID = NULL;
-    jfieldID sWalletNewTransactionsID = NULL;
-    jfieldID sWalletIsPrivateFieldID = NULL;
-    jfieldID sWalletNameFieldID = NULL;
-    jfieldID sWalletBalanceFieldID = NULL;
+    jfieldID sWalletUpdatedTransactionsID = NULL;
+    jfieldID sWalletIsPrivateID = NULL;
+    jfieldID sWalletNameID = NULL;
+    jfieldID sWalletBalanceID = NULL;
+    jfieldID sWalletBlockHeightID = NULL;
 
     // Transaction
     jclass sTransactionClass = NULL;
@@ -33,6 +34,7 @@ extern "C"
     jfieldID sTransactionBlockID = NULL;
     jfieldID sTransactionDateID = NULL;
     jfieldID sTransactionAmountID = NULL;
+    jfieldID sTransactionCountID = NULL;
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_NextCash_destroy(JNIEnv *pEnvironment,
                                                                               jobject pObject)
@@ -72,6 +74,7 @@ extern "C"
           "Ljava/lang/String;");
         sTransactionDateID = pEnvironment->GetFieldID(sTransactionClass, "date", "J");
         sTransactionAmountID = pEnvironment->GetFieldID(sTransactionClass, "amount", "J");
+        sTransactionCountID = pEnvironment->GetFieldID(sTransactionClass, "count", "I");
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setupJNI(JNIEnv *pEnvironment,
@@ -91,11 +94,12 @@ extern "C"
         sWalletLastUpdatedID = pEnvironment->GetFieldID(sWalletClass, "lastUpdated", "J");
         sWalletTransactionsID = pEnvironment->GetFieldID(sWalletClass, "transactions",
           "[Ltech/nextcash/nextcashwallet/Transaction;");
-        sWalletNewTransactionsID = pEnvironment->GetFieldID(sWalletClass, "newTransactions",
+        sWalletUpdatedTransactionsID = pEnvironment->GetFieldID(sWalletClass, "updatedTransactions",
           "[Ltech/nextcash/nextcashwallet/Transaction;");
-        sWalletIsPrivateFieldID = pEnvironment->GetFieldID(sWalletClass, "isPrivate", "Z");
-        sWalletNameFieldID = pEnvironment->GetFieldID(sWalletClass, "name", "Ljava/lang/String;");
-        sWalletBalanceFieldID = pEnvironment->GetFieldID(sWalletClass, "balance", "J");
+        sWalletIsPrivateID = pEnvironment->GetFieldID(sWalletClass, "isPrivate", "Z");
+        sWalletNameID = pEnvironment->GetFieldID(sWalletClass, "name", "Ljava/lang/String;");
+        sWalletBalanceID = pEnvironment->GetFieldID(sWalletClass, "balance", "J");
+        sWalletBlockHeightID = pEnvironment->GetFieldID(sWalletClass, "blockHeight", "I");
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Transaction_setupJNI(JNIEnv *pEnvironment,
@@ -421,6 +425,7 @@ extern "C"
     }
 
     jobject createTransaction(JNIEnv *pEnvironment,
+                              BitCoin::Daemon *pDaemon,
                               BitCoin::Monitor::SPVTransactionData *pTransaction)
     {
         jobject result = pEnvironment->NewObject(sTransactionClass, sTransactionConstructor);
@@ -445,6 +450,15 @@ extern "C"
         pEnvironment->SetLongField(result, sTransactionAmountID,
           (jlong)pTransaction->amount);
 
+        // Set count
+        if(pTransaction->blockHash.isEmpty())
+            pEnvironment->SetIntField(result, sTransactionCountID,
+              (jint)pTransaction->nodes.size());
+        else
+            pEnvironment->SetIntField(result, sTransactionCountID,
+              (jint)(pDaemon->chain()->height() + 1 -
+              pDaemon->chain()->blockHeight(pTransaction->blockHash)));
+
         return result;
     }
 
@@ -464,11 +478,14 @@ extern "C"
 
         // Get and sort transactions
         std::vector<BitCoin::Monitor::SPVTransactionData *> transactions;
-        if(!daemon->monitor()->getTransactions(key, transactions))
+        if(!daemon->monitor()->getTransactions(key, transactions, true))
             return JNI_FALSE;
 
+        jint blockHeight = (jint)daemon->chain()->height();
         bool previousUpdate = pEnvironment->GetLongField(wallet, sWalletLastUpdatedID) != 0;
-        NextCash::HashList previousHashList;
+        NextCash::HashList previousHashList, previousConfirmedHashList;
+
+        // Check for updated transactions since previous update
         if(previousUpdate)
         {
             jobjectArray previousTransactions = (jobjectArray)pEnvironment->GetObjectField(wallet,
@@ -476,7 +493,7 @@ extern "C"
             if(previousTransactions != NULL)
             {
                 jsize previousCount = pEnvironment->GetArrayLength(previousTransactions);
-                jobject hashString;
+                jobject hashString, blockString;
                 const char *hashText;
                 NextCash::Hash hash;
                 jobject previousTransaction;
@@ -486,10 +503,14 @@ extern "C"
                       i);
                     hashString = pEnvironment->GetObjectField(previousTransaction,
                       sTransactionHashID);
+                    blockString = pEnvironment->GetObjectField(previousTransaction,
+                      sTransactionBlockID);
 
                     hashText = pEnvironment->GetStringUTFChars((jstring)hashString, NULL);
                     hash.setHex(hashText);
                     previousHashList.push_back(hash);
+                    if(blockString != NULL)
+                        previousConfirmedHashList.push_back(hash);
                     pEnvironment->ReleaseStringUTFChars((jstring)hashString, hashText);
                 }
             }
@@ -503,9 +524,9 @@ extern "C"
 
         setupTransactionClass(pEnvironment);
 
-        // Get previous transactions
+        // Set transactions
         std::vector<BitCoin::Monitor::SPVTransactionData *> newUpdatedTransactions;
-        jobjectArray updatedTransactions = pEnvironment->NewObjectArray((jsize)transactions.size(),
+        jobjectArray newTransactions = pEnvironment->NewObjectArray((jsize)transactions.size(),
           sTransactionClass, NULL);
         unsigned int index = 0;
 
@@ -513,23 +534,26 @@ extern "C"
           transactions.begin(); transaction != transactions.end(); ++transaction, ++index)
         {
             // Set value in array
-            pEnvironment->SetObjectArrayElement(updatedTransactions, index,
-              createTransaction(pEnvironment, *transaction));
+            pEnvironment->SetObjectArrayElement(newTransactions, index,
+              createTransaction(pEnvironment, daemon, *transaction));
 
             if(previousUpdate)
             {
                 // Check if this is a new transaction
                 if(!previousHashList.contains((*transaction)->transaction->hash))
-                    newUpdatedTransactions.push_back(*transaction);
+                    newUpdatedTransactions.push_back(*transaction); // New transaction
+                else if(!(*transaction)->blockHash.isEmpty() &&
+                  !previousConfirmedHashList.contains((*transaction)->transaction->hash))
+                    newUpdatedTransactions.push_back(*transaction); // Newly confirmed transaction
             }
         }
 
-        pEnvironment->SetObjectField(wallet, sWalletTransactionsID, updatedTransactions);
+        pEnvironment->SetObjectField(wallet, sWalletTransactionsID, newTransactions);
 
         if(previousUpdate)
         {
-            // Update new transactions
-            jobjectArray newUpdatedTransactionsObject =
+            // Set updated transactions
+            jobjectArray updatedTransactions =
               pEnvironment->NewObjectArray((jsize)newUpdatedTransactions.size(), sTransactionClass,
               NULL);
 
@@ -539,21 +563,23 @@ extern "C"
                  ++transaction, ++index)
             {
                 // Set value in array
-                pEnvironment->SetObjectArrayElement(newUpdatedTransactionsObject, index,
-                  createTransaction(pEnvironment, *transaction));
+                pEnvironment->SetObjectArrayElement(updatedTransactions, index,
+                  createTransaction(pEnvironment, daemon, *transaction));
             }
 
-            pEnvironment->SetObjectField(wallet, sWalletNewTransactionsID,
-              newUpdatedTransactionsObject);
+            pEnvironment->SetObjectField(wallet, sWalletUpdatedTransactionsID,
+              updatedTransactions);
         }
 
-        pEnvironment->SetBooleanField(wallet, sWalletIsPrivateFieldID, (jboolean)key->isPrivate());
+        pEnvironment->SetBooleanField(wallet, sWalletIsPrivateID, (jboolean)key->isPrivate());
 
         jstring name = pEnvironment->NewStringUTF(daemon->keyStore()->names.at(pOffset).text());
-        pEnvironment->SetObjectField(wallet, sWalletNameFieldID, name);
+        pEnvironment->SetObjectField(wallet, sWalletNameID, name);
 
-        pEnvironment->SetLongField(wallet, sWalletBalanceFieldID,
+        pEnvironment->SetLongField(wallet, sWalletBalanceID,
           (jlong)daemon->monitor()->balance(key, true));
+
+        pEnvironment->SetIntField(wallet, sWalletBlockHeightID, blockHeight);
 
         pEnvironment->SetLongField(wallet, sWalletLastUpdatedID, (jlong)BitCoin::getTime());
         return JNI_TRUE;
