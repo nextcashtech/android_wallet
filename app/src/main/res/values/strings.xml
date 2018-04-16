@@ -71,6 +71,10 @@
     <string name="failed_key_import_exists">Key already in wallet</string>
     <string name="failed_key_import_method">Invalid derivation method</string>
     <string name="failed_update_name">Failed to update name</string>
+    <string name="locked">View Only</string>
+    <string name="locked_message">
+        View Only. Wallet has a &quot;public only&quot; key and can not spend.
+    </string>
     <string-array name="derivation_methods">
         <item>BIP-0044</item>
         <item>BIP-0032</item>

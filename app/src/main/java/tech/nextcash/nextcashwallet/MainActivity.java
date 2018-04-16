@@ -225,13 +225,14 @@ public class MainActivity extends AppCompatActivity
 
         if(mBitcoin.wallets != null)
         {
-            for(int i = 0; i < mBitcoin.wallets.length; i++)
+            int offset = 0;
+            for(Wallet wallet : mBitcoin.wallets)
             {
                 addView = false;
                 view = null;
 
                 if(mMode == Mode.WALLETS)
-                    view = content.findViewWithTag(i);
+                    view = content.findViewWithTag(offset);
 
                 if(view == null)
                 {
@@ -243,17 +244,28 @@ public class MainActivity extends AppCompatActivity
 
                     // Add wallet
                     view = inflater.inflate(R.layout.wallet_item, content, false);
-                    view.setTag(i);
+                    view.setTag(offset);
                     addView = true;
+
+                    view.findViewById(R.id.walletDetails).setVisibility(View.GONE);
                 }
 
-                ((TextView)view.findViewById(R.id.walletBalance)).setText(String.format(Locale.getDefault(), "%,.5f", Bitcoin.bitcoins(mBitcoin.wallets[i].balance)));
+                ((TextView)view.findViewById(R.id.walletBalance)).setText(String.format(Locale.getDefault(),
+                  "%,.5f", Bitcoin.bitcoins(wallet.balance)));
 
-                name = mBitcoin.wallets[i].name;
+                name = wallet.name;
                 if(name == null || name.length() == 0)
-                    ((TextView)view.findViewById(R.id.walletName)).setText(String.format(Locale.getDefault(), "Wallet %d", i + 1));
+                    ((TextView)view.findViewById(R.id.walletName)).setText(String.format(Locale.getDefault(),
+                      "Wallet %d", offset + 1));
                 else
                     ((TextView)view.findViewById(R.id.walletName)).setText(name);
+
+                if(!wallet.isPrivate)
+                {
+                    view.findViewById(R.id.walletLocked).setVisibility(View.VISIBLE);
+                    view.findViewById(R.id.walletSend).setEnabled(false);
+                    view.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
+                }
 
                 // Add/Update recent transactions
                 recentView = view.findViewById(R.id.walletRecent);
@@ -265,7 +277,7 @@ public class MainActivity extends AppCompatActivity
                 recentCount = 0;
 
                 TextView amountText;
-                for(Transaction transaction : mBitcoin.wallets[i].transactions)
+                for(Transaction transaction : wallet.transactions)
                 {
                     if(transaction.block == null)
                     {
@@ -280,18 +292,22 @@ public class MainActivity extends AppCompatActivity
                             continue;
                     }
 
-                    transactionView = inflater.inflate(R.layout.wallet_transaction, transactionViewGroup, false);
+                    transactionView = inflater.inflate(R.layout.wallet_transaction, transactionViewGroup,
+                      false);
 
                     amountText = transactionView.findViewById(R.id.amount);
-                    amountText.setText(String.format(Locale.getDefault(), "%+,.5f", Bitcoin.bitcoins(transaction.amount)));
+                    amountText.setText(String.format(Locale.getDefault(), "%+,.5f",
+                      Bitcoin.bitcoins(transaction.amount)));
                     if(transaction.amount > 0)
                         amountText.setTextColor(getResources().getColor(R.color.colorPositive));
                     else
                         amountText.setTextColor(getResources().getColor(R.color.colorNegative));
 
-                    ((TextView)transactionView.findViewById(R.id.date)).setText(String.format(Locale.getDefault(), "%1$tD %1$tr", transaction.date * 1000));
+                    ((TextView)transactionView.findViewById(R.id.date)).setText(String.format(Locale.getDefault(),
+                      "%1$tD %1$tr", transaction.date * 1000));
 
-                    ((TextView)transactionView.findViewById(R.id.hash)).setText(String.format(Locale.getDefault(), "%s...", transaction.hash.substring(0, 8)));
+                    ((TextView)transactionView.findViewById(R.id.hash)).setText(String.format(Locale.getDefault(),
+                      "%s...", transaction.hash.substring(0, 8)));
 
                     transactionViewGroup.addView(transactionView);
                 }
@@ -325,6 +341,8 @@ public class MainActivity extends AppCompatActivity
 
                 if(addView)
                     content.addView(view);
+
+                offset++;
             }
         }
 
@@ -590,6 +608,9 @@ public class MainActivity extends AppCompatActivity
         case R.id.walletEdit:
             ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
             displayEditWallet((int)wallet.getTag());
+            break;
+        case R.id.walletLocked:
+            Toast.makeText(this, R.string.locked_message, Toast.LENGTH_LONG).show();
             break;
         }
     }
