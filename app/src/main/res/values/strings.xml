@@ -7,10 +7,10 @@
 
     <string name="inactive">Inactive</string>
     <string name="loading">Loading</string>
-    <string name="synchronizing">Synchronizing</string>
     <string name="synchronized_text">Synchronized</string>
     <string name="finding_peers">Finding Peers</string>
     <string name="connecting_to_peers">Connecting to Peers</string>
+    <string name="looking_for_blocks">Looking for blocks</string>
     <string name="looking_for_transactions">Looking for transactions</string>
 
     <string name="blocks">Blocks</string>
@@ -100,6 +100,13 @@
     <string name="receive_confirmed">Receive Confirmed</string>
     <string name="send_confirmed">Send Confirmed</string>
     <string name="double_tap_back">Double tap back to exit.</string>
+
+    <string name="channel_progress_name">Progress</string>
+    <string name="channel_progress_description">
+        Progress of synchronization with block chain.
+    </string>
+    <string name="loading_for_synchronize">Loading for synchronize</string>
+    <string name="progress_title">Synchronizing</string>
 
     <string name="channel_transactions_name">Transactions</string>
     <string name="channel_transactions_description">

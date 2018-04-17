@@ -18,7 +18,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Locale;
 import java.util.Vector;
 
 
@@ -27,9 +26,15 @@ public class Bitcoin
 {
     private static final String logTag = "Bitcoin";
     private static Thread sMainThread;
+    private static final int sExampleBlockHeight = 526256;
+    private static final long sExampleTime = 1523978805;
+    private static final long sSecondsPerBlock = 600;
+    private static final int sProgressNotificationID = 1;
 
-    private long mHandle;
+    private long mHandle; // Used by JNI
     private String mPath;
+    private boolean mLoaded;
+    private int mStartBlockHeight, mStartMerkleHeight;
     private int mChangeID;
     private boolean mIsRegistered;
     private int mNextNotificationID;
@@ -38,14 +43,29 @@ public class Bitcoin
     {
         mHandle = 0;
         mPath = pPath;
+        mLoaded = false;
+        mStartBlockHeight = 0;
+        mStartMerkleHeight = 0;
         mChangeID = -1;
         mIsRegistered = false;
-        mNextNotificationID = 1;
+        mNextNotificationID = 2;
     }
 
     public static float bitcoins(long pValue)
     {
         return (float)pValue / 100000000;
+    }
+
+    private int estimatedBlockHeight()
+    {
+        int height = blockHeight();
+        if(height < sExampleBlockHeight)
+            return sExampleBlockHeight + (int)(((System.currentTimeMillis() / 1000) - sExampleTime) / sSecondsPerBlock);
+        else
+        {
+            Block block = getBlockFromHeight(height);
+            return height + (int)(((System.currentTimeMillis() / 1000) - block.time) / sSecondsPerBlock);
+        }
     }
 
     public static native String userAgent();
@@ -55,9 +75,11 @@ public class Bitcoin
 
     public native boolean load();
 
-    public native boolean isLoaded();
+    public boolean isLoaded() { return mLoaded; }
 
     public native boolean isRunning();
+
+    public native boolean isInSync();
 
     public native void setFinishMode(int pFinishMode);
     public native void setFinishModeNoCreate(int pFinishMode);
@@ -82,6 +104,9 @@ public class Bitcoin
     // Block height of block chain.
     public native int blockHeight();
 
+    public native Block getBlockFromHeight(int pHeight);
+    public native Block getBlockFromHash(String pHash);
+
     // Block height of latest key monitoring pass.
     public native int merkleHeight();
 
@@ -93,40 +118,19 @@ public class Bitcoin
 
     public Wallet[] wallets;
 
-    private static final String transactionsNotificationChannel = "TRANS";
-
-    private void register(Context pContext)
-    {
-        if(mIsRegistered)
-            return;
-
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-        {
-            CharSequence name = pContext.getString(R.string.channel_transactions_name);
-            String description = pContext.getString(R.string.channel_transactions_description);
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(transactionsNotificationChannel, name, importance);
-            channel.setDescription(description);
-
-            // Register the channel with the system
-            NotificationManager notificationManager =
-              (NotificationManager)pContext.getSystemService(Context.NOTIFICATION_SERVICE);
-            if(notificationManager != null)
-                notificationManager.createNotificationChannel(channel);
-        }
-
-        mIsRegistered = true;
-    }
-
     public interface CallBacks
     {
-        void onTransactionUpdate(int pWalletOffset, Transaction pTransaction);
+        void onLoad();
+        boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction);
+        void onFinish();
     }
 
     private CallBacks mCallBacks;
 
     public void setCallBacks(CallBacks pCallBacks)
     {
+        if(mCallBacks != null)
+            mCallBacks.onFinish();
         mCallBacks = pCallBacks;
     }
 
@@ -136,7 +140,115 @@ public class Bitcoin
             mCallBacks = null;
     }
 
-    private void notify(Context pContext, String pChannel, String pTitle, String pText)
+    public void onLoaded()
+    {
+        mLoaded = true;
+        mStartMerkleHeight = merkleHeight();
+        mStartBlockHeight = blockHeight();
+        if(mCallBacks != null)
+            mCallBacks.onLoad();
+    }
+
+    public void onFinished()
+    {
+        if(mCallBacks != null)
+            mCallBacks.onFinish();
+    }
+
+    private static final String sProgressNotificationChannel = "Progress";
+    private static final String sTransactionsNotificationChannel = "Transactions";
+
+    private void register(Context pContext)
+    {
+        if(mIsRegistered)
+            return;
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        {
+            NotificationChannel channel = new NotificationChannel(sTransactionsNotificationChannel,
+              pContext.getString(R.string.channel_transactions_name), NotificationManager.IMPORTANCE_HIGH);
+            channel.setDescription(pContext.getString(R.string.channel_transactions_description));
+
+            // Register the channel with the system
+            NotificationManager notificationManager =
+              (NotificationManager)pContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            if(notificationManager != null)
+                notificationManager.createNotificationChannel(channel);
+
+            channel = new NotificationChannel(sProgressNotificationChannel,
+              pContext.getString(R.string.channel_progress_name), NotificationManager.IMPORTANCE_LOW);
+            channel.setDescription(pContext.getString(R.string.channel_progress_description));
+
+            // Register the channel with the system
+            if(notificationManager != null)
+                notificationManager.createNotificationChannel(channel);
+        }
+
+        mIsRegistered = true;
+    }
+
+    private void updateProgressNotification(Context pContext)
+    {
+        boolean sync = isInSync();
+        if(sync && merkleHeight() == blockHeight())
+        {
+            NotificationManagerCompat.from(pContext).cancel(sProgressNotificationID);
+            return;
+        }
+
+        Intent intent = new Intent(pContext, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(pContext, 0, intent, 0);
+        Bitmap iconBitmap = BitmapFactory.decodeResource(pContext.getResources(), R.drawable.icon);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(pContext, sProgressNotificationChannel)
+          .setSmallIcon(R.drawable.icon_notification)
+          .setLargeIcon(iconBitmap)
+          .setContentTitle(pContext.getString(R.string.progress_title))
+          .setContentIntent(pendingIntent)
+          .setPriority(NotificationCompat.PRIORITY_LOW);
+
+        int max = 0;
+        int progress = 0;
+        boolean indeterminate = false;
+
+        if(!mLoaded)
+        {
+            builder.setContentText(pContext.getString(R.string.loading_for_synchronize));
+            indeterminate = true;
+        }
+        else if(isInSync())
+        {
+            max = blockHeight() - mStartMerkleHeight;
+            progress = merkleHeight() - mStartMerkleHeight;
+
+            builder.setContentText(pContext.getString(R.string.looking_for_transactions));
+            builder.setProgress(max, progress, indeterminate);
+        }
+        else
+        {
+            int estimatedHeight = estimatedBlockHeight();
+            max = estimatedHeight - mStartBlockHeight;
+            progress = blockHeight() - mStartBlockHeight;
+
+            builder.setContentText(pContext.getString(R.string.looking_for_blocks));
+        }
+
+        if(!indeterminate && (max <= 1 || max - progress < 2))
+        {
+            indeterminate = true;
+            max = 0;
+            progress = 0;
+        }
+
+        builder.setProgress(max, progress, indeterminate);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(pContext);
+
+        // notificationId is a unique int for each notification that you must define
+        notificationManager.notify(sProgressNotificationID, builder.build());
+    }
+
+    private void notify(Context pContext, String pTitle, String pText)
     {
         Settings settings = Settings.getInstance(pContext.getFilesDir());
         if(settings.containsValue("notify_transactions") &&
@@ -148,7 +260,7 @@ public class Bitcoin
         PendingIntent pendingIntent = PendingIntent.getActivity(pContext, 0, intent, 0);
         Bitmap iconBitmap = BitmapFactory.decodeResource(pContext.getResources(), R.drawable.icon);
 
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(pContext, pChannel)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(pContext, sTransactionsNotificationChannel)
           .setSmallIcon(R.drawable.icon_notification)
           .setLargeIcon(iconBitmap)
           .setContentTitle(pTitle)
@@ -160,7 +272,12 @@ public class Bitcoin
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(pContext);
 
         // notificationId is a unique int for each notification that you must define
-        notificationManager.notify(mNextNotificationID++, mBuilder.build());
+        notificationManager.notify(mNextNotificationID++, builder.build());
+    }
+
+    public void clearProgress(Context pContext)
+    {
+        NotificationManagerCompat.from(pContext).cancel(sProgressNotificationID);
     }
 
     // Returns true if hash was added to the file.
@@ -271,7 +388,11 @@ public class Bitcoin
 
     public boolean update(Context pContext)
     {
+        if(!mLoaded)
+            return false;
+
         register(pContext);
+        updateProgressNotification(pContext);
 
         int changeID = getChangeID();
         if(changeID == mChangeID)
@@ -354,7 +475,7 @@ public class Bitcoin
                         if(mCallBacks != null)
                             mCallBacks.onTransactionUpdate(offset, transaction);
 
-                        notify(pContext, transactionsNotificationChannel, title, transaction.description(pContext));
+                        notify(pContext, title, transaction.description(pContext));
                     }
                 }
             }

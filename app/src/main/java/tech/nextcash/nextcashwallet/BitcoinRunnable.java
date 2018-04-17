@@ -23,8 +23,11 @@ public class BitcoinRunnable implements Runnable
     {
         Log.i(logTag, "Bitcoin thread starting");
         mBitcoin.setPath(mPath);
+        mBitcoin.load();
+        mBitcoin.onLoaded();
         mBitcoin.run(mFinishMode);
         mBitcoin.destroy();
+        mBitcoin.onFinished();
         Log.i(logTag, "Bitcoin thread finished");
     }
 }

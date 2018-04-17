@@ -26,7 +26,7 @@ import android.widget.TextView;
 import java.util.Locale;
 
 
-public class MainActivity extends AppCompatActivity implements Bitcoin.CallBacks
+public class MainActivity extends AppCompatActivity
 {
     public static final String logTag = "MainActivity";
     public static final int SETTINGS_REQUEST_CODE = 20;
@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity implements Bitcoin.CallBacks
     private Mode mMode;
     private Bitcoin mBitcoin;
     private boolean mFinishOnBack;
+    private Bitcoin.CallBacks mBitcoinCallBacks;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -61,6 +62,28 @@ public class MainActivity extends AppCompatActivity implements Bitcoin.CallBacks
         };
         mMode = Mode.LOADING;
         mFinishOnBack = false;
+
+        mBitcoinCallBacks = new Bitcoin.CallBacks()
+        {
+            @Override
+            public void onLoad()
+            {
+            }
+
+            @Override
+            public boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
+            {
+                showMessage(pTransaction.description(getApplicationContext()), 2000);
+                return true;
+            }
+
+            @Override
+            public void onFinish()
+            {
+                mBitcoin.clearProgress(getApplicationContext());
+                mBitcoin.clearCallBacks(mBitcoinCallBacks);
+            }
+        };
 
         scheduleJobs();
     }
@@ -120,13 +143,13 @@ public class MainActivity extends AppCompatActivity implements Bitcoin.CallBacks
         super.onStart();
         if(!mBitcoin.start(Bitcoin.FINISH_ON_REQUEST))
             mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
+        mBitcoin.setCallBacks(mBitcoinCallBacks);
     }
 
     @Override
     public void onResume()
     {
         updateStatus();
-        mBitcoin.setCallBacks(this);
         super.onResume();
     }
 
@@ -139,7 +162,6 @@ public class MainActivity extends AppCompatActivity implements Bitcoin.CallBacks
     @Override
     public void onPause()
     {
-        mBitcoin.clearCallBacks(this);
         mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
         super.onPause();
     }
@@ -177,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements Bitcoin.CallBacks
                 status.setText(R.string.connecting_to_peers);
                 break;
             case 4: // Synchronizing
-                status.setText(R.string.synchronizing);
+                status.setText(R.string.looking_for_blocks);
                 break;
             case 5: // Synchronized
                 status.setText(R.string.synchronized_text);
@@ -306,13 +328,6 @@ public class MainActivity extends AppCompatActivity implements Bitcoin.CallBacks
         }
 
         mMode = Mode.WALLETS;
-    }
-
-    @Override
-    public void onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
-    {
-        // TODO Display message about transaction
-        showMessage(pTransaction.description(this), 2000);
     }
 
     public void focusOnText(int pTextID)

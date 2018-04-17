@@ -36,6 +36,13 @@ extern "C"
     jfieldID sTransactionAmountID = NULL;
     jfieldID sTransactionCountID = NULL;
 
+    // Block
+    jclass sBlockClass = NULL;
+    jmethodID sBlockConstructor = NULL;
+    jfieldID sBlockHeightID = NULL;
+    jfieldID sBlockHashID = NULL;
+    jfieldID sBlockTimeID = NULL;
+
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_NextCash_destroy(JNIEnv *pEnvironment,
                                                                               jobject pObject)
     {
@@ -64,7 +71,6 @@ extern "C"
 
     void setupTransactionClass(JNIEnv *pEnvironment)
     {
-        // Transaction
         sTransactionClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Transaction");
         sTransactionConstructor = pEnvironment->GetMethodID(sTransactionClass, "<init>",
           "()V");
@@ -75,6 +81,19 @@ extern "C"
         sTransactionDateID = pEnvironment->GetFieldID(sTransactionClass, "date", "J");
         sTransactionAmountID = pEnvironment->GetFieldID(sTransactionClass, "amount", "J");
         sTransactionCountID = pEnvironment->GetFieldID(sTransactionClass, "count", "I");
+    }
+
+    void setupBlockClass(JNIEnv *pEnvironment)
+    {
+        sBlockClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Block");
+        sBlockConstructor = pEnvironment->GetMethodID(sBlockClass, "<init>",
+          "()V");
+        sBlockHeightID = pEnvironment->GetFieldID(sBlockClass, "height",
+          "I");
+        sBlockHashID = pEnvironment->GetFieldID(sBlockClass, "hash",
+          "Ljava/lang/String;");
+        sBlockTimeID = pEnvironment->GetFieldID(sBlockClass, "time",
+          "J");
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setupJNI(JNIEnv *pEnvironment,
@@ -189,7 +208,8 @@ extern "C"
                 result = JNI_TRUE;
             }
             else
-                NextCash::Log::add(NextCash::Log::WARNING, NEXTCASH_JNI_LOG_NAME, "Bitcoin failed to load");
+                NextCash::Log::add(NextCash::Log::WARNING, NEXTCASH_JNI_LOG_NAME,
+                  "Bitcoin failed to load");
         }
         catch(std::bad_alloc pException)
         {
@@ -205,16 +225,6 @@ extern "C"
         return result;
     }
 
-    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isLoaded(JNIEnv *pEnvironment,
-                                                                                  jobject pObject)
-    {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
-        if(daemon == NULL)
-            return JNI_FALSE;
-
-        return (jboolean)daemon->isLoaded();
-    }
-
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isRunning(JNIEnv *pEnvironment,
                                                                                    jobject pObject)
     {
@@ -223,6 +233,16 @@ extern "C"
             return JNI_FALSE;
 
         return (jboolean)daemon->isRunning();
+    }
+
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isInSync(JNIEnv *pEnvironment,
+                                                                                  jobject pObject)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return JNI_FALSE;
+
+        return (jboolean)daemon->chain()->isInSync();
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setFinishMode(JNIEnv *pEnvironment,
@@ -324,6 +344,62 @@ extern "C"
             return (jint)0;
 
         return daemon->monitor()->height();
+    }
+
+    jobject createBlock(JNIEnv *pEnvironment,
+                        int pHeight,
+                        jstring pHash,
+                        int32_t pTime)
+    {
+        jobject result = pEnvironment->NewObject(sBlockClass, sBlockConstructor);
+
+        // Set height
+        pEnvironment->SetIntField(result, sBlockHeightID, (jint)pHeight);
+
+        // Set hash
+        pEnvironment->SetObjectField(result, sBlockHashID, pHash);
+
+        // Set time
+        pEnvironment->SetLongField(result, sBlockTimeID, (jlong)pTime);
+
+        return result;
+    }
+
+    JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getBlockFromHeight(JNIEnv *pEnvironment,
+                                                                                           jobject pObject,
+                                                                                           jint pHeight)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return NULL;
+
+        setupBlockClass(pEnvironment);
+
+        NextCash::Hash hash;
+        if(!daemon->chain()->getBlockHash((unsigned int)pHeight, hash))
+            return NULL;
+
+        return createBlock(pEnvironment, pHeight, pEnvironment->NewStringUTF(hash.hex().text()),
+          daemon->chain()->blockStats().time((unsigned int)pHeight));
+    }
+
+    JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getBlockFromHash(JNIEnv *pEnvironment,
+                                                                                         jobject pObject,
+                                                                                         jstring pHash)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return NULL;
+
+        setupBlockClass(pEnvironment);
+
+        const char *hashHex = pEnvironment->GetStringUTFChars(pHash, NULL);
+        NextCash::Hash hash(hashHex);
+        int height = daemon->chain()->blockHeight(hash);
+        pEnvironment->ReleaseStringUTFChars(pHash, hashHex);
+
+        return createBlock(pEnvironment, height, pHash,
+          daemon->chain()->blockStats().time((unsigned int)height));
     }
 
     JNIEXPORT jlong JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_balance(JNIEnv *pEnvironment,

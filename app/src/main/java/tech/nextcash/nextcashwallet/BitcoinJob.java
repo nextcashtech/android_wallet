@@ -15,6 +15,7 @@ public class BitcoinJob extends JobService
     public static final int SYNC_JOB_ID = 92; // Sync to latest block and exit (background only)
 
     Bitcoin mBitcoin;
+    Bitcoin.CallBacks mBitcoinCallBacks;
     JobParameters mJobParameters;
 
     private void backgroundUpdate()
@@ -56,9 +57,6 @@ public class BitcoinJob extends JobService
                 Log.d(logTag, String.format("Bitcoin update sleep exception : %s", pException.toString()));
             }
         }
-
-        Log.i(logTag, "Job Finished");
-        jobFinished(mJobParameters, false);
     }
 
     private Runnable mUpdateRunnable = new Runnable()
@@ -98,9 +96,33 @@ public class BitcoinJob extends JobService
         Log.i(logTag, "Starting job");
         mJobParameters = pParams;
         mBitcoin = ((MainApp)getApplication()).bitcoin;
+
+        mBitcoinCallBacks = new Bitcoin.CallBacks()
+        {
+            @Override
+            public void onLoad()
+            {
+            }
+
+            @Override
+            public boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
+            {
+                return false;
+            }
+
+            @Override
+            public void onFinish()
+            {
+                mBitcoin.clearProgress(getApplicationContext());
+                jobFinished(mJobParameters, false);
+                mBitcoin.clearCallBacks(mBitcoinCallBacks);
+            }
+        };
+
         if(mBitcoin.start(Bitcoin.FINISH_ON_SYNC))
         {
             startUpdate();
+            mBitcoin.setCallBacks(mBitcoinCallBacks);
             return true;
         }
         else
