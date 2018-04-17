@@ -114,5 +114,6 @@
     <string name="pending_notification_description_end">is pending.</string>
     <string name="confirmed_notification_description_end">has been confirmed.</string>
     <string name="nodes">Nodes</string>
+    <string name="system_settings">System Settings</string>
 
 </resources>

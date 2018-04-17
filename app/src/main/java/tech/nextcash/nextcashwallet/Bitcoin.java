@@ -6,6 +6,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -98,7 +100,7 @@ public class Bitcoin
         if(mIsRegistered)
             return;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
         {
             CharSequence name = pContext.getString(R.string.channel_transactions_name);
             String description = pContext.getString(R.string.channel_transactions_description);
@@ -118,13 +120,19 @@ public class Bitcoin
 
     private void notify(Context pContext, String pChannel, String pTitle, String pText)
     {
+        Settings settings = Settings.getInstance(pContext.getFilesDir());
+        if(settings.containsValue("notify_transactions") &&
+          !Settings.getInstance(pContext.getFilesDir()).boolValue("notify_transactions"))
+            return;
+
         Intent intent = new Intent(pContext, MainActivity.class);
-        // TODO Add intent extra to open specific wallet/transaction
+        // TODO Add intent extra to show specific wallet/transaction
         PendingIntent pendingIntent = PendingIntent.getActivity(pContext, 0, intent, 0);
+        Bitmap iconBitmap = BitmapFactory.decodeResource(pContext.getResources(), R.drawable.icon);
 
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(pContext, pChannel)
           .setSmallIcon(R.drawable.icon_notification)
-          //.setLargeIcon(pContext.getResources().getDrawable(R.drawable.icon))
+          .setLargeIcon(iconBitmap)
           .setContentTitle(pTitle)
           .setContentText(pText)
           .setContentIntent(pendingIntent)

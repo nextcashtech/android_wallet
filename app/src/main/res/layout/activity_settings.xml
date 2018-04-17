@@ -48,6 +48,14 @@
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
                 android:text="@string/title_transactions"/>
 
+            <Button
+                android:id="@+id/systemNotificationSettings"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="20dp"
+                android:text="@string/system_settings"
+                android:onClick="onClick"/>
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="2dip"

@@ -2,6 +2,7 @@ package tech.nextcash.nextcashwallet;
 
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -92,15 +93,14 @@ public class MainActivity extends AppCompatActivity
                     scheduleNeeded = true;
                 }
 
-                //TODO Re-enable background synchronization
-//                if(scheduleNeeded)
-//                {
-//                    JobInfo.Builder updateJobInfoBuilder = new JobInfo.Builder(BitcoinJob.SYNC_JOB_ID,
-//                      new ComponentName(this, BitcoinJob.class));
-//                    updateJobInfoBuilder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
-//                    updateJobInfoBuilder.setPeriodic(syncFrequency * 60 * 1000);
-//                    jobScheduler.schedule(updateJobInfoBuilder.build());
-//                }
+                if(scheduleNeeded)
+                {
+                    JobInfo.Builder updateJobInfoBuilder = new JobInfo.Builder(BitcoinJob.SYNC_JOB_ID,
+                      new ComponentName(this, BitcoinJob.class));
+                    updateJobInfoBuilder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+                    updateJobInfoBuilder.setPeriodic(syncFrequency * 60 * 1000);
+                    jobScheduler.schedule(updateJobInfoBuilder.build());
+                }
             }
 
             return true;

@@ -1,5 +1,7 @@
 package tech.nextcash.nextcashwallet;
 
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -64,7 +66,11 @@ public class SettingsActivity extends AppCompatActivity
         if(settings.containsValue("notify_transactions"))
             notifyTransactions.setChecked(settings.boolValue("notify_transactions"));
         else
-            notifyTransactions.setChecked(false);
+            notifyTransactions.setChecked(true);
+
+        // Hide system notification settings for versions before 26
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
+            findViewById(R.id.systemNotificationSettings).setVisibility(View.GONE);
     }
 
     private void setupActionBar()
@@ -118,5 +124,20 @@ public class SettingsActivity extends AppCompatActivity
     public void onPointerCaptureChanged(boolean hasCapture)
     {
 
+    }
+
+    public void onClick(View pView)
+    {
+        if(pView.getId() == R.id.systemNotificationSettings)
+        {
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            {
+                Intent settingsIntent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                  .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                  .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName());
+                //.putExtra(Settings.EXTRA_CHANNEL_ID, MY_CHANNEL_ID);
+                startActivity(settingsIntent);
+            }
+        }
     }
 }
