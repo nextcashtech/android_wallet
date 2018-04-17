@@ -1,11 +1,11 @@
 package tech.nextcash.nextcashwallet;
 
-
 import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
 
 import java.util.Locale;
+
 
 public class Transaction
 {
@@ -20,6 +20,24 @@ public class Transaction
         date = 0;
         amount = 0;
         count = 0;
+    }
+
+    public String description(Context pContext)
+    {
+        int startString, endString;
+
+        if(amount > 0)
+            startString = R.string.receive_description_start;
+        else
+            startString = R.string.send_description_start;
+
+        if(block == null)
+            endString = R.string.pending_notification_description_end;
+        else
+            endString = R.string.confirmed_notification_description_end;
+
+        return String.format(Locale.getDefault(), "%s %,.5f %s",
+          pContext.getString(startString), Bitcoin.bitcoins(amount), pContext.getString(endString));
     }
 
     public void updateView(Context pContext, View pView)

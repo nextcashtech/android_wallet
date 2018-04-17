@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="colorPrimary">#f3b5</color>
-    <color name="colorPrimaryDark">#f294</color>
-    <color name="colorPrimaryButton">#f13b</color>
-    <color name="colorAccent">#f93</color>
+    <color name="colorPrimaryDark">#f173</color>
+    <color name="colorButton">#f13b</color>
+    <color name="colorNotification">#fe72</color>
     <color name="colorProgress">#53b5</color>
     <color name="colorPositive">#f4b4</color>
     <color name="colorNegative">#fc66</color>

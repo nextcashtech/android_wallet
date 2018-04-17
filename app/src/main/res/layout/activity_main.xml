@@ -34,14 +34,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <ProgressBar
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:indeterminateTint="@color/colorProgress"
-                android:indeterminateTintMode="src_atop"
-                style="@android:style/Widget.ProgressBar.Large"/>
-
         </LinearLayout>
     </ScrollView>
 
@@ -105,6 +97,43 @@
 
         </RelativeLayout>
 
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/progress"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center">
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminateTint="@color/colorProgress"
+            android:indeterminateTintMode="src_atop"
+            style="@android:style/Widget.ProgressBar.Large"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/notification"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:gravity="center_horizontal"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/notificationText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/notification_background"
+            android:textColor="#ffff"
+            android:layout_margin="10dp"
+            android:padding="15dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textAlignment="center"
+            android:text="@string/double_tap_back"/>
     </LinearLayout>
 
 </RelativeLayout>

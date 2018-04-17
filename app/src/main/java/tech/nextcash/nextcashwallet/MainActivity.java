@@ -22,18 +22,17 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.Locale;
 
 
-public class MainActivity extends AppCompatActivity
+public class MainActivity extends AppCompatActivity implements Bitcoin.CallBacks
 {
     public static final String logTag = "MainActivity";
     public static final int SETTINGS_REQUEST_CODE = 20;
 
     private Handler mDelayHandler;
-    private Runnable mStatusUpdateRunnable, mClearFinishOnBack;
+    private Runnable mStatusUpdateRunnable, mClearFinishOnBack, mClearNotification;
 
     private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, HISTORY, SETUP }
     private Mode mMode;
@@ -52,6 +51,14 @@ public class MainActivity extends AppCompatActivity
         mDelayHandler = new Handler();
         mStatusUpdateRunnable = new Runnable() { @Override public void run() { updateStatus(); } };
         mClearFinishOnBack = new Runnable() { @Override public void run() { mFinishOnBack = false; } };
+        mClearNotification = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                findViewById(R.id.notification).setVisibility(View.GONE);
+            }
+        };
         mMode = Mode.LOADING;
         mFinishOnBack = false;
 
@@ -119,6 +126,7 @@ public class MainActivity extends AppCompatActivity
     public void onResume()
     {
         updateStatus();
+        mBitcoin.setCallBacks(this);
         super.onResume();
     }
 
@@ -131,6 +139,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onPause()
     {
+        mBitcoin.clearCallBacks(this);
         mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
         super.onPause();
     }
@@ -216,6 +225,8 @@ public class MainActivity extends AppCompatActivity
         boolean addButtonNeeded = false, addView;
         String name;
 
+        findViewById(R.id.progress).setVisibility(View.GONE);
+
         if(mMode != Mode.WALLETS)
         {
             // Rebuild all wallets
@@ -295,6 +306,13 @@ public class MainActivity extends AppCompatActivity
         }
 
         mMode = Mode.WALLETS;
+    }
+
+    @Override
+    public void onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
+    {
+        // TODO Display message about transaction
+        showMessage(pTransaction.description(this), 2000);
     }
 
     public void focusOnText(int pTextID)
@@ -581,7 +599,7 @@ public class MainActivity extends AppCompatActivity
                       mBitcoin.setName((int)nameView.getTag(), name))
                         updateWallets();
                     else
-                        Toast.makeText(this, R.string.failed_update_name, Toast.LENGTH_LONG).show();
+                        showMessage(getString(R.string.failed_update_name), 2000);
                     break;
                 }
                 case R.id.backupWallet:
@@ -602,16 +620,16 @@ public class MainActivity extends AppCompatActivity
                     updateWallets(); // Rebuild view showing wallets
                     break;
                 case 1: // Unknown error
-                    Toast.makeText(this, R.string.failed_key_import, Toast.LENGTH_LONG).show();
+                    showMessage(getString(R.string.failed_key_import), 2000);
                     break;
                 case 2: // Invalid format
-                    Toast.makeText(this, R.string.failed_key_import_format, Toast.LENGTH_LONG).show();
+                    showMessage(getString(R.string.failed_key_import_format), 2000);
                     break;
                 case 3: // Already exists
-                    Toast.makeText(this, R.string.failed_key_import_exists, Toast.LENGTH_LONG).show();
+                    showMessage(getString(R.string.failed_key_import_exists), 2000);
                     break;
                 case 4: // Invalid derivation method
-                    Toast.makeText(this, R.string.failed_key_import_method, Toast.LENGTH_LONG).show();
+                    showMessage(getString(R.string.failed_key_import_method), 2000);
                     break;
             }
             break;
@@ -660,12 +678,19 @@ public class MainActivity extends AppCompatActivity
             break;
         }
         case R.id.walletLocked:
-            Toast.makeText(this, R.string.locked_message, Toast.LENGTH_LONG).show();
+            showMessage(getString(R.string.locked_message), 2000);
             break;
         case R.id.walletTransaction:
             // TODO Show transaction details
             break;
         }
+    }
+
+    public void showMessage(String pText, int pDelay)
+    {
+        ((TextView)findViewById(R.id.notificationText)).setText(pText);
+        findViewById(R.id.notification).setVisibility(View.VISIBLE);
+        mDelayHandler.postDelayed(mClearNotification, pDelay);
     }
 
     @Override
@@ -681,7 +706,7 @@ public class MainActivity extends AppCompatActivity
         else
         {
             mFinishOnBack = true;
-            Toast.makeText(this, R.string.double_tap_back, Toast.LENGTH_SHORT).show();
+            showMessage(getString(R.string.double_tap_back), 1000);
             mDelayHandler.postDelayed(mClearFinishOnBack, 1000);
         }
     }

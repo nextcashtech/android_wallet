@@ -118,6 +118,24 @@ public class Bitcoin
         mIsRegistered = true;
     }
 
+    public interface CallBacks
+    {
+        void onTransactionUpdate(int pWalletOffset, Transaction pTransaction);
+    }
+
+    private CallBacks mCallBacks;
+
+    public void setCallBacks(CallBacks pCallBacks)
+    {
+        mCallBacks = pCallBacks;
+    }
+
+    public void clearCallBacks(CallBacks pCallBacks)
+    {
+        if(mCallBacks == pCallBacks)
+            mCallBacks = null;
+    }
+
     private void notify(Context pContext, String pChannel, String pTitle, String pText)
     {
         Settings settings = Settings.getInstance(pContext.getFilesDir());
@@ -263,7 +281,7 @@ public class Bitcoin
         if(count == 0)
         {
             mChangeID = changeID;
-            return false;
+            return true;
         }
 
         // Check for initial creation of wallets
@@ -307,16 +325,10 @@ public class Bitcoin
                 {
                     //TODO Don't notify for wallets not yet fully "recovered"
                     // Notify of new transaction
-                    String title, description;
-                    int startString, endString;
+                    String title;
 
                     for(Transaction transaction : wallet.updatedTransactions)
                     {
-                        if(transaction.amount > 0)
-                            startString = R.string.receive_description_start;
-                        else
-                            startString = R.string.send_description_start;
-
                         if(transaction.block == null)
                         {
                             // Pending
@@ -327,7 +339,6 @@ public class Bitcoin
                                 title = pContext.getString(R.string.pending_receive_title);
                             else
                                 title = pContext.getString(R.string.pending_send_title);
-                            endString = R.string.pending_notification_description_end;
                         }
                         else
                         {
@@ -338,13 +349,12 @@ public class Bitcoin
                                 title = pContext.getString(R.string.confirmed_receive_title);
                             else
                                 title = pContext.getString(R.string.confirmed_send_title);
-                            endString = R.string.confirmed_notification_description_end;
                         }
 
-                        description = String.format(Locale.getDefault(), "%s %,.5f %s",
-                          pContext.getString(startString), bitcoins(transaction.amount), pContext.getString(endString));
+                        if(mCallBacks != null)
+                            mCallBacks.onTransactionUpdate(offset, transaction);
 
-                        notify(pContext, transactionsNotificationChannel, title, description);
+                        notify(pContext, transactionsNotificationChannel, title, transaction.description(pContext));
                     }
                 }
             }
