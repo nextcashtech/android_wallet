@@ -141,6 +141,7 @@ public class MainActivity extends AppCompatActivity
     public void onStart()
     {
         super.onStart();
+        stopService(new Intent(this, BitcoinJob.class));
         if(!mBitcoin.start(Bitcoin.FINISH_ON_REQUEST))
             mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
         mBitcoin.setCallBacks(mBitcoinCallBacks);
@@ -188,6 +189,7 @@ public class MainActivity extends AppCompatActivity
             default:
             case 0: // Inactive
                 status.setText(R.string.inactive);
+                mBitcoin.start(Bitcoin.FINISH_ON_REQUEST);
                 break;
             case 1: // Loading
                 status.setText(R.string.loading);
@@ -711,7 +713,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onBackPressed()
     {
-        if(mMode != Mode.WALLETS)
+        if(mMode != Mode.WALLETS && mMode != Mode.LOADING)
             updateWallets(); // Go back to main wallets view
         else if(mFinishOnBack)
         {
