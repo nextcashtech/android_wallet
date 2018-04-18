@@ -30,8 +30,6 @@ public class BitcoinJob extends JobService
             {
                 if(!mBitcoin.isRunning())
                     break;
-
-                mBitcoin.update(context);
             }
             else
             {
@@ -47,6 +45,8 @@ public class BitcoinJob extends JobService
                     }
                 }
             }
+
+            mBitcoin.update(context);
 
             try
             {

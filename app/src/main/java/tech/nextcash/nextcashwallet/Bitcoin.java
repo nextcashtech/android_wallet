@@ -213,23 +213,20 @@ public class Bitcoin
 
         if(!mLoaded)
         {
-            builder.setContentText(pContext.getString(R.string.loading_for_synchronize));
             indeterminate = true;
+            builder.setContentText(pContext.getString(R.string.loading_for_synchronize));
         }
         else if(isInSync())
         {
             max = blockHeight() - mStartMerkleHeight;
             progress = merkleHeight() - mStartMerkleHeight;
-
             builder.setContentText(pContext.getString(R.string.looking_for_transactions));
-            builder.setProgress(max, progress, indeterminate);
         }
         else
         {
             int estimatedHeight = estimatedBlockHeight();
             max = estimatedHeight - mStartBlockHeight;
             progress = blockHeight() - mStartBlockHeight;
-
             builder.setContentText(pContext.getString(R.string.looking_for_blocks));
         }
 
@@ -388,11 +385,11 @@ public class Bitcoin
 
     public boolean update(Context pContext)
     {
-        if(!mLoaded)
-            return false;
-
         register(pContext);
         updateProgressNotification(pContext);
+
+        if(!mLoaded)
+            return false;
 
         int changeID = getChangeID();
         if(changeID == mChangeID)

@@ -231,7 +231,7 @@ public class MainActivity extends AppCompatActivity
         {
         case LOADING:
         case WALLETS:
-            if(isLoaded && mBitcoin.update(getApplicationContext()))
+            if(mBitcoin.update(getApplicationContext()))
                 updateWallets();
             break;
         default:
