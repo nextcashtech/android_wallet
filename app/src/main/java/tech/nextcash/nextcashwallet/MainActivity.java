@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity
     public void onStart()
     {
         super.onStart();
-        stopService(new Intent(this, BitcoinJob.class));
+        //stopService(new Intent(this, BitcoinJob.class));
         if(!mBitcoin.start(Bitcoin.FINISH_ON_REQUEST))
             mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
         mBitcoin.setCallBacks(mBitcoinCallBacks);
@@ -194,6 +194,12 @@ public class MainActivity extends AppCompatActivity
                 break;
             case 1: // Loading
                 status.setText(R.string.loading);
+                if(mMode != Mode.LOADING)
+                {
+                    ((ViewGroup)findViewById(R.id.content)).removeAllViews();
+                    findViewById(R.id.progress).setVisibility(View.VISIBLE);
+                    mMode = Mode.LOADING;
+                }
                 break;
             case 2: // Finding peers
                 status.setText(R.string.finding_peers);
@@ -230,8 +236,13 @@ public class MainActivity extends AppCompatActivity
         switch(mMode)
         {
         case LOADING:
+            if(mBitcoin.isLoaded())
+            {
+                mBitcoin.update(getApplicationContext(), true);
+                updateWallets();
+            }
         case WALLETS:
-            if(mBitcoin.update(getApplicationContext()))
+            if(mBitcoin.update(getApplicationContext(), false))
                 updateWallets();
             break;
         default:

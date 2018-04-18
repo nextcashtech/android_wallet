@@ -230,7 +230,7 @@ public class Bitcoin
             builder.setContentText(pContext.getString(R.string.looking_for_blocks));
         }
 
-        if(!indeterminate && (max <= 1 || max - progress < 2))
+        if(!indeterminate && (max <= 1 || progress < 1 || max - progress < 2))
         {
             indeterminate = true;
             max = 0;
@@ -383,7 +383,7 @@ public class Bitcoin
         }
     }
 
-    public boolean update(Context pContext)
+    public boolean update(Context pContext, boolean pForce)
     {
         register(pContext);
         updateProgressNotification(pContext);
@@ -392,14 +392,14 @@ public class Bitcoin
             return false;
 
         int changeID = getChangeID();
-        if(changeID == mChangeID)
+        if(changeID == mChangeID && !pForce)
             return false; // No changes detected
 
         int count = keyCount();
         if(count == 0)
         {
             mChangeID = changeID;
-            return true;
+            return false;
         }
 
         // Check for initial creation of wallets

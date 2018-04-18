@@ -46,7 +46,7 @@ public class BitcoinJob extends JobService
                 }
             }
 
-            mBitcoin.update(context);
+            mBitcoin.update(context, false);
 
             try
             {
