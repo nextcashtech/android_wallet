@@ -23,6 +23,7 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.text.DateFormat;
 import java.util.Locale;
 
 
@@ -244,7 +245,7 @@ public class MainActivity extends AppCompatActivity
     public void updateWallets()
     {
         LayoutInflater inflater = getLayoutInflater();
-        ViewGroup content = findViewById(R.id.content);
+        ViewGroup content = findViewById(R.id.content), transactions;
         View view;
         boolean addButtonNeeded = false, addView;
         String name;
@@ -311,11 +312,14 @@ public class MainActivity extends AppCompatActivity
                     view.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
                 }
 
-                populateTransactions((ViewGroup)view.findViewById(R.id.walletTransactions), wallet.transactions,
+                transactions = view.findViewById(R.id.walletTransactions);
+                populateTransactions(transactions, wallet.transactions,
                   3);
 
                 if(addView)
                     content.addView(view);
+
+                alignTransactions(transactions);
 
                 offset++;
             }
@@ -431,6 +435,59 @@ public class MainActivity extends AppCompatActivity
         mMode = Mode.EDIT_WALLET;
     }
 
+    public void alignColumns(ViewGroup pView, int pColumnCount)
+    {
+        ViewGroup row;
+        int rowCount = pView.getChildCount();
+        TextView entry;
+        int widest[] = new int[pColumnCount];
+        int width;
+        boolean shade = false;
+
+        // Find widest columns
+        for(int rowOffset = 0; rowOffset < rowCount; rowOffset++)
+        {
+            row = (ViewGroup)pView.getChildAt(rowOffset);
+
+            for(int columnOffset = 0; columnOffset < pColumnCount; columnOffset++)
+            {
+                entry = (TextView)row.getChildAt(columnOffset);
+                entry.measure(0, 0);
+                width = entry.getMeasuredWidth();
+                if(width > widest[columnOffset])
+                    widest[columnOffset] = width;
+            }
+        }
+
+        // Set column widths to align
+        for(int rowOffset = 0; rowOffset < rowCount; rowOffset++)
+        {
+            row = (ViewGroup)pView.getChildAt(rowOffset);
+
+            for(int columnOffset = 0; columnOffset < pColumnCount; columnOffset++)
+            {
+                entry = (TextView)row.getChildAt(columnOffset);
+                entry.setWidth(widest[columnOffset]);
+            }
+
+            if(shade)
+                row.setBackgroundColor(getResources().getColor(R.color.rowShade));
+
+            shade = !shade;
+        }
+    }
+
+    public void alignTransactions(ViewGroup pView)
+    {
+        ViewGroup pending = pView.findViewById(R.id.walletPending);
+        if(pending.getVisibility() != View.GONE)
+            alignColumns(pending, 3);
+
+        ViewGroup recent = pView.findViewById(R.id.walletRecent);
+        if(recent.getVisibility() != View.GONE)
+            alignColumns(recent, 3);
+    }
+
     public void populateTransactions(ViewGroup pView, Transaction[] pTransactions, int pLimit)
     {
         LayoutInflater inflater = getLayoutInflater();
@@ -453,6 +510,14 @@ public class MainActivity extends AppCompatActivity
             {
                 transactionViewGroup = pendingView;
                 pendingCount++;
+                if(pendingCount == 1)
+                {
+                    // Add header line
+                    transactionView = inflater.inflate(R.layout.wallet_transaction_header, transactionViewGroup,
+                      false);
+                    ((TextView)transactionView.findViewById(R.id.count)).setText(R.string.peers_title);
+                    transactionViewGroup.addView(transactionView);
+                }
             }
             else
             {
@@ -460,6 +525,14 @@ public class MainActivity extends AppCompatActivity
                 recentCount++;
                 if(recentCount > pLimit)
                     continue;
+                if(recentCount == 1)
+                {
+                    // Add header line
+                    transactionView = inflater.inflate(R.layout.wallet_transaction_header, transactionViewGroup,
+                      false);
+                    ((TextView)transactionView.findViewById(R.id.count)).setText(R.string.confirms_title);
+                    transactionViewGroup.addView(transactionView);
+                }
             }
 
             transactionView = inflater.inflate(R.layout.wallet_transaction, transactionViewGroup,
@@ -529,10 +602,13 @@ public class MainActivity extends AppCompatActivity
         historyView = (ViewGroup)inflater.inflate(R.layout.wallet_history, contentView, false);
         ((TextView)historyView.findViewById(R.id.title)).setText(wallet.name);
 
-        populateTransactions((ViewGroup)historyView.findViewById(R.id.walletTransactions), wallet.transactions,
+        ViewGroup transactions = historyView.findViewById(R.id.walletTransactions);
+        populateTransactions(transactions, wallet.transactions,
           100);
 
         contentView.addView(historyView);
+
+        alignTransactions(transactions);
 
         mMode = Mode.HISTORY;
     }

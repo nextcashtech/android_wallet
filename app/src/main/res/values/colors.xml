@@ -7,4 +7,5 @@
     <color name="colorProgress">#53b5</color>
     <color name="colorPositive">#f4b4</color>
     <color name="colorNegative">#fc66</color>
+    <color name="rowShade">#feee</color>
 </resources>

@@ -90,6 +90,12 @@
     <string name="recent_transactions">Recent Transactions</string>
     <string name="confirmed_transactions">Confirmed Transactions</string>
     <string name="no_transactions">No Transactions</string>
+    <string name="amount_title">Amount</string>
+    <string name="time_title">Time</string>
+    <string name="confirms_title">Confirms</string>
+    <string name="peers_title">Peers</string>
+    <string name="nine_plus">9+</string>
+    <string name="hash_title">Hash</string>
     <string name="peer">Peer</string>
     <string name="peers">Peers</string>
     <string name="confirm">Confirm</string>

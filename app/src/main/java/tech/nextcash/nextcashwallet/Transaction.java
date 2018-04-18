@@ -4,6 +4,8 @@ import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
 
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 
@@ -50,30 +52,28 @@ public class Transaction
         else
             amountText.setTextColor(pContext.getResources().getColor(R.color.colorNegative));
 
-        ((TextView)pView.findViewById(R.id.date)).setText(String.format(Locale.getDefault(),
-          "%1$tD %1$tr", date * 1000));
+        long diff = (System.currentTimeMillis() / 1000) - date;
+        if(diff < 60)
+            ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
+              "%d secs", diff));
+        else if(diff < 3600)
+            ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
+              "%d mins", diff / 60));
+        else if(diff < 86400)
+            ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
+              "%d hrs", diff / 3600));
+        else
+            ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
+              "%1$tY-%1$tm-%1$td", date * 1000));
 
         if(block == null)
         {
-            if(count == 1)
-                ((TextView)pView.findViewById(R.id.count)).setText(String.format(Locale.getDefault(),
-                  "%d %s", count, pContext.getString(R.string.peer)));
-            else
-                ((TextView)pView.findViewById(R.id.count)).setText(String.format(Locale.getDefault(),
-                  "%d %s", count, pContext.getString(R.string.peers)));
+            ((TextView)pView.findViewById(R.id.count)).setText(String.format(Locale.getDefault(), "%d", count));
         }
         else if(count > 9)
-            ((TextView)pView.findViewById(R.id.count)).setText(String.format(Locale.getDefault(),
-              "9+ %s", pContext.getString(R.string.confirms)));
-        else if(count == 1)
-            ((TextView)pView.findViewById(R.id.count)).setText(String.format(Locale.getDefault(), "%d %s",
-              count, pContext.getString(R.string.confirm)));
+            ((TextView)pView.findViewById(R.id.count)).setText(pContext.getString(R.string.nine_plus));
         else
-            ((TextView)pView.findViewById(R.id.count)).setText(String.format(Locale.getDefault(), "%d %s",
-              count, pContext.getString(R.string.confirms)));
-
-        ((TextView)pView.findViewById(R.id.hash)).setText(String.format(Locale.getDefault(),
-          "%s...", hash.substring(0, 8)));
+            ((TextView)pView.findViewById(R.id.count)).setText(String.format(Locale.getDefault(), "%d", count));
     }
 
     private static native void setupJNI();
