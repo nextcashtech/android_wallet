@@ -161,6 +161,28 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onNewIntent(Intent pIntent)
     {
+        Bundle extras = pIntent.getExtras();
+
+        if(extras != null)
+        {
+            if(extras.containsKey("Message"))
+                showMessage(getString(extras.getInt("Message")), 2000);
+
+            if(extras.containsKey("UpdateWallet"))
+            {
+                if(mBitcoin.isLoaded())
+                {
+                    mBitcoin.update(getApplicationContext(), true);
+                    updateWallets();
+
+                    if(extras.getInt("UpdateWallet") != -1)
+                    {
+                        //TODO Open wallet at specified offset
+                    }
+                }
+            }
+        }
+
         super.onNewIntent(pIntent);
     }
 
@@ -729,7 +751,10 @@ public class MainActivity extends AppCompatActivity
                     String name = nameView.getText().toString();
                     if((int)nameView.getTag() < mBitcoin.wallets.length &&
                       mBitcoin.setName((int)nameView.getTag(), name))
+                    {
+                        mBitcoin.update(getApplicationContext(), true);
                         updateWallets();
+                    }
                     else
                         showMessage(getString(R.string.failed_update_name), 2000);
                     break;
@@ -744,26 +769,16 @@ public class MainActivity extends AppCompatActivity
             break;
         case R.id.importButton: // Import BIP-0032 encoded key
         {
-            String encodedKey = ((EditText)findViewById(R.id.importText)).getText().toString();
-            switch(mBitcoin.addKey(encodedKey,
-              ((Spinner)findViewById(R.id.derivationMethodSpinner)).getSelectedItemPosition()))
-            {
-                case 0: // Success
-                    updateWallets(); // Rebuild view showing wallets
-                    break;
-                case 1: // Unknown error
-                    showMessage(getString(R.string.failed_key_import), 2000);
-                    break;
-                case 2: // Invalid format
-                    showMessage(getString(R.string.failed_key_import_format), 2000);
-                    break;
-                case 3: // Already exists
-                    showMessage(getString(R.string.failed_key_import_exists), 2000);
-                    break;
-                case 4: // Invalid derivation method
-                    showMessage(getString(R.string.failed_key_import_method), 2000);
-                    break;
-            }
+            ImportKeyTask task = new ImportKeyTask(this, mBitcoin,
+              ((EditText)findViewById(R.id.importText)).getText().toString(),
+              ((Spinner)findViewById(R.id.derivationMethodSpinner)).getSelectedItemPosition());
+            task.execute();
+
+            ViewGroup contentView = findViewById(R.id.content);
+            contentView.removeAllViews();
+
+            findViewById(R.id.progress).setVisibility(View.VISIBLE);
+
             break;
         }
         case R.id.walletHeader: // Expand/Compress wallet

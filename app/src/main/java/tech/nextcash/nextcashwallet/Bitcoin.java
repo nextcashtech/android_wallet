@@ -417,15 +417,10 @@ public class Bitcoin
             return false;
 
         int changeID = getChangeID();
-        if(changeID == mChangeID && !pForce)
-            return false; // No changes detected
-
         int count = keyCount();
-        if(count == 0)
-        {
-            mChangeID = changeID;
-            return false;
-        }
+        if(((count == 0 && wallets == null) || (wallets != null && count == wallets.length)) &&
+          changeID == mChangeID && !pForce)
+            return false; // No changes detected
 
         // Check for initial creation of wallets
         if(wallets == null || (wallets.length == 0 && count > 0))
@@ -512,7 +507,7 @@ public class Bitcoin
     private native int getChangeID();
 
     // Return the number of keys in the key store
-    private native int keyCount();
+    public native int keyCount();
 
     private native boolean updateWallet(int pOffset);
 
