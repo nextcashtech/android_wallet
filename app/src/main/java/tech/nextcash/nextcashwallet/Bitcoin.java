@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Vector;
 
 
@@ -54,6 +55,30 @@ public class Bitcoin
     public static float bitcoins(long pValue)
     {
         return (float)pValue / 100000000;
+    }
+
+    public static String amountText(long pAmount, double pFiatRate)
+    {
+        if(pFiatRate != 0.0)
+        {
+            return String.format(Locale.getDefault(), "$%,.2f",
+              Bitcoin.bitcoins(pAmount) * pFiatRate);
+//            if(pAmount > 0)
+//            {
+//                if(pAddSign)
+//                    return String.format(Locale.getDefault(), "+$%,.2f",
+//                      Bitcoin.bitcoins(pAmount) * pFiatRate);
+//                else
+//                    return String.format(Locale.getDefault(), "$%,.2f",
+//                      Bitcoin.bitcoins(pAmount) * pFiatRate);
+//            }
+//            else
+//                return String.format(Locale.getDefault(), "-$%,.2f",
+//                  Bitcoin.bitcoins(pAmount) * -pFiatRate);
+        }
+        else
+            return String.format(Locale.getDefault(), "%,.5f",
+              Bitcoin.bitcoins(pAmount));
     }
 
     private int estimatedBlockHeight()

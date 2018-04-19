@@ -23,7 +23,6 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import java.text.DateFormat;
 import java.util.Locale;
 
 
@@ -33,13 +32,14 @@ public class MainActivity extends AppCompatActivity
     public static final int SETTINGS_REQUEST_CODE = 20;
 
     private Handler mDelayHandler;
-    private Runnable mStatusUpdateRunnable, mClearFinishOnBack, mClearNotification;
+    private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification;
 
     private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, HISTORY, SETUP }
     private Mode mMode;
     private Bitcoin mBitcoin;
     private boolean mFinishOnBack;
     private Bitcoin.CallBacks mBitcoinCallBacks;
+    private double mFiatRate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity
         mBitcoin = ((MainApp)getApplication()).bitcoin;
         mDelayHandler = new Handler();
         mStatusUpdateRunnable = new Runnable() { @Override public void run() { updateStatus(); } };
+        mRateUpdateRunnable = new Runnable() { @Override public void run() { startUpdateRates(); } };
         mClearFinishOnBack = new Runnable() { @Override public void run() { mFinishOnBack = false; } };
         mClearNotification = new Runnable()
         {
@@ -63,6 +64,7 @@ public class MainActivity extends AppCompatActivity
         };
         mMode = Mode.LOADING;
         mFinishOnBack = false;
+        mFiatRate = 0.0;
 
         mBitcoinCallBacks = new Bitcoin.CallBacks()
         {
@@ -146,6 +148,7 @@ public class MainActivity extends AppCompatActivity
         if(!mBitcoin.start(Bitcoin.FINISH_ON_REQUEST))
             mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
         mBitcoin.setCallBacks(mBitcoinCallBacks);
+        startUpdateRates();
     }
 
     @Override
@@ -165,6 +168,7 @@ public class MainActivity extends AppCompatActivity
     public void onPause()
     {
         mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
+        mDelayHandler.removeCallbacks(mRateUpdateRunnable);
         super.onPause();
     }
 
@@ -179,6 +183,14 @@ public class MainActivity extends AppCompatActivity
     protected void onDestroy()
     {
         super.onDestroy();
+    }
+
+    private void startUpdateRates()
+    {
+        new FiatRateRequestTask(getFilesDir()).execute();
+
+        // Run again in 60 seconds
+        mDelayHandler.postDelayed(mRateUpdateRunnable, 60000);
     }
 
     private void updateStatus()
@@ -219,6 +231,7 @@ public class MainActivity extends AppCompatActivity
         }
 
         boolean isLoaded = mBitcoin.isLoaded();
+        boolean forceUpdate = false;
         TextView blocks = findViewById(R.id.blockHeight);
         TextView peerCount = findViewById(R.id.peerCount);
         if(isLoaded)
@@ -226,23 +239,33 @@ public class MainActivity extends AppCompatActivity
             blocks.setText(String.format(Locale.getDefault(), "%,d / %,d", mBitcoin.merkleHeight(),
               mBitcoin.blockHeight()));
             peerCount.setText(String.format(Locale.getDefault(), "%,d", mBitcoin.peerCount()));
+
+            double fiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
+            if(fiatRate != mFiatRate)
+                forceUpdate = true;
         }
         else
         {
             blocks.setText("- / -");
             peerCount.setText("-");
+            if(mMode != Mode.LOADING)
+            {
+                ViewGroup content = findViewById(R.id.content);
+                content.removeAllViews();
+                findViewById(R.id.progress).setVisibility(View.VISIBLE);
+            }
         }
 
         switch(mMode)
         {
         case LOADING:
-            if(mBitcoin.isLoaded())
+            if(isLoaded)
             {
                 mBitcoin.update(getApplicationContext(), true);
                 updateWallets();
             }
         case WALLETS:
-            if(mBitcoin.update(getApplicationContext(), false))
+            if(mBitcoin.update(getApplicationContext(), forceUpdate))
                 updateWallets();
             break;
         default:
@@ -260,6 +283,8 @@ public class MainActivity extends AppCompatActivity
         View view;
         boolean addButtonNeeded = false, addView;
         String name;
+
+        mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
 
         findViewById(R.id.progress).setVisibility(View.GONE);
 
@@ -306,8 +331,8 @@ public class MainActivity extends AppCompatActivity
                     view.findViewById(R.id.walletDetails).setVisibility(View.GONE);
                 }
 
-                ((TextView)view.findViewById(R.id.walletBalance)).setText(String.format(Locale.getDefault(),
-                  "%,.5f", Bitcoin.bitcoins(wallet.balance)));
+                ((TextView)view.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance,
+                  mFiatRate));
 
                 name = wallet.name;
                 if(name == null || name.length() == 0)
@@ -512,6 +537,7 @@ public class MainActivity extends AppCompatActivity
         pendingView = pView.findViewById(R.id.walletPending);
         pendingView.removeAllViews();
 
+
         pendingCount = 0;
         recentCount = 0;
 
@@ -549,7 +575,7 @@ public class MainActivity extends AppCompatActivity
             transactionView = inflater.inflate(R.layout.wallet_transaction, transactionViewGroup,
               false);
 
-            transaction.updateView(this, transactionView);
+            transaction.updateView(this, transactionView, mFiatRate);
 
             // Set tag with transaction offset
             if(transaction.block == null)
@@ -596,6 +622,8 @@ public class MainActivity extends AppCompatActivity
         ViewGroup historyView;
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup contentView = findViewById(R.id.content);
+
+        mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
 
         contentView.removeAllViews();
 

@@ -38,15 +38,16 @@ public class Transaction
         else
             endString = R.string.confirmed_notification_description_end;
 
-        return String.format(Locale.getDefault(), "%s %,.5f %s",
-          pContext.getString(startString), Bitcoin.bitcoins(amount), pContext.getString(endString));
+        double fiatRate = Settings.getInstance(pContext.getFilesDir()).doubleValue("usd_rate");
+
+        return String.format(Locale.getDefault(), "%s %s %s",
+          pContext.getString(startString), Bitcoin.amountText(amount, fiatRate), pContext.getString(endString));
     }
 
-    public void updateView(Context pContext, View pView)
+    public void updateView(Context pContext, View pView, double pFiatRate)
     {
         TextView amountText = pView.findViewById(R.id.amount);
-        amountText.setText(String.format(Locale.getDefault(), "%+,.5f",
-          Bitcoin.bitcoins(amount)));
+        amountText.setText(Bitcoin.amountText(amount, pFiatRate));
         if(amount > 0)
             amountText.setTextColor(pContext.getResources().getColor(R.color.colorPositive));
         else

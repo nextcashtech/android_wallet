@@ -5,10 +5,11 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 
+
 public class Settings
 {
     private static Settings theInstance = null;
-    public static Settings getInstance(File pDirectory)
+    public static synchronized Settings getInstance(File pDirectory)
     {
         if(theInstance == null)
             theInstance = new Settings(pDirectory);
@@ -54,7 +55,7 @@ public class Settings
         }
     }
 
-    private void write()
+    private synchronized void write()
     {
         if(mDirectory == null || mValues == null)
             return;
@@ -142,6 +143,42 @@ public class Settings
         {
             Log.e(logTag, "Name not found to update : " + pException.toString());
             mValues.putInt(pName, pValue);
+        }
+
+        write();
+    }
+
+    public double doubleValue(String pName)
+    {
+        try
+        {
+            if(mValues != null && mValues.containsKey(pName))
+                return mValues.getDouble(pName);
+        }
+        catch(ParseEntity.NameException|ParseEntity.TypeException pException)
+        {
+            Log.e(logTag, "Invalid settings value : " + pException.toString());
+        }
+
+        return 0.0;
+    }
+
+    public void setDoubleValue(String pName, double pValue)
+    {
+        if(mValues == null)
+            return;
+
+        try
+        {
+            if(mValues.containsKey(pName))
+                mValues.getParseEntity(pName).setValue(pValue);
+            else
+                mValues.putDouble(pName, pValue);
+        }
+        catch(ParseEntity.NameException pException)
+        {
+            Log.e(logTag, "Name not found to update : " + pException.toString());
+            mValues.putDouble(pName, pValue);
         }
 
         write();

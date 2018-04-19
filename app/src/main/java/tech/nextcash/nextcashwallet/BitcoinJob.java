@@ -121,6 +121,7 @@ public class BitcoinJob extends JobService
 
         if(mBitcoin.start(Bitcoin.FINISH_ON_SYNC))
         {
+            new FiatRateRequestTask(getFilesDir()).execute();
             startUpdate();
             mBitcoin.setCallBacks(mBitcoinCallBacks);
             return true;
