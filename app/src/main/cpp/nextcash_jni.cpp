@@ -660,7 +660,7 @@ extern "C"
 
         pEnvironment->SetBooleanField(wallet, sWalletIsPrivateID, (jboolean)key->isPrivate());
 
-        jstring name = pEnvironment->NewStringUTF(daemon->keyStore()->names.at(pOffset).text());
+        jstring name = pEnvironment->NewStringUTF(daemon->keyStore()->data.at(pOffset).name.text());
         pEnvironment->SetObjectField(wallet, sWalletNameID, name);
 
         pEnvironment->SetLongField(wallet, sWalletBalanceID,
@@ -682,7 +682,7 @@ extern "C"
             return JNI_FALSE;
 
         const char *newName = pEnvironment->GetStringUTFChars(pName, NULL);
-        daemon->keyStore()->names[pOffset] = newName;
+        daemon->keyStore()->data[pOffset].name = newName;
         jboolean result = (jboolean)daemon->saveKeyStore();
         pEnvironment->ReleaseStringUTFChars(pName, newName);
         return result;
@@ -696,6 +696,29 @@ extern "C"
         if(daemon == NULL || daemon->keyStore()->size() <= pOffset)
             return JNI_FALSE;
 
-        return pEnvironment->NewStringUTF(daemon->keyStore()->seeds.at(pOffset).text());
+        return pEnvironment->NewStringUTF(daemon->keyStore()->data.at(pOffset).seed.text());
+    }
+
+    JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getNextReceiveAddress(JNIEnv *pEnvironment,
+                                                                                              jobject pObject,
+                                                                                              jint pOffset)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL || daemon->keyStore()->size() <= pOffset)
+            return NULL;
+
+        BitCoin::Key *chain = daemon->keyStore()->at(pOffset)->chainKey(0,
+          daemon->keyStore()->data.at(pOffset).derivationPathMethod);
+
+        if(chain == NULL)
+            return NULL;
+
+        BitCoin::Key *unused = chain->getNextUnused();
+
+        if(unused == NULL)
+            return NULL;
+
+        NextCash::String result = unused->address();
+        return pEnvironment->NewStringUTF(result.text());
     }
 }

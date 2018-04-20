@@ -131,4 +131,10 @@
     <string name="nodes">Nodes</string>
     <string name="system_settings">System Settings</string>
 
+    <string name="address_clipboard">Address copied to clipboard</string>
+    <string name="tap_to_copy">Tap to copy</string>
+    <string name="address_qr_code">Address QR Code</string>
+    <string name="failed_receive_address">Failed to generate receive address.</string>
+    <string name="failed_receive_address_qr">Failed to generate QR Code.</string>
+
 </resources>

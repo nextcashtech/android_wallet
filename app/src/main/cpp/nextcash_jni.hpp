@@ -91,6 +91,12 @@ extern "C"
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_seed(JNIEnv *pEnvironment,
                                                                              jobject pObject,
                                                                              jint pOffset);
+
+    JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getNextReceiveAddress(JNIEnv *pEnvironment,
+                                                                                              jobject pObject,
+                                                                                              jint pOffset);
+
+
 }
 
 #endif

@@ -2,9 +2,12 @@ package tech.nextcash.nextcashwallet;
 
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.ActionBar;
@@ -34,7 +37,7 @@ public class MainActivity extends AppCompatActivity
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification;
 
-    private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, HISTORY, SETUP }
+    private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, HISTORY, RECEIVE, SEND, SETUP }
     private Mode mMode;
     private Bitcoin mBitcoin;
     private boolean mFinishOnBack;
@@ -814,6 +817,41 @@ public class MainActivity extends AppCompatActivity
         }
         case R.id.walletReceive:
         {
+            ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
+            String receiveAddress = mBitcoin.getNextReceiveAddress((int)wallet.getTag());
+
+            if(receiveAddress == null)
+                showMessage(getString(R.string.failed_receive_address), 2000);
+            else
+            {
+                // Generate QR Image
+                Bitmap bitmap = mBitcoin.qrCode(receiveAddress);
+
+                if(bitmap == null)
+                    showMessage(getString(R.string.failed_receive_address_qr), 2000);
+                else
+                {
+                    LayoutInflater inflater = getLayoutInflater();
+                    ViewGroup contentView = findViewById(R.id.content);
+
+                    contentView.removeAllViews();
+
+                    ViewGroup receiveView = (ViewGroup)inflater.inflate(R.layout.receive, contentView, false);
+                    ((ImageView)receiveView.findViewById(R.id.addressImage)).setImageBitmap(bitmap);
+                    ((TextView)receiveView.findViewById(R.id.addressText)).setText(receiveAddress);
+                    contentView.addView(receiveView);
+
+                    ActionBar actionBar = getSupportActionBar();
+                    if(actionBar != null)
+                    {
+                        actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
+                        actionBar.setTitle(" " + getResources().getString(R.string.receive));
+                        actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+                    }
+
+                    mMode = Mode.RECEIVE;
+                }
+            }
             break;
         }
         case R.id.walletHistory:
@@ -834,6 +872,18 @@ public class MainActivity extends AppCompatActivity
         case R.id.walletTransaction:
             // TODO Show transaction details
             break;
+        case R.id.addressText:
+        {
+            ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+            if(manager != null)
+            {
+                ClipData clip = ClipData.newPlainText("Bitcoin Cash Address",
+                  ((TextView)pView).getText().toString());
+                manager.setPrimaryClip(clip);
+                showMessage(getString(R.string.address_clipboard), 2000);
+            }
+            break;
+        }
         }
     }
 

@@ -13,6 +13,12 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -143,6 +149,29 @@ public class Bitcoin
     public static final int BIP0032_DERIVATION = 1;
     public static final int SIMPLE_DERIVATION  = 2;
     public native int addKey(String pEncodedKey, int pDerivationPath);
+
+    public native String getNextReceiveAddress(int pWalletOffset);
+
+    public Bitmap qrCode(String pText)
+    {
+        Bitmap result;
+        MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
+
+        try
+        {
+            BitMatrix bitMatrix = multiFormatWriter.encode(pText, BarcodeFormat.QR_CODE,
+              200,200);
+            BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
+            result = barcodeEncoder.createBitmap(bitMatrix);
+        }
+        catch (WriterException pException)
+        {
+            Log.e(logTag, String.format("Failed to create QR Code : %s", pException.toString()));
+            return null;
+        }
+
+        return result;
+    }
 
     public Wallet[] wallets;
 
