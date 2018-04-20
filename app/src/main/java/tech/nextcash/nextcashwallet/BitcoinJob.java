@@ -17,12 +17,12 @@ public class BitcoinJob extends JobService
     Bitcoin mBitcoin;
     Bitcoin.CallBacks mBitcoinCallBacks;
     JobParameters mJobParameters;
+    long mStartTime;
 
     private void backgroundUpdate()
     {
         boolean started = false;
         Context context = getApplicationContext();
-        int notStartedCount = 0;
 
         while(true)
         {
@@ -30,6 +30,12 @@ public class BitcoinJob extends JobService
             {
                 if(!mBitcoin.isRunning())
                     break;
+
+                if((System.currentTimeMillis() / 1000) - mStartTime > 300)
+                {
+                    Log.w(logTag, "Bitcoin failed to sync within 5 minutes");
+                    mBitcoin.stop();
+                }
             }
             else
             {
@@ -37,8 +43,7 @@ public class BitcoinJob extends JobService
                     started = true;
                 else
                 {
-                    notStartedCount++;
-                    if(notStartedCount > 100)
+                    if((System.currentTimeMillis() / 1000) - mStartTime > 20)
                     {
                         Log.d(logTag, "Bitcoin failed to start for update thread");
                         break;
@@ -94,6 +99,7 @@ public class BitcoinJob extends JobService
     public boolean onStartJob(JobParameters pParams)
     {
         Log.i(logTag, "Starting job");
+        mStartTime = System.currentTimeMillis() / 1000;
         mJobParameters = pParams;
         mBitcoin = ((MainApp)getApplication()).bitcoin;
 
@@ -138,9 +144,6 @@ public class BitcoinJob extends JobService
     public boolean onStopJob(JobParameters pParams)
     {
         Log.i(logTag, "Stopping job");
-        if(mBitcoin.requestStop())
-            return true;
-        else
-            return false;
+        return mBitcoin.stop();
     }
 }

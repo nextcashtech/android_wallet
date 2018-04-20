@@ -279,14 +279,15 @@ extern "C"
         daemon->run(false);
     }
 
-    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_stop(JNIEnv *pEnvironment,
-                                                                          jobject pObject)
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_stop(JNIEnv *pEnvironment,
+                                                                              jobject pObject)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL)
-            return;
+            return JNI_FALSE;
 
         daemon->requestStop();
+        return JNI_TRUE;
     }
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_peerCount(JNIEnv *pEnvironment,
