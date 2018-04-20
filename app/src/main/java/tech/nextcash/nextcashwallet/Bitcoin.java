@@ -39,6 +39,7 @@ public class Bitcoin
     private int mChangeID;
     private boolean mIsRegistered;
     private int mNextNotificationID;
+    private boolean mProgressDisplayed;
 
     Bitcoin(String pPath)
     {
@@ -50,6 +51,7 @@ public class Bitcoin
         mChangeID = -1;
         mIsRegistered = false;
         mNextNotificationID = 2;
+        mProgressDisplayed = false;
     }
 
     public static float bitcoins(long pValue)
@@ -62,7 +64,7 @@ public class Bitcoin
         if(pFiatRate != 0.0)
         {
             return String.format(Locale.getDefault(), "$%,.2f",
-              Bitcoin.bitcoins(pAmount) * pFiatRate);
+              Bitcoin.bitcoins(Math.abs(pAmount)) * pFiatRate);
 //            if(pAmount > 0)
 //            {
 //                if(pAddSign)
@@ -78,7 +80,7 @@ public class Bitcoin
         }
         else
             return String.format(Locale.getDefault(), "%,.5f",
-              Bitcoin.bitcoins(pAmount));
+              Bitcoin.bitcoins(Math.abs(pAmount)));
     }
 
     private int estimatedBlockHeight()
@@ -106,11 +108,12 @@ public class Bitcoin
 
     public native boolean isInSync();
 
-    public native void setFinishMode(int pFinishMode);
-    public native void setFinishModeNoCreate(int pFinishMode);
-
     public static final int FINISH_ON_REQUEST = 0; // Continue running until stop is requested.
     public static final int FINISH_ON_SYNC = 1; // Finish when block chain is in sync.
+
+    public native int finishMode();
+    public native void setFinishMode(int pFinishMode);
+    public native void setFinishModeNoCreate(int pFinishMode);
 
     // Run the daemon process.
     public native void run(int pFinishMode);
@@ -118,7 +121,7 @@ public class Bitcoin
     public native void destroy();
 
     // Request the daemon process stop.
-    public native void stop();
+    public native boolean stop();
 
     // Return the number of peers connected to
     public native int peerCount();
@@ -217,12 +220,17 @@ public class Bitcoin
         boolean sync = isInSync();
         if(sync && merkleHeight() == blockHeight())
         {
-            NotificationManagerCompat.from(pContext).cancel(sProgressNotificationID);
+            if(mProgressDisplayed)
+                NotificationManagerCompat.from(pContext).cancel(sProgressNotificationID);
+            mProgressDisplayed = false;
             return;
         }
 
         Intent intent = new Intent(pContext, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(pContext, 0, intent, 0);
+        Intent stopIntent = new Intent();
+        stopIntent.setAction(pContext.getString(R.string.stop));
+        PendingIntent stopPendingIntent = PendingIntent.getBroadcast(pContext, 0, intent, 0);
         Bitmap iconBitmap = BitmapFactory.decodeResource(pContext.getResources(), R.drawable.icon);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(pContext, sProgressNotificationChannel)
@@ -231,6 +239,9 @@ public class Bitcoin
           .setContentTitle(pContext.getString(R.string.progress_title))
           .setContentIntent(pendingIntent)
           .setPriority(NotificationCompat.PRIORITY_LOW);
+
+        if(finishMode() != FINISH_ON_REQUEST)
+            builder.addAction(R.drawable.ic_stop_black_24dp, pContext.getString(R.string.stop), stopPendingIntent);
 
         int max = 0;
         int progress = 0;
@@ -268,9 +279,10 @@ public class Bitcoin
 
         // notificationId is a unique int for each notification that you must define
         notificationManager.notify(sProgressNotificationID, builder.build());
+        mProgressDisplayed = true;
     }
 
-    private void notify(Context pContext, String pTitle, String pText)
+    private void notify(Context pContext, String pTitle, String pText, String pTransactionHash)
     {
         Settings settings = Settings.getInstance(pContext.getFilesDir());
         if(settings.containsValue("notify_transactions") &&
@@ -279,6 +291,7 @@ public class Bitcoin
 
         Intent intent = new Intent(pContext, MainActivity.class);
         // TODO Add intent extra to show specific wallet/transaction
+        intent.putExtra("Transaction", pTransactionHash);
         PendingIntent pendingIntent = PendingIntent.getActivity(pContext, 0, intent, 0);
         Bitmap iconBitmap = BitmapFactory.decodeResource(pContext.getResources(), R.drawable.icon);
 
@@ -492,7 +505,7 @@ public class Bitcoin
                         if(mCallBacks != null)
                             mCallBacks.onTransactionUpdate(offset, transaction);
 
-                        notify(pContext, title, transaction.description(pContext));
+                        notify(pContext, title, transaction.description(pContext), transaction.hash);
                     }
                 }
             }
@@ -543,35 +556,6 @@ public class Bitcoin
         }
 
         return result;
-    }
-
-    public synchronized boolean requestStop()
-    {
-        Thread thread = getThread(false,0);
-        if(thread != null && thread.isAlive())
-        {
-            stop();
-            return true;
-        }
-        else
-            return false;
-    }
-
-    public void waitForStop()
-    {
-        requestStop();
-
-        while(isRunning())
-        {
-            try
-            {
-                Thread.sleep(100);
-            }
-            catch(InterruptedException pException)
-            {
-                Log.d(logTag, String.format("Wait for stop sleep exception : %s", pException.toString()));
-            }
-        }
     }
 
     private static native void setupJNI();

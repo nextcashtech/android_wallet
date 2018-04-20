@@ -245,6 +245,16 @@ extern "C"
         return (jboolean)daemon->chain()->isInSync();
     }
 
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_finishMode(JNIEnv *pEnvironment,
+                                                                                jobject pObject)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject, true);
+        if(daemon == NULL)
+            return 0;
+
+        return (jint)daemon->finishMode();
+    }
+
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setFinishMode(JNIEnv *pEnvironment,
                                                                                    jobject pObject,
                                                                                    jint pMode)

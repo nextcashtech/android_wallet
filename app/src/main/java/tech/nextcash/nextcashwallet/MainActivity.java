@@ -141,24 +141,6 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onStart()
-    {
-        super.onStart();
-        //stopService(new Intent(this, BitcoinJob.class));
-        if(!mBitcoin.start(Bitcoin.FINISH_ON_REQUEST))
-            mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
-        mBitcoin.setCallBacks(mBitcoinCallBacks);
-        startUpdateRates();
-    }
-
-    @Override
-    public void onResume()
-    {
-        updateStatus();
-        super.onResume();
-    }
-
-    @Override
     public void onNewIntent(Intent pIntent)
     {
         Bundle extras = pIntent.getExtras();
@@ -181,9 +163,31 @@ public class MainActivity extends AppCompatActivity
                     }
                 }
             }
+
+            if(extras.containsKey("Transaction"))
+            {
+                // TODO Open Transaction view
+            }
         }
 
         super.onNewIntent(pIntent);
+    }
+
+    @Override
+    public void onStart()
+    {
+        if(!mBitcoin.start(Bitcoin.FINISH_ON_REQUEST))
+            mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
+        mBitcoin.setCallBacks(mBitcoinCallBacks);
+        startUpdateRates();
+        super.onStart();
+    }
+
+    @Override
+    public void onResume()
+    {
+        updateStatus();
+        super.onResume();
     }
 
     @Override

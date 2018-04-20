@@ -18,6 +18,8 @@ public class BitcoinJob extends JobService
     Bitcoin.CallBacks mBitcoinCallBacks;
     JobParameters mJobParameters;
     long mStartTime;
+    Receiver mReceiver;
+    Receiver.CallBacks mReceiverCallBacks;
 
     private void backgroundUpdate()
     {
@@ -35,6 +37,7 @@ public class BitcoinJob extends JobService
                 {
                     Log.w(logTag, "Bitcoin failed to sync within 5 minutes");
                     mBitcoin.stop();
+                    break;
                 }
             }
             else
@@ -103,33 +106,47 @@ public class BitcoinJob extends JobService
         mJobParameters = pParams;
         mBitcoin = ((MainApp)getApplication()).bitcoin;
 
-        mBitcoinCallBacks = new Bitcoin.CallBacks()
-        {
-            @Override
-            public void onLoad()
-            {
-            }
-
-            @Override
-            public boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
-            {
-                return false;
-            }
-
-            @Override
-            public void onFinish()
-            {
-                mBitcoin.clearProgress(getApplicationContext());
-                jobFinished(mJobParameters, false);
-                mBitcoin.clearCallBacks(mBitcoinCallBacks);
-            }
-        };
-
         if(mBitcoin.start(Bitcoin.FINISH_ON_SYNC))
         {
             new FiatRateRequestTask(getFilesDir()).execute();
             startUpdate();
+
+            mBitcoinCallBacks = new Bitcoin.CallBacks()
+            {
+                @Override
+                public void onLoad()
+                {
+                }
+
+                @Override
+                public boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
+                {
+                    return false;
+                }
+
+                @Override
+                public void onFinish()
+                {
+                    mBitcoin.clearProgress(getApplicationContext());
+                    jobFinished(mJobParameters, false);
+                    mBitcoin.clearCallBacks(mBitcoinCallBacks);
+                }
+            };
+
             mBitcoin.setCallBacks(mBitcoinCallBacks);
+
+            mReceiverCallBacks = new Receiver.CallBacks()
+            {
+                @Override
+                public void onStop()
+                {
+                    Log.i(logTag, "Stopping job from stop action");
+                    mBitcoin.stop();
+                }
+            };
+
+            mReceiver = new Receiver(getApplicationContext(), mReceiverCallBacks);
+
             return true;
         }
         else
@@ -143,7 +160,7 @@ public class BitcoinJob extends JobService
     @Override
     public boolean onStopJob(JobParameters pParams)
     {
-        Log.i(logTag, "Stopping job");
+        Log.i(logTag, "Stopping job from stop job request");
         return mBitcoin.stop();
     }
 }
