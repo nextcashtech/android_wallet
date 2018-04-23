@@ -263,6 +263,7 @@ public class MainActivity extends AppCompatActivity
         boolean forceUpdate = false;
         TextView blocks = findViewById(R.id.blockHeight);
         TextView peerCount = findViewById(R.id.peerCount);
+        TextView exchangeRate = findViewById(R.id.exchangeRate);
         if(isLoaded)
         {
             blocks.setText(String.format(Locale.getDefault(), "%,d / %,d", mBitcoin.merkleHeight(),
@@ -272,11 +273,17 @@ public class MainActivity extends AppCompatActivity
             double fiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
             if(fiatRate != mFiatRate)
                 forceUpdate = true;
+
+            if(fiatRate == 0.0)
+                exchangeRate.setText("");
+            else
+                exchangeRate.setText(String.format(Locale.getDefault(), "1 BCH = $%,d USD", (int)fiatRate));
         }
         else
         {
             blocks.setText("- / -");
             peerCount.setText("-");
+            exchangeRate.setText("");
             if(mMode != Mode.LOADING)
             {
                 ViewGroup content = findViewById(R.id.content);
@@ -362,6 +369,12 @@ public class MainActivity extends AppCompatActivity
 
                 ((TextView)view.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance,
                   mFiatRate));
+
+                if(mFiatRate != 0.0)
+                {
+                    ((TextView)view.findViewById(R.id.walletBitcoinBalance)).setText(String.format(Locale.getDefault(),
+                      "%,.5f BCH", Bitcoin.bitcoins(wallet.balance)));
+                }
 
                 name = wallet.name;
                 if(name == null || name.length() == 0)
