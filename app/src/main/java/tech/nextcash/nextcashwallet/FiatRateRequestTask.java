@@ -151,7 +151,7 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
     @Override
     protected void onPostExecute(Double pRate)
     {
-        if(pRate != 0.0)
+        if(pRate != null && pRate != 0.0)
             Settings.getInstance(mDirectory).setDoubleValue("usd_rate", pRate);
         super.onPostExecute(pRate);
     }
