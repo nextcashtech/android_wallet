@@ -16,6 +16,7 @@ extern "C"
     jclass sBitcoinClass = NULL;
     jfieldID sBitcoinHandleID = NULL;
     jfieldID sBitcoinWalletsID = NULL;
+    jfieldID sBitcoinLoadedID = NULL;
 
     // Wallet
     jclass sWalletClass = NULL;
@@ -104,6 +105,7 @@ extern "C"
         sBitcoinHandleID = pEnvironment->GetFieldID(sBitcoinClass, "mHandle", "J");
         sBitcoinWalletsID = pEnvironment->GetFieldID(sBitcoinClass, "wallets",
           "[Ltech/nextcash/nextcashwallet/Wallet;");
+        sBitcoinLoadedID = pEnvironment->GetFieldID(sBitcoinClass, "mLoaded", "Z");
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Wallet_setupJNI(JNIEnv *pEnvironment,
@@ -170,6 +172,7 @@ extern "C"
 
         // Zeroize handle in java object
         pEnvironment->SetLongField(pObject, sBitcoinHandleID, 0);
+        pEnvironment->SetBooleanField(pObject, sBitcoinLoadedID, JNI_FALSE);
 
         // Delete C++ object
         delete daemon;

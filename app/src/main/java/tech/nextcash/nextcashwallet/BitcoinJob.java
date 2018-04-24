@@ -2,7 +2,11 @@ package tech.nextcash.nextcashwallet;
 
 import android.app.job.JobParameters;
 import android.app.job.JobService;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.util.Log;
 
 
@@ -10,157 +14,142 @@ import android.util.Log;
 public class BitcoinJob extends JobService
 {
     private static final String logTag = "BitcoinJob";
-    private static Thread sUpdateThread;
 
     public static final int SYNC_JOB_ID = 92; // Sync to latest block and exit (background only)
 
-    Bitcoin mBitcoin;
-    Bitcoin.CallBacks mBitcoinCallBacks;
-    JobParameters mJobParameters;
-    long mStartTime;
-    Receiver mReceiver;
-    Receiver.CallBacks mReceiverCallBacks;
+    private Bitcoin mBitcoin;
+    private BitcoinService.CallBacks mServiceCallBacks;
+    private BitcoinService mService;
+    private boolean mServiceIsBound;
+    private ServiceConnection mServiceConnection;
+    private boolean mFinished;
+    private JobParameters mJobParameters;
+    private Receiver mReceiver;
+    private Receiver.CallBacks mReceiverCallBacks;
 
-    private void backgroundUpdate()
+    private void startBitcoinService()
     {
-        boolean started = false;
-        Context context = getApplicationContext();
+        Intent intent = new Intent(this, BitcoinService.class);
+        intent.putExtra("FinishMode", Bitcoin.FINISH_ON_SYNC);
+        startService(intent);
 
-        while(true)
+        if(!mServiceIsBound)
         {
-            if(started)
-            {
-                if(!mBitcoin.isRunning())
-                    break;
-
-                if((System.currentTimeMillis() / 1000) - mStartTime > 300)
-                {
-                    Log.w(logTag, "Bitcoin failed to sync within 5 minutes");
-                    mBitcoin.stop();
-                    break;
-                }
-            }
-            else
-            {
-                if(mBitcoin.isLoaded())
-                    started = true;
-                else
-                {
-                    if((System.currentTimeMillis() / 1000) - mStartTime > 20)
-                    {
-                        Log.d(logTag, "Bitcoin failed to start for update thread");
-                        break;
-                    }
-                }
-            }
-
-            mBitcoin.update(context, false);
-
-            try
-            {
-                Thread.sleep(2000);
-            }
-            catch(InterruptedException pException)
-            {
-                Log.d(logTag, String.format("Bitcoin update sleep exception : %s", pException.toString()));
-            }
+            Log.d(logTag, "Binding Bitcoin service");
+            bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+            mServiceIsBound = true;
         }
     }
 
-    private Runnable mUpdateRunnable = new Runnable()
+    @Override
+    public void onCreate()
     {
-        @Override
-        public void run()
-        {
-            backgroundUpdate();
-        }
-    };
+        mBitcoin = ((MainApp)getApplication()).bitcoin;
 
-    private synchronized Thread getUpdateThread()
-    {
-        if((sUpdateThread == null || !sUpdateThread.isAlive()))
-            sUpdateThread = new Thread(mUpdateRunnable, "BitcoinUpdate");
-        return sUpdateThread;
+        mServiceCallBacks = new BitcoinService.CallBacks()
+        {
+            @Override
+            public void onLoad()
+            {
+            }
+
+            @Override
+            public boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
+            {
+                return true;
+            }
+
+            @Override
+            public boolean onUpdate()
+            {
+                return true;
+            }
+
+            @Override
+            public void onFinish()
+            {
+                if(!mFinished)
+                {
+                    jobFinished(mJobParameters, false);
+                    mFinished = true;
+                }
+            }
+        };
+
+        mServiceIsBound = false;
+        mService = null;
+        mServiceConnection = new ServiceConnection()
+        {
+            @Override
+            public void onServiceConnected(ComponentName pComponentName, IBinder pBinder)
+            {
+                Log.d(logTag, "Bitcoin service connected");
+                mService = ((BitcoinService.LocalBinder)pBinder).getService();
+                mService.setCallBacks(mServiceCallBacks);
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName pComponentName)
+            {
+                Log.d(logTag, "Bitcoin service disconnected");
+                mService.removeCallBacks(mServiceCallBacks);
+                mService = null;
+                if(!mFinished)
+                {
+                    jobFinished(mJobParameters, false);
+                    mFinished = true;
+                }
+            }
+        };
+
+        mReceiverCallBacks = new Receiver.CallBacks()
+        {
+            @Override
+            public void onStop()
+            {
+                Log.i(logTag, "Stopping job from stop action");
+                mBitcoin.stop();
+            }
+        };
+
+        mReceiver = new Receiver(this, mReceiverCallBacks);
+
+        super.onCreate();
     }
 
-    public synchronized boolean startUpdate()
+    @Override
+    public void onDestroy()
     {
-        boolean result = true;
-        Thread thread = getUpdateThread();
-        if(!thread.isAlive())
-            thread.start();
-        else
+        if(mServiceIsBound)
         {
-            Log.v(logTag, "Bitcoin update thread already running");
-            result = false;
+            Log.d(logTag, "Unbinding Bitcoin service");
+            unbindService(mServiceConnection);
+            mServiceIsBound = false;
         }
-
-        return result;
+        super.onDestroy();
     }
 
     @Override
     public boolean onStartJob(JobParameters pParams)
     {
         Log.i(logTag, "Starting job");
-        mStartTime = System.currentTimeMillis() / 1000;
         mJobParameters = pParams;
-        mBitcoin = ((MainApp)getApplication()).bitcoin;
+        mFinished = false;
 
-        if(mBitcoin.start(Bitcoin.FINISH_ON_SYNC))
-        {
-            new FiatRateRequestTask(getFilesDir()).execute();
-            startUpdate();
+        startBitcoinService();
+        new FiatRateRequestTask(getFilesDir()).execute();
 
-            mBitcoinCallBacks = new Bitcoin.CallBacks()
-            {
-                @Override
-                public void onLoad()
-                {
-                }
-
-                @Override
-                public boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
-                {
-                    return false;
-                }
-
-                @Override
-                public void onFinish()
-                {
-                    mBitcoin.clearProgress(getApplicationContext());
-                    jobFinished(mJobParameters, false);
-                    mBitcoin.clearCallBacks(mBitcoinCallBacks);
-                }
-            };
-
-            mBitcoin.setCallBacks(mBitcoinCallBacks);
-
-            mReceiverCallBacks = new Receiver.CallBacks()
-            {
-                @Override
-                public void onStop()
-                {
-                    Log.i(logTag, "Stopping job from stop action");
-                    mBitcoin.stop();
-                }
-            };
-
-            mReceiver = new Receiver(getApplicationContext(), mReceiverCallBacks);
-
-            return true;
-        }
-        else
-        {
-            Log.i(logTag, "Job never started. Already running.");
-            jobFinished(pParams, false);
-            return false;
-        }
+        return true;
     }
 
     @Override
     public boolean onStopJob(JobParameters pParams)
     {
         Log.i(logTag, "Stopping job from stop job request");
-        return mBitcoin.stop();
+        if(mBitcoin.finishMode() == Bitcoin.FINISH_ON_SYNC)
+            mBitcoin.stop();
+        else
+            jobFinished(mJobParameters, false);
+        return false;
     }
 }

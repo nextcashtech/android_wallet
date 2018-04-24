@@ -21,7 +21,7 @@ public class MainApp extends Application
     @Override
     public void onCreate()
     {
-        bitcoin = new Bitcoin(getApplicationContext().getFilesDir().getPath());
+        bitcoin = new Bitcoin();
         super.onCreate();
     }
 

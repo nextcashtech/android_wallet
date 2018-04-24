@@ -7,9 +7,11 @@ import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -39,15 +41,36 @@ public class MainActivity extends AppCompatActivity
 
     private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, HISTORY, RECEIVE, SEND, SETUP }
     private Mode mMode;
+    private double mFiatRate;
     private Bitcoin mBitcoin;
     private boolean mFinishOnBack;
-    private Bitcoin.CallBacks mBitcoinCallBacks;
-    private double mFiatRate;
+    private BitcoinService.CallBacks mServiceCallBacks;
+    private BitcoinService mService;
+    private boolean mServiceIsBound;
+    private ServiceConnection mServiceConnection;
+
+    public class TransactionRunnable implements Runnable
+    {
+        Transaction mTransaction;
+
+        TransactionRunnable(Transaction pTransaction)
+        {
+            mTransaction = pTransaction;
+        }
+
+        @Override
+        public void run()
+        {
+            showMessage(mTransaction.description(MainActivity.this), 2000);
+            if(mMode == Mode.WALLETS)
+                updateWallets();
+        }
+    }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
+    protected void onCreate(Bundle pSavedInstanceState)
     {
-        super.onCreate(savedInstanceState);
+        super.onCreate(pSavedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -69,29 +92,87 @@ public class MainActivity extends AppCompatActivity
         mFinishOnBack = false;
         mFiatRate = 0.0;
 
-        mBitcoinCallBacks = new Bitcoin.CallBacks()
+        mServiceCallBacks = new BitcoinService.CallBacks()
         {
             @Override
             public void onLoad()
             {
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        if(mMode == Mode.LOADING)
+                            updateWallets();
+                    }
+                });
             }
 
             @Override
             public boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
             {
-                showMessage(pTransaction.description(getApplicationContext()), 2000);
+                runOnUiThread(new TransactionRunnable(pTransaction));
+                return true;
+            }
+
+            @Override
+            public boolean onUpdate()
+            {
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        if(mMode == Mode.WALLETS)
+                            updateWallets();
+                        updateStatus();
+                    }
+                });
                 return true;
             }
 
             @Override
             public void onFinish()
             {
-                mBitcoin.clearProgress(getApplicationContext());
-                mBitcoin.clearCallBacks(mBitcoinCallBacks);
+            }
+        };
+
+        mServiceIsBound = false;
+        mService = null;
+        mServiceConnection = new ServiceConnection()
+        {
+            @Override
+            public void onServiceConnected(ComponentName pComponentName, IBinder pBinder)
+            {
+                Log.d(logTag, "Bitcoin service connected");
+                mService = ((BitcoinService.LocalBinder)pBinder).getService();
+                mService.setCallBacks(mServiceCallBacks);
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName pComponentName)
+            {
+                Log.d(logTag, "Bitcoin service disconnected");
+                mService.removeCallBacks(mServiceCallBacks);
+                mService = null;
             }
         };
 
         scheduleJobs();
+    }
+
+    private void startBitcoinService()
+    {
+        Intent intent = new Intent(this, BitcoinService.class);
+        intent.putExtra("FinishMode", Bitcoin.FINISH_ON_REQUEST);
+        startService(intent);
+
+        if(!mServiceIsBound)
+        {
+            Log.d(logTag, "Binding Bitcoin service");
+            bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+            mServiceIsBound = true;
+        }
     }
 
     private boolean scheduleJobs()
@@ -105,7 +186,9 @@ public class MainActivity extends AppCompatActivity
         else
         {
             int syncFrequency = Settings.getInstance(getFilesDir()).intValue("sync_frequency");
-            if(syncFrequency != -1)
+            if(syncFrequency == -1)
+                jobScheduler.cancel(BitcoinJob.SYNC_JOB_ID);
+            else
             {
                 if(syncFrequency == 0)
                     syncFrequency = 60; // Default of 60 minutes
@@ -157,7 +240,7 @@ public class MainActivity extends AppCompatActivity
             {
                 if(mBitcoin.isLoaded())
                 {
-                    mBitcoin.update(getApplicationContext(), true);
+                    mBitcoin.update(true);
                     updateWallets();
 
                     if(extras.getInt("UpdateWallet") != -1)
@@ -179,9 +262,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onStart()
     {
-        if(!mBitcoin.start(Bitcoin.FINISH_ON_REQUEST))
-            mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
-        mBitcoin.setCallBacks(mBitcoinCallBacks);
+        startBitcoinService();
         startUpdateRates();
         super.onStart();
     }
@@ -204,7 +285,13 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onStop()
     {
-        mBitcoin.setFinishModeNoCreate(Bitcoin.FINISH_ON_SYNC);
+        mBitcoin.setFinishMode(Bitcoin.FINISH_ON_SYNC);
+        if(mServiceIsBound)
+        {
+            Log.d(logTag, "Unbinding Bitcoin service");
+            unbindService(mServiceConnection);
+            mServiceIsBound = false;
+        }
         super.onStop();
     }
 
@@ -231,7 +318,7 @@ public class MainActivity extends AppCompatActivity
             default:
             case 0: // Inactive
                 status.setText(R.string.inactive);
-                mBitcoin.start(Bitcoin.FINISH_ON_REQUEST);
+                //startBitcoinService();
                 break;
             case 1: // Loading
                 status.setText(R.string.loading);
@@ -260,7 +347,7 @@ public class MainActivity extends AppCompatActivity
         }
 
         boolean isLoaded = mBitcoin.isLoaded();
-        boolean forceUpdate = false;
+        boolean exchangeRateUpdated = false;
         TextView blocks = findViewById(R.id.blockHeight);
         TextView peerCount = findViewById(R.id.peerCount);
         TextView exchangeRate = findViewById(R.id.exchangeRate);
@@ -272,12 +359,15 @@ public class MainActivity extends AppCompatActivity
 
             double fiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
             if(fiatRate != mFiatRate)
-                forceUpdate = true;
+                exchangeRateUpdated = true;
 
             if(fiatRate == 0.0)
                 exchangeRate.setText("");
             else
                 exchangeRate.setText(String.format(Locale.getDefault(), "1 BCH = $%,d USD", (int)fiatRate));
+
+            if(mMode == Mode.LOADING)
+                updateWallets();
         }
         else
         {
@@ -292,21 +382,8 @@ public class MainActivity extends AppCompatActivity
             }
         }
 
-        switch(mMode)
-        {
-        case LOADING:
-            if(isLoaded)
-            {
-                mBitcoin.update(getApplicationContext(), true);
-                updateWallets();
-            }
-        case WALLETS:
-            if(mBitcoin.update(getApplicationContext(), forceUpdate))
-                updateWallets();
-            break;
-        default:
-            break;
-        }
+        if(exchangeRateUpdated && mMode == Mode.WALLETS)
+            updateWallets();
 
         // Run again in 2 seconds
         mDelayHandler.postDelayed(mStatusUpdateRunnable, 2000);
@@ -771,10 +848,7 @@ public class MainActivity extends AppCompatActivity
                     String name = nameView.getText().toString();
                     if((int)nameView.getTag() < mBitcoin.wallets.length &&
                       mBitcoin.setName((int)nameView.getTag(), name))
-                    {
-                        mBitcoin.update(getApplicationContext(), true);
                         updateWallets();
-                    }
                     else
                         showMessage(getString(R.string.failed_update_name), 2000);
                     break;

@@ -67,6 +67,7 @@
     <string name="import_bip0032_key">Import BIP-0032 Key</string>
     <string name="title_import_bip0032_key">Enter BIP-0032 Encoded Key</string>
     <string name="import_text">Import</string>
+    <string name="success_key_import">Successfully imported key</string>
     <string name="failed_key_import">Failed to import key</string>
     <string name="failed_key_import_format">Invalid key format</string>
     <string name="failed_key_import_exists">Key already in wallet</string>

@@ -33,8 +33,7 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
             switch(pResult)
             {
                 case 0: // Success
-                    if(mBitcoin.isLoaded())
-                        mBitcoin.update(mActivity.getApplicationContext(), true);
+                    mActivity.showMessage(mActivity.getString(R.string.success_key_import), 2000);
                     break;
                 case 1: // Unknown error
                     mActivity.showMessage(mActivity.getString(R.string.failed_key_import), 2000);
