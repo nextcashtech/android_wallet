@@ -667,7 +667,7 @@ extern "C"
         pEnvironment->SetObjectField(wallet, sWalletNameID, name);
 
         pEnvironment->SetLongField(wallet, sWalletBalanceID,
-          (jlong)daemon->monitor()->balance(key, true));
+          (jlong)daemon->monitor()->balance(key, false));
 
         pEnvironment->SetIntField(wallet, sWalletBlockHeightID, blockHeight);
 
