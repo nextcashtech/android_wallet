@@ -69,6 +69,7 @@ extern "C"
     // Keys
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_addKey(JNIEnv *pEnvironment,
                                                                             jobject pObject,
+                                                                            jstring pPassword,
                                                                             jstring pKey,
                                                                             jint pDerivationMethod);
 
@@ -90,11 +91,16 @@ extern "C"
 
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_seed(JNIEnv *pEnvironment,
                                                                              jobject pObject,
+                                                                             jstring pPassword,
                                                                              jint pOffset);
+
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_hasPassCode(JNIEnv *pEnvironment,
+                                                                                     jobject pObject);
 
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getNextReceiveAddress(JNIEnv *pEnvironment,
                                                                                               jobject pObject,
-                                                                                              jint pOffset);
+                                                                                              jint pOffset,
+                                                                                              jint pIndex);
 
 
 }

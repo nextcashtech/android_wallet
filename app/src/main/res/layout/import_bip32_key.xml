@@ -21,11 +21,25 @@
         android:layout_height="wrap_content"
         android:inputType="textNoSuggestions|textMultiLine"/>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        android:textStyle="bold"
+        android:text="@string/derivation_path"/>
+
     <Spinner
         android:id="@+id/derivationMethodSpinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"/>
+
+    </LinearLayout>
 
     <Button
         android:id="@+id/importButton"

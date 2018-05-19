@@ -7,13 +7,15 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
 {
     private MainActivity mActivity;
     private Bitcoin mBitcoin;
+    private String mPasscode;
     private String mKey;
     private int mDerivationMethod;
 
-    public ImportKeyTask(MainActivity pActivity, Bitcoin pBitcoin, String pKey, int pDerivationMethod)
+    public ImportKeyTask(MainActivity pActivity, Bitcoin pBitcoin, String pPasscode, String pKey, int pDerivationMethod)
     {
         mActivity = pActivity;
         mBitcoin = pBitcoin;
+        mPasscode = pPasscode;
         mKey = pKey;
         mDerivationMethod = pDerivationMethod;
     }
@@ -21,7 +23,7 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        return mBitcoin.addKey(mKey, mDerivationMethod);
+        return mBitcoin.addKey(mPasscode, mKey, mDerivationMethod);
     }
 
     @Override

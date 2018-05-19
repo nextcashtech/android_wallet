@@ -116,13 +116,7 @@ public class Bitcoin
     // Block height of latest key monitoring pass.
     public native int merkleHeight();
 
-    // Add a key, from BIP-0032 encoded text to be monitored.
-    public static final int BIP0044_DERIVATION = 0;
-    public static final int BIP0032_DERIVATION = 1;
-    public static final int SIMPLE_DERIVATION  = 2;
-    public native int addKey(String pEncodedKey, int pDerivationPath);
-
-    public native String getNextReceiveAddress(int pWalletOffset);
+    public native String getNextReceiveAddress(int pWalletOffset, int pChainIndex);
 
     public Bitmap qrCode(String pText)
     {
@@ -210,7 +204,15 @@ public class Bitcoin
 
     public native boolean setName(int pOffset, String pName);
 
-    public native String seed(int pOffset);
+    // Add a key, from BIP-0032 encoded text to be monitored.
+    public static final int BIP0044_DERIVATION = 0;
+    public static final int BIP0032_DERIVATION = 1;
+    public static final int SIMPLE_DERIVATION  = 2;
+    public native int addKey(String pPasscode, String pEncodedKey, int pDerivationPath);
+
+    public native String seed(String pPasscode, int pOffset);
+
+    public native boolean hasPassCode();
 
     //TODO Generate a mnemonic sentence that can be used to create an HD key.
     //public native String generateMnemonic();

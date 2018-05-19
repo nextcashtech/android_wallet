@@ -66,6 +66,7 @@
     <string name="remove_wallet">Remove Wallet</string>
     <string name="import_bip0032_key">Import BIP-0032 Key</string>
     <string name="title_import_bip0032_key">Enter BIP-0032 Encoded Key</string>
+    <string name="derivation_path">Derive Path</string>
     <string name="import_text">Import</string>
     <string name="success_key_import">Successfully imported key</string>
     <string name="failed_key_import">Failed to import key</string>
@@ -137,5 +138,12 @@
     <string name="address_qr_code">Address QR Code</string>
     <string name="failed_receive_address">Failed to generate receive address.</string>
     <string name="failed_receive_address_qr">Failed to generate QR Code.</string>
+
+    <string name="create_passcode_description">
+        Create a pass code to protect your private keys. You will be required to enter it when
+        creating/adding keys or sending transactions.
+    </string>
+    <string name="passcode">Pass Code</string>
+    <string name="authorize">Authorize</string>
 
 </resources>

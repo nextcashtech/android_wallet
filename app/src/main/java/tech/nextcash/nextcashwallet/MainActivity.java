@@ -39,8 +39,12 @@ public class MainActivity extends AppCompatActivity
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification;
 
-    private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, HISTORY, RECEIVE, SEND, SETUP }
+    private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, HISTORY, RECEIVE, SEND, SETUP, AUTHORIZE }
     private Mode mMode;
+    private enum AuthorizedTask { NONE, ADD_KEY, SIGN_TRANSACTION }
+    private AuthorizedTask mAuthorizedTask;
+    private String mKeyToLoad, mSeed;
+    private int mDerivationPathMethodToLoad;
     private double mFiatRate;
     private Bitcoin mBitcoin;
     private boolean mFinishOnBack;
@@ -89,6 +93,7 @@ public class MainActivity extends AppCompatActivity
             }
         };
         mMode = Mode.LOADING;
+        mAuthorizedTask = AuthorizedTask.NONE;
         mFinishOnBack = false;
         mFiatRate = 0.0;
 
@@ -544,6 +549,39 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    public void displayAuthorize()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup contentView = findViewById(R.id.content);
+
+        contentView.removeAllViews();
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_lock_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.authorize));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        // Edit Name
+        ViewGroup passcode = (ViewGroup)inflater.inflate(R.layout.passcode, contentView, false);
+        if(!mBitcoin.hasPassCode())
+            passcode.findViewById(R.id.createDescription).setVisibility(View.VISIBLE);
+        contentView.addView(passcode);
+
+        // Update button
+        View button = inflater.inflate(R.layout.button, contentView, false);
+        button.setTag(R.id.authorize);
+        ((TextView)button.findViewById(R.id.title)).setText(R.string.authorize);
+        contentView.addView(button);
+
+        focusOnText(R.id.passcode);
+
+        mMode = Mode.AUTHORIZE;
+    }
+
     public void displayEditWallet(int pKeyOffset)
     {
         View button;
@@ -859,20 +897,42 @@ public class MainActivity extends AppCompatActivity
                 case R.id.removeWallet:
                     //TODO Delete wallet
                     break;
+                case R.id.authorize:
+                {
+                    switch(mAuthorizedTask)
+                    {
+                        case ADD_KEY:
+                            if(mKeyToLoad != null)
+                            {
+                                String passcode = ((EditText)findViewById(R.id.passcode)).getText().toString();
+                                ImportKeyTask task = new ImportKeyTask(this, mBitcoin, passcode, mKeyToLoad,
+                                  mDerivationPathMethodToLoad);
+                                task.execute();
+                            }
+                            else
+                            {
+                                // TODO Load seed
+                            }
+
+                            ViewGroup contentView = findViewById(R.id.content);
+                            contentView.removeAllViews();
+
+                            findViewById(R.id.progress).setVisibility(View.VISIBLE);
+                            break;
+                        case SIGN_TRANSACTION:
+                            break;
+                    }
+                    break;
+                }
             }
             break;
         case R.id.importButton: // Import BIP-0032 encoded key
         {
-            ImportKeyTask task = new ImportKeyTask(this, mBitcoin,
-              ((EditText)findViewById(R.id.importText)).getText().toString(),
-              ((Spinner)findViewById(R.id.derivationMethodSpinner)).getSelectedItemPosition());
-            task.execute();
-
-            ViewGroup contentView = findViewById(R.id.content);
-            contentView.removeAllViews();
-
-            findViewById(R.id.progress).setVisibility(View.VISIBLE);
-
+            mAuthorizedTask = AuthorizedTask.ADD_KEY;
+            mKeyToLoad = ((EditText)findViewById(R.id.importText)).getText().toString();
+            mDerivationPathMethodToLoad = ((Spinner)findViewById(R.id.derivationMethodSpinner)).getSelectedItemPosition();
+            mSeed = null;
+            displayAuthorize();
             break;
         }
         case R.id.walletHeader: // Expand/Compress wallet
@@ -905,7 +965,7 @@ public class MainActivity extends AppCompatActivity
         case R.id.walletReceive:
         {
             ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
-            String receiveAddress = mBitcoin.getNextReceiveAddress((int)wallet.getTag());
+            String receiveAddress = mBitcoin.getNextReceiveAddress((int)wallet.getTag(), 0);
 
             if(receiveAddress == null)
                 showMessage(getString(R.string.failed_receive_address), 2000);
