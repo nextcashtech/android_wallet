@@ -609,8 +609,8 @@ public class MainActivity extends AppCompatActivity
 
         // Update button
         button = inflater.inflate(R.layout.button, contentView, false);
-        button.setTag(R.id.updateWallet);
-        ((TextView)button.findViewById(R.id.title)).setText(R.string.update_wallet);
+        button.setTag(R.id.updateWalletName);
+        ((TextView)button.findViewById(R.id.title)).setText(R.string.update_name);
         contentView.addView(button);
 
         // Backup button
@@ -879,7 +879,7 @@ public class MainActivity extends AppCompatActivity
                     derivationMethod.setAdapter(adapter);
                     break;
                 }
-                case R.id.updateWallet:
+                case R.id.updateWalletName:
                 {
                     ViewGroup contentView = findViewById(R.id.content);
                     EditText nameView = contentView.findViewById(R.id.name);

@@ -4,7 +4,7 @@
     <item type="id" name="createWallet" />
     <item type="id" name="recoverWallet" />
     <item type="id" name="importWallet" />
-    <item type="id" name="updateWallet" />
+    <item type="id" name="updateWalletName" />
     <item type="id" name="backupWallet" />
     <item type="id" name="removeWallet" />
     <item type="id" name="authorize" />
