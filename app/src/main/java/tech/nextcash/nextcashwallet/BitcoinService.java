@@ -39,6 +39,7 @@ public class BitcoinService extends Service
     private Runnable mBitcoinRunnable, mMonitorRunnable;
     private boolean mIsRegistered, mIsBound;
     private int mNextNotificationID;
+    private Notification mProgressNotification;
     private boolean mProgressDisplayed;
     private int mStartBlockHeight, mStartMerkleHeight;
 
@@ -75,14 +76,14 @@ public class BitcoinService extends Service
                 Log.i(logTag, "Bitcoin thread starting");
                 register();
                 updateProgressNotification();
-                //startForeground(sProgressNotificationID, mProgressNotification);
+                startForeground(sProgressNotificationID, mProgressNotification);
                 mBitcoin.setPath(getFilesDir().getPath() + "/bitcoin");
                 mBitcoin.load();
                 onLoaded();
                 mBitcoin.run(mFinishMode);
                 onFinished();
                 clearProgress();
-                //stopForeground(true);
+                stopForeground(true);
                 Log.i(logTag, "Bitcoin thread finished");
             }
         };
@@ -330,7 +331,8 @@ public class BitcoinService extends Service
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
 
         // notificationId is a unique int for each notification that you must define
-        notificationManager.notify(sProgressNotificationID, builder.build());
+        mProgressNotification = builder.build();
+        notificationManager.notify(sProgressNotificationID, mProgressNotification);
         mProgressDisplayed = true;
     }
 
@@ -363,7 +365,7 @@ public class BitcoinService extends Service
         notificationManager.notify(mNextNotificationID++, builder.build());
     }
 
-    public void clearProgress()
+    private void clearProgress()
     {
         NotificationManagerCompat.from(this).cancel(sProgressNotificationID);
     }
