@@ -23,12 +23,14 @@ public class Bitcoin
 
     private long mHandle; // Used by JNI
     private boolean mLoaded;
+    private boolean mNeedsUpdate;
     private int mChangeID;
 
     Bitcoin()
     {
         mHandle = 0;
         mLoaded = false;
+        mNeedsUpdate = false;
         mChangeID = -1;
     }
 
@@ -153,8 +155,8 @@ public class Bitcoin
 
         int changeID = getChangeID();
         int count = keyCount();
-        if(((count == 0 && wallets == null) || (wallets != null && count == wallets.length)) &&
-          changeID == mChangeID && !pForce)
+        if(!mNeedsUpdate && !pForce && ((count == 0 && wallets == null) || (wallets != null && count == wallets.length)) &&
+          changeID == mChangeID)
             return false; // No changes detected
 
         // Check for initial creation of wallets
@@ -170,28 +172,36 @@ public class Bitcoin
         {
             Wallet[] newWallets = new Wallet[count];
 
-            // Copy pre-existing wallets
-            for(int i = 0; i < wallets.length && i < newWallets.length; i++)
-                newWallets[i] = wallets[i];
+            if(wallets.length < count) // don't copy if one was removed
+            {
+                // Copy pre-existing wallets
+                for(int i = 0; i < wallets.length && i < newWallets.length; i++)
+                    newWallets[i] = wallets[i];
+            }
 
             wallets = newWallets;
 
             // Initialize new wallets
             for(int i=0;i<wallets.length;i++)
-            {
                 if(wallets[i] == null)
                     wallets[i] = new Wallet();
-            }
         }
 
         // Update wallets
         boolean result = true;
         for(int offset = 0; offset < wallets.length; offset++)
             if(!updateWallet(offset))
+            {
+                mNeedsUpdate = true;
                 result = false;
+            }
 
         if(result)
+        {
+            mNeedsUpdate = false;
             mChangeID = changeID;
+        }
+
         return result;
     }
 
@@ -204,12 +214,19 @@ public class Bitcoin
 
     public native boolean setName(int pOffset, String pName);
 
-    // Add a key, from BIP-0032 encoded text to be monitored.
     public static final int BIP0044_DERIVATION = 0;
     public static final int BIP0032_DERIVATION = 1;
     public static final int SIMPLE_DERIVATION  = 2;
-    public native int addKey(String pPasscode, String pEncodedKey, int pDerivationPath);
 
+    // Load a key from BIP-0032 encoded text.
+    public native int loadKey(String pPassCode, String pEncodedKey, int pDerivationPath, String pName);
+
+    // Add a key from a mnemonic seed.
+    public native int addSeed(String pPassCode, String pMnemonicSeed, int pDerivationPath, String pName);
+
+    public native int removeKey(String pPassCode, int pOffset);
+
+    public native String generateMnemonicSeed(int pEntropy);
     public native String seed(String pPasscode, int pOffset);
 
     public native boolean hasPassCode();

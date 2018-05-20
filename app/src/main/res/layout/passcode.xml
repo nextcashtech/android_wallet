@@ -11,8 +11,7 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="5dp"
         android:text="@string/create_passcode_description"
-        android:visibility="gone"
-        android:textAppearance="@style/TextAppearance.AppCompat.Small"/>
+        android:visibility="gone"/>
 
     <LinearLayout
         android:orientation="horizontal"
@@ -25,7 +24,6 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="5dp"
             android:text="@string/passcode"
-            android:textAppearance="@style/TextAppearance.AppCompat.Small"
             android:labelFor="@id/passcode"/>
 
         <EditText

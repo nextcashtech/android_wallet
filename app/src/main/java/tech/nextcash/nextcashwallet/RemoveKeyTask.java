@@ -1,33 +1,30 @@
 package tech.nextcash.nextcashwallet;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
-import java.util.Locale;
 
-
-public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
+public class RemoveKeyTask extends AsyncTask<String, Integer, Integer>
 {
+    public static final String logTag = "RemoveKeyTask";
+
     private MainActivity mActivity;
     private Bitcoin mBitcoin;
-    private String mPasscode;
-    private String mKey;
-    private int mDerivationMethod;
+    private String mPassCode;
+    private int mOffset;
 
-    public ImportKeyTask(MainActivity pActivity, Bitcoin pBitcoin, String pPasscode, String pKey, int pDerivationMethod)
+    public RemoveKeyTask(MainActivity pActivity, Bitcoin pBitcoin, String pPassCode, int pOffset)
     {
         mActivity = pActivity;
         mBitcoin = pBitcoin;
-        mPasscode = pPasscode;
-        mKey = pKey;
-        mDerivationMethod = pDerivationMethod;
+        mPassCode = pPassCode;
+        mOffset = pOffset;
     }
 
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        String name = String.format(Locale.getDefault(), "%s %d", mActivity.getString(R.string.wallet),
-          mBitcoin.wallets.length + 1);
-        int result = mBitcoin.loadKey(mPasscode, mKey, mDerivationMethod, name);
+        int result = mBitcoin.removeKey(mPassCode, mOffset);
 
         if(result == 0)
             mBitcoin.update(true);
@@ -44,10 +41,10 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
             switch(pResult)
             {
                 case 0: // Success
-                    mActivity.showMessage(mActivity.getString(R.string.success_key_import), 2000);
+                    mActivity.showMessage(mActivity.getString(R.string.success_remove_wallet), 2000);
                     break;
                 case 1: // Unknown error
-                    mActivity.showMessage(mActivity.getString(R.string.failed_key_import), 2000);
+                    mActivity.showMessage(mActivity.getString(R.string.failed_remove_wallet), 2000);
                     break;
                 case 2: // Invalid format
                     mActivity.showMessage(mActivity.getString(R.string.failed_key_import_format), 2000);
@@ -58,10 +55,20 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
                 case 4: // Invalid derivation method
                     mActivity.showMessage(mActivity.getString(R.string.failed_key_import_method), 2000);
                     break;
+                case 5: // Invalid pass code
+                    mActivity.showMessage(mActivity.getString(R.string.failed_invalid_passcode), 2000);
+                    break;
+                case 6: // Failed to load seed
+                    mActivity.showMessage(mActivity.getString(R.string.failed_invalid_seed), 2000);
+                    break;
             }
 
             if(mBitcoin.isLoaded())
+            {
+                Log.i(logTag, "Clearing after removing wallet");
+                mActivity.clear();
                 mActivity.updateWallets();
+            }
         }
 
         super.onPostExecute(pResult);

@@ -5,20 +5,20 @@ import android.os.AsyncTask;
 import java.util.Locale;
 
 
-public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
+public class CreateKeyTask extends AsyncTask<String, Integer, Integer>
 {
     private MainActivity mActivity;
     private Bitcoin mBitcoin;
     private String mPasscode;
-    private String mKey;
+    private String mSeed;
     private int mDerivationMethod;
 
-    public ImportKeyTask(MainActivity pActivity, Bitcoin pBitcoin, String pPasscode, String pKey, int pDerivationMethod)
+    public CreateKeyTask(MainActivity pActivity, Bitcoin pBitcoin, String pPasscode, String pSeed, int pDerivationMethod)
     {
         mActivity = pActivity;
         mBitcoin = pBitcoin;
         mPasscode = pPasscode;
-        mKey = pKey;
+        mSeed = pSeed;
         mDerivationMethod = pDerivationMethod;
     }
 
@@ -27,7 +27,7 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
     {
         String name = String.format(Locale.getDefault(), "%s %d", mActivity.getString(R.string.wallet),
           mBitcoin.wallets.length + 1);
-        int result = mBitcoin.loadKey(mPasscode, mKey, mDerivationMethod, name);
+        int result = mBitcoin.addSeed(mPasscode, mSeed, mDerivationMethod, name);
 
         if(result == 0)
             mBitcoin.update(true);
@@ -44,10 +44,10 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
             switch(pResult)
             {
                 case 0: // Success
-                    mActivity.showMessage(mActivity.getString(R.string.success_key_import), 2000);
+                    mActivity.showMessage(mActivity.getString(R.string.success_create_wallet), 2000);
                     break;
                 case 1: // Unknown error
-                    mActivity.showMessage(mActivity.getString(R.string.failed_key_import), 2000);
+                    mActivity.showMessage(mActivity.getString(R.string.failed_create_wallet), 2000);
                     break;
                 case 2: // Invalid format
                     mActivity.showMessage(mActivity.getString(R.string.failed_key_import_format), 2000);
@@ -57,6 +57,12 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
                     break;
                 case 4: // Invalid derivation method
                     mActivity.showMessage(mActivity.getString(R.string.failed_key_import_method), 2000);
+                    break;
+                case 5: // Invalid pass code
+                    mActivity.showMessage(mActivity.getString(R.string.failed_invalid_passcode), 2000);
+                    break;
+                case 6: // Failed to load seed
+                    mActivity.showMessage(mActivity.getString(R.string.failed_invalid_seed), 2000);
                     break;
             }
 

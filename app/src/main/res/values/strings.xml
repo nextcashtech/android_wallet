@@ -55,6 +55,7 @@
         Cryptographic Library - secp256k1 Copyright &#169; 2013 Pieter Wuille
     </string>
 
+    <string name="wallet">Wallet</string>
     <string name="title_add_wallet">Add Wallet</string>
     <string name="title_edit_wallet">Edit Wallet</string>
     <string name="title_wallet_history">Wallet History</string>
@@ -74,6 +75,8 @@
     <string name="failed_key_import_exists">Key already in wallet</string>
     <string name="failed_key_import_method">Invalid derivation method</string>
     <string name="failed_update_name">Failed to update name</string>
+    <string name="success_remove_wallet">Successfully removed wallet</string>
+    <string name="failed_remove_wallet">Failed to remove wallet</string>
     <string name="locked">View Only</string>
     <string name="locked_message">
         View Only. Wallet has a &quot;public only&quot; key and can not spend.
@@ -145,5 +148,42 @@
     </string>
     <string name="passcode">Pass Code</string>
     <string name="authorize">Authorize</string>
+    <string name="create_wallet">Create Wallet</string>
+    <string name="wallet_seed">Wallet Seed</string>
+    <string name="wallet_seed_description">
+        These words are the &quot;mnemonic seed&quot; for your new wallet.
+        You need to write this down and store this in a safe place so you can recover your wallet if
+        you lose access to this device or forget your passcode.
+        No one else can recover your bitcoins for you.
+        Anyone who has access to this seed can spend all of your bitcoins.
+    </string>
+    <string name="wallet_seed_written">
+        Press continue when you have written down your &quot;mnemonic seed&quot;.
+    </string>
+    <string name="continue_string">Continue</string>
+    <string name="check_seed">Check Seed</string>
+    <string name="skip_check_seed">Skip (at your own risk)</string>
+    <string name="enter_wallet_seed">Select Seed Words in Order</string>
+    <string name="scroll_left_right">Scroll Left and Right</string>
+    <string name="seed_doesnt_match">Seed Doesn\'t Match</string>
+    <string name="seed_matches">Seed Matches</string>
+    <string name="success_create_wallet">Successfully created wallet</string>
+    <string name="failed_create_wallet">Failed to create wallet</string>
+    <string name="failed_invalid_passcode">Invalid pass code</string>
+    <string name="failed_invalid_seed">Invalid seed</string>
+    <string name="failed_retrieve_seed">Failed to retrieve seed</string>
+    <string name="send_payment">Send Payment</string>
+
+    <string name="mnemonic_seed_entropy">Entropy</string>
+    <string-array name="mnemonic_seed_length_titles">
+        <item>Low</item>
+        <item>Medium</item>
+        <item>High</item>
+    </string-array>
+    <integer-array name="mnemonic_seed_length_values">
+        <item>24</item>
+        <item>28</item>
+        <item>32</item>
+    </integer-array>
 
 </resources>

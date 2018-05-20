@@ -15,6 +15,7 @@ import android.os.IBinder;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -22,16 +23,21 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Locale;
 
 
-public class MainActivity extends AppCompatActivity
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener
 {
     public static final String logTag = "MainActivity";
     public static final int SETTINGS_REQUEST_CODE = 20;
@@ -39,11 +45,14 @@ public class MainActivity extends AppCompatActivity
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification;
 
-    private enum Mode { LOADING, WALLETS, ADD_WALLET, EDIT_WALLET, HISTORY, RECEIVE, SEND, SETUP, AUTHORIZE }
+    private enum Mode { LOADING, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, VERIFY_SEED, BACKUP_WALLET,
+      RECOVER_WALLET, EDIT_WALLET, HISTORY, RECEIVE, SEND, SETUP, AUTHORIZE }
     private Mode mMode;
-    private enum AuthorizedTask { NONE, ADD_KEY, SIGN_TRANSACTION }
+    private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private AuthorizedTask mAuthorizedTask;
     private String mKeyToLoad, mSeed;
+    private int mEditKeyOffset;
+    private boolean mSeedBackupOnly;
     private int mDerivationPathMethodToLoad;
     private double mFiatRate;
     private Bitcoin mBitcoin;
@@ -323,7 +332,6 @@ public class MainActivity extends AppCompatActivity
             default:
             case 0: // Inactive
                 status.setText(R.string.inactive);
-                //startBitcoinService();
                 break;
             case 1: // Loading
                 status.setText(R.string.loading);
@@ -384,6 +392,7 @@ public class MainActivity extends AppCompatActivity
                 ViewGroup content = findViewById(R.id.content);
                 content.removeAllViews();
                 findViewById(R.id.progress).setVisibility(View.VISIBLE);
+                mMode = Mode.LOADING;
             }
         }
 
@@ -394,13 +403,19 @@ public class MainActivity extends AppCompatActivity
         mDelayHandler.postDelayed(mStatusUpdateRunnable, 2000);
     }
 
+    public void clear()
+    {
+        ((ViewGroup)findViewById(R.id.content)).removeAllViews();
+        findViewById(R.id.progress).setVisibility(View.VISIBLE);
+        mMode = Mode.IN_PROGRESS;
+    }
+
     public void updateWallets()
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup content = findViewById(R.id.content), transactions;
         View view;
         boolean addButtonNeeded = false, addView;
-        String name;
 
         mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
 
@@ -408,6 +423,8 @@ public class MainActivity extends AppCompatActivity
 
         if(mMode != Mode.WALLETS)
         {
+            Log.i(logTag, String.format("Rebuilding %d wallets", mBitcoin.wallets.length));
+
             // Rebuild all wallets
             addButtonNeeded = true;
             content.removeAllViews();
@@ -424,6 +441,8 @@ public class MainActivity extends AppCompatActivity
 
         if(mBitcoin.wallets != null)
         {
+            Log.i(logTag, String.format("Updating %d wallets", mBitcoin.wallets.length));
+
             int offset = 0;
             for(Wallet wallet : mBitcoin.wallets)
             {
@@ -458,12 +477,7 @@ public class MainActivity extends AppCompatActivity
                       "%,.5f BCH", Bitcoin.bitcoins(wallet.balance)));
                 }
 
-                name = wallet.name;
-                if(name == null || name.length() == 0)
-                    ((TextView)view.findViewById(R.id.walletName)).setText(String.format(Locale.getDefault(),
-                      "Wallet %d", offset + 1));
-                else
-                    ((TextView)view.findViewById(R.id.walletName)).setText(name);
+                ((TextView)view.findViewById(R.id.walletName)).setText(wallet.name);
 
                 if(!wallet.isPrivate)
                 {
@@ -549,6 +563,148 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    public void displayCreateWallet()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup contentView = findViewById(R.id.content);
+
+        contentView.removeAllViews();
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.create_wallet));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.create_wallet, contentView, false);
+        mSeed = mBitcoin.generateMnemonicSeed(28);
+        mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION;
+        mSeedBackupOnly = false;
+        ((TextView)createWallet.findViewById(R.id.seed)).setText(mSeed);
+
+        Spinner entropy = createWallet.findViewById(R.id.seedEntropy);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+          R.array.mnemonic_seed_length_titles, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        entropy.setAdapter(adapter);
+        entropy.setOnItemSelectedListener(this);
+        entropy.setSelection(1);
+
+        contentView.addView(createWallet);
+
+        // Verify button
+        View button = inflater.inflate(R.layout.button, contentView, false);
+        button.setTag(R.id.verifySeedSaved);
+        ((TextView)button.findViewById(R.id.title)).setText(R.string.continue_string);
+        contentView.addView(button);
+
+        mMode = Mode.CREATE_WALLET;
+    }
+
+    @Override
+    public void onItemSelected(AdapterView<?> pParent, View pView, int pPosition, long pID)
+    {
+        int[] values = getResources().getIntArray(R.array.mnemonic_seed_length_values);
+
+        if(pPosition >= values.length)
+            Log.e(logTag, String.format("Invalid seed entropy position selected : %d", pPosition));
+        else
+        {
+            mSeed = mBitcoin.generateMnemonicSeed(values[pPosition]);
+            ((TextView)findViewById(R.id.seed)).setText(mSeed);
+        }
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent)
+    {
+
+    }
+
+    public void displayVerifySeed()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup contentView = findViewById(R.id.content);
+
+        contentView.removeAllViews();
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.create_wallet));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup verifySeed = (ViewGroup)inflater.inflate(R.layout.verify_seed, contentView, false);
+        LinearLayout wordButtons = verifySeed.findViewById(R.id.seedButtons);
+        ArrayList<String> words = new ArrayList<>();
+        TextView wordButton;
+
+        contentView.addView(verifySeed);
+
+        Collections.addAll(words, mSeed.split(" "));
+        Collections.shuffle(words);
+
+        for(String word : words)
+        {
+            wordButton = (TextView)inflater.inflate(R.layout.seed_word_button, wordButtons, false);
+            wordButton.setText(word);
+            wordButtons.addView(wordButton);
+        }
+
+        // Skip button
+        View button = inflater.inflate(R.layout.negative_button, contentView, false);
+        button.setTag(R.id.skipCheckSeed);
+        ((TextView)button.findViewById(R.id.title)).setText(R.string.skip_check_seed);
+        contentView.addView(button);
+
+        mMode = Mode.VERIFY_SEED;
+    }
+
+    public void displayBackupWallet(String pPassCode)
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup contentView = findViewById(R.id.content);
+
+        contentView.removeAllViews();
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.backup_wallet));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.create_wallet, contentView, false);
+        mSeed = mBitcoin.seed(pPassCode, mEditKeyOffset);
+        if(mSeed == null)
+        {
+            showMessage(getString(R.string.failed_retrieve_seed), 2000);
+            updateWallets();
+        }
+        mSeedBackupOnly = true;
+        ((TextView)createWallet.findViewById(R.id.seed)).setText(mSeed);
+
+        createWallet.findViewById(R.id.seedEntropyContainer).setVisibility(View.GONE);
+
+        contentView.addView(createWallet);
+
+        // Verify button
+        View button = inflater.inflate(R.layout.button, contentView, false);
+        button.setTag(R.id.verifySeedSaved);
+        ((TextView)button.findViewById(R.id.title)).setText(R.string.continue_string);
+        contentView.addView(button);
+
+        mMode = Mode.BACKUP_WALLET;
+    }
+
     public void displayAuthorize()
     {
         LayoutInflater inflater = getLayoutInflater();
@@ -561,17 +717,37 @@ public class MainActivity extends AppCompatActivity
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_lock_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.authorize));
+            switch(mAuthorizedTask)
+            {
+                case NONE:
+                    break;
+                case ADD_KEY:
+                    actionBar.setTitle(" " + getString(R.string.authorize) + " " +
+                      getString(R.string.add_wallet));
+                    break;
+                case BACKUP_KEY:
+                    actionBar.setTitle(" " + getString(R.string.authorize) + " " +
+                      getString(R.string.backup_wallet));
+                    break;
+                case REMOVE_KEY:
+                    actionBar.setTitle(" " + getString(R.string.authorize) + " " +
+                      getString(R.string.remove_wallet));
+                    break;
+                case SIGN_TRANSACTION:
+                    actionBar.setTitle(" " + getString(R.string.authorize) + " " +
+                      getString(R.string.send_payment));
+                    break;
+            }
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        // Edit Name
+        // Pass code input
         ViewGroup passcode = (ViewGroup)inflater.inflate(R.layout.passcode, contentView, false);
         if(!mBitcoin.hasPassCode())
             passcode.findViewById(R.id.createDescription).setVisibility(View.VISIBLE);
         contentView.addView(passcode);
 
-        // Update button
+        // Authorize button
         View button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.authorize);
         ((TextView)button.findViewById(R.id.title)).setText(R.string.authorize);
@@ -600,10 +776,11 @@ public class MainActivity extends AppCompatActivity
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
+        mEditKeyOffset = pKeyOffset;
+
         // Edit Name
         editName = (ViewGroup)inflater.inflate(R.layout.edit_name, contentView, false);
         ((EditText)editName.findViewById(R.id.name)).setText(mBitcoin.wallets[pKeyOffset].name);
-        editName.findViewById(R.id.name).setTag(pKeyOffset);
 
         contentView.addView(editName);
 
@@ -860,6 +1037,23 @@ public class MainActivity extends AppCompatActivity
                     break;
                 }
                 case R.id.createWallet:
+                    displayCreateWallet();
+                    break;
+                case R.id.verifySeedSaved:
+                    displayVerifySeed();
+                    break;
+                case R.id.skipCheckSeed:
+                    if(mSeedBackupOnly)
+                    {
+                        mSeed = null;
+                        updateWallets();
+                    }
+                    else
+                    {
+                        mAuthorizedTask = AuthorizedTask.ADD_KEY;
+                        mKeyToLoad = null;
+                        displayAuthorize();
+                    }
                     break;
                 case R.id.recoverWallet:
                     break;
@@ -877,6 +1071,21 @@ public class MainActivity extends AppCompatActivity
                       R.array.derivation_methods, android.R.layout.simple_spinner_item);
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                     derivationMethod.setAdapter(adapter);
+
+                    // Load button
+                    View button = inflater.inflate(R.layout.button, contentView, false);
+                    button.setTag(R.id.loadKey);
+                    ((TextView)button.findViewById(R.id.title)).setText(R.string.import_text);
+                    contentView.addView(button);
+                    break;
+                }
+                case R.id.loadKey: // Import BIP-0032 encoded key
+                {
+                    mAuthorizedTask = AuthorizedTask.ADD_KEY;
+                    mKeyToLoad = ((EditText)findViewById(R.id.importText)).getText().toString();
+                    mDerivationPathMethodToLoad = ((Spinner)findViewById(R.id.derivationMethodSpinner)).getSelectedItemPosition();
+                    mSeed = null;
+                    displayAuthorize();
                     break;
                 }
                 case R.id.updateWalletName:
@@ -884,57 +1093,104 @@ public class MainActivity extends AppCompatActivity
                     ViewGroup contentView = findViewById(R.id.content);
                     EditText nameView = contentView.findViewById(R.id.name);
                     String name = nameView.getText().toString();
-                    if((int)nameView.getTag() < mBitcoin.wallets.length &&
-                      mBitcoin.setName((int)nameView.getTag(), name))
+                    if(mEditKeyOffset < mBitcoin.wallets.length &&
+                      mBitcoin.setName(mEditKeyOffset, name))
                         updateWallets();
                     else
                         showMessage(getString(R.string.failed_update_name), 2000);
                     break;
                 }
                 case R.id.backupWallet:
-                    //TODO Provide seed to user
+                    mSeedBackupOnly = true;
+                    mAuthorizedTask = AuthorizedTask.BACKUP_KEY;
+                    displayAuthorize();
                     break;
                 case R.id.removeWallet:
-                    //TODO Delete wallet
+                    mAuthorizedTask = AuthorizedTask.REMOVE_KEY;
+                    displayAuthorize();
                     break;
                 case R.id.authorize:
-                {
+                    String passcode = ((EditText)findViewById(R.id.passcode)).getText().toString();
                     switch(mAuthorizedTask)
                     {
                         case ADD_KEY:
+                        {
                             if(mKeyToLoad != null)
                             {
-                                String passcode = ((EditText)findViewById(R.id.passcode)).getText().toString();
-                                ImportKeyTask task = new ImportKeyTask(this, mBitcoin, passcode, mKeyToLoad,
-                                  mDerivationPathMethodToLoad);
+                                ImportKeyTask task = new ImportKeyTask(this, mBitcoin, passcode, mKeyToLoad, mDerivationPathMethodToLoad);
                                 task.execute();
+                                mKeyToLoad = null;
                             }
                             else
                             {
-                                // TODO Load seed
+                                CreateKeyTask task = new CreateKeyTask(this, mBitcoin, passcode, mSeed, mDerivationPathMethodToLoad);
+                                task.execute();
+                                mSeed = null;
                             }
 
                             ViewGroup contentView = findViewById(R.id.content);
                             contentView.removeAllViews();
 
                             findViewById(R.id.progress).setVisibility(View.VISIBLE);
+                            mMode = Mode.IN_PROGRESS;
                             break;
+                        }
+                        case BACKUP_KEY:
+                            displayBackupWallet(passcode);
+                            break;
+                        case REMOVE_KEY:
+                        {
+                            RemoveKeyTask task = new RemoveKeyTask(this, mBitcoin, passcode, mEditKeyOffset);
+                            task.execute();
+
+                            ViewGroup contentView = findViewById(R.id.content);
+                            contentView.removeAllViews();
+
+                            findViewById(R.id.progress).setVisibility(View.VISIBLE);
+                            mMode = Mode.IN_PROGRESS;
+                            break;
+                        }
                         case SIGN_TRANSACTION:
                             break;
                     }
                     break;
+            }
+            break;
+        case R.id.seedWordButton:
+            ViewGroup wordButtons = (ViewGroup)pView.getParent();
+            wordButtons.removeView(pView);
+            TextView seed = findViewById(R.id.seed);
+            if(seed.getText().length() > 0)
+                seed.setText(String.format("%s %s", seed.getText(), ((TextView)pView).getText()));
+            else
+                seed.setText(((TextView)pView).getText());
+
+            if(wordButtons.getChildCount() == 0)
+            {
+                // Verify seed matches
+                String seedText = (String)seed.getText();
+                if(seedText.equals(mSeed))
+                {
+                    if(mSeedBackupOnly)
+                    {
+                        mSeed = null;
+                        showMessage(getString(R.string.seed_matches), 2000);
+                        updateWallets();
+                    }
+                    else
+                    {
+                        mAuthorizedTask = AuthorizedTask.ADD_KEY;
+                        mKeyToLoad = null;
+                        displayAuthorize();
+                    }
+                }
+                else
+                {
+                    showMessage(getString(R.string.seed_doesnt_match), 2000);
+                    displayVerifySeed();
                 }
             }
             break;
-        case R.id.importButton: // Import BIP-0032 encoded key
-        {
-            mAuthorizedTask = AuthorizedTask.ADD_KEY;
-            mKeyToLoad = ((EditText)findViewById(R.id.importText)).getText().toString();
-            mDerivationPathMethodToLoad = ((Spinner)findViewById(R.id.derivationMethodSpinner)).getSelectedItemPosition();
-            mSeed = null;
-            displayAuthorize();
-            break;
-        }
         case R.id.walletHeader: // Expand/Compress wallet
         {
             ViewGroup wallet = (ViewGroup)pView.getParent();
@@ -1045,7 +1301,14 @@ public class MainActivity extends AppCompatActivity
     public void onBackPressed()
     {
         if(mMode != Mode.WALLETS && mMode != Mode.LOADING)
+        {
+            if(mMode == Mode.AUTHORIZE)
+            {
+                mSeed = null;
+                mKeyToLoad = null;
+            }
             updateWallets(); // Go back to main wallets view
+        }
         else if(mFinishOnBack)
         {
             mBitcoin.stop();
