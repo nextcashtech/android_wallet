@@ -40,7 +40,6 @@ public class BitcoinService extends Service
     private boolean mIsRegistered, mIsBound;
     private int mNextNotificationID;
     private Notification mProgressNotification;
-    private boolean mProgressDisplayed;
     private int mStartBlockHeight, mStartMerkleHeight;
 
     public class LocalBinder extends Binder
@@ -59,7 +58,7 @@ public class BitcoinService extends Service
         mBitcoin = ((MainApp)getApplication()).bitcoin;
         mIsRegistered = false;
         mNextNotificationID = 2;
-        mProgressDisplayed = false;
+        mProgressNotification = null;
         mStartBlockHeight = 0;
         mStartMerkleHeight = 0;
         mIsBound = false;
@@ -83,7 +82,6 @@ public class BitcoinService extends Service
                 mBitcoin.run(mFinishMode);
                 onFinished();
                 clearProgress();
-                stopForeground(true);
                 Log.i(logTag, "Bitcoin thread finished");
             }
         };
@@ -273,9 +271,12 @@ public class BitcoinService extends Service
         boolean sync = mBitcoin.isInSync();
         if(sync && mBitcoin.merkleHeight() == mBitcoin.blockHeight())
         {
-            if(mProgressDisplayed)
+            if(mProgressNotification != null)
+            {
                 NotificationManagerCompat.from(this).cancel(sProgressNotificationID);
-            mProgressDisplayed = false;
+                mProgressNotification = null;
+                stopForeground(true);
+            }
             return;
         }
 
@@ -333,7 +334,6 @@ public class BitcoinService extends Service
         // notificationId is a unique int for each notification that you must define
         mProgressNotification = builder.build();
         notificationManager.notify(sProgressNotificationID, mProgressNotification);
-        mProgressDisplayed = true;
     }
 
     private void notify(String pTitle, String pText, String pTransactionHash)
@@ -367,7 +367,11 @@ public class BitcoinService extends Service
 
     private void clearProgress()
     {
-        NotificationManagerCompat.from(this).cancel(sProgressNotificationID);
+        if(mProgressNotification != null)
+        {
+            NotificationManagerCompat.from(this).cancel(sProgressNotificationID);
+            mProgressNotification = null;
+        }
     }
 
     // Returns true if hash was added to the file.
