@@ -15,7 +15,6 @@ import android.os.IBinder;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -25,7 +24,6 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -51,7 +49,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private AuthorizedTask mAuthorizedTask;
     private String mKeyToLoad, mSeed;
-    private int mEditKeyOffset;
+    private int mCurrentWalletViewID;
     private boolean mSeedBackupOnly;
     private int mDerivationPathMethodToLoad;
     private double mFiatRate;
@@ -410,18 +408,22 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.IN_PROGRESS;
     }
 
-    public void updateWallets()
+    public synchronized void updateWallets()
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup content = findViewById(R.id.content), transactions;
         View view;
-        boolean addButtonNeeded = false, addView;
+        boolean addButtonNeeded = false, addView, rebuild = mMode != Mode.WALLETS;
+
+        for(Wallet wallet : mBitcoin.wallets)
+            if(wallet.viewID == 0)
+                rebuild = true;
 
         mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
 
         findViewById(R.id.progress).setVisibility(View.GONE);
 
-        if(mMode != Mode.WALLETS)
+        if(rebuild)
         {
             Log.i(logTag, String.format("Rebuilding %d wallets", mBitcoin.wallets.length));
 
@@ -449,8 +451,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 addView = false;
                 view = null;
 
-                if(mMode == Mode.WALLETS)
-                    view = content.findViewWithTag(offset);
+                if(!rebuild)
+                    view = content.findViewById(wallet.viewID);
+
+                if(view != null && view.getId() != R.id.walletItem)
+                {
+                    Log.e(logTag, String.format("Invalid wallet item found for wallet at offset : %d", offset));
+                    break;
+                }
 
                 if(view == null)
                 {
@@ -462,14 +470,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                     // Add wallet
                     view = inflater.inflate(R.layout.wallet_item, content, false);
-                    view.setTag(offset);
+                    wallet.viewID = View.generateViewId();
+                    view.setId(wallet.viewID);
                     addView = true;
 
                     view.findViewById(R.id.walletDetails).setVisibility(View.GONE);
                 }
 
-                ((TextView)view.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance,
-                  mFiatRate));
+                ((TextView)view.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance, mFiatRate));
 
                 if(mFiatRate != 0.0)
                 {
@@ -487,8 +495,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
 
                 transactions = view.findViewById(R.id.walletTransactions);
-                populateTransactions(transactions, wallet.transactions,
-                  3);
+                populateTransactions(transactions, wallet.transactions, 3);
 
                 if(addView)
                     content.addView(view);
@@ -503,7 +510,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             view = inflater.inflate(R.layout.button, content, false);
             view.setTag(R.id.addWallet);
-            ((TextView)view.findViewById(R.id.title)).setText(R.string.add_wallet);
+            ((TextView)view.findViewById(R.id.button)).setText(R.string.add_wallet);
             content.addView(view);
         }
 
@@ -563,7 +570,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
-    public void displayCreateWallet()
+    public synchronized void displayCreateWallet()
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup contentView = findViewById(R.id.content);
@@ -579,7 +586,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.create_wallet, contentView, false);
+        ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.view_seed, contentView, false);
         mSeed = mBitcoin.generateMnemonicSeed(28);
         mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION;
         mSeedBackupOnly = false;
@@ -598,7 +605,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Verify button
         View button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.verifySeedSaved);
-        ((TextView)button.findViewById(R.id.title)).setText(R.string.continue_string);
+        ((TextView)button.findViewById(R.id.button)).setText(R.string.continue_string);
         contentView.addView(button);
 
         mMode = Mode.CREATE_WALLET;
@@ -624,7 +631,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     }
 
-    public void displayVerifySeed()
+    public synchronized void displayVerifySeed()
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup contentView = findViewById(R.id.content);
@@ -660,13 +667,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Skip button
         View button = inflater.inflate(R.layout.negative_button, contentView, false);
         button.setTag(R.id.skipCheckSeed);
-        ((TextView)button.findViewById(R.id.title)).setText(R.string.skip_check_seed);
+        ((TextView)button.findViewById(R.id.button)).setText(R.string.skip_check_seed);
         contentView.addView(button);
 
         mMode = Mode.VERIFY_SEED;
     }
 
-    public void displayBackupWallet(String pPassCode)
+    public synchronized void displayBackupWallet(String pPassCode)
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup contentView = findViewById(R.id.content);
@@ -682,12 +689,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.create_wallet, contentView, false);
-        mSeed = mBitcoin.seed(pPassCode, mEditKeyOffset);
+        ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.view_seed, contentView, false);
+        mSeed = mBitcoin.seed(pPassCode, mBitcoin.walletOffsetForViewID(mCurrentWalletViewID));
         if(mSeed == null)
         {
             showMessage(getString(R.string.failed_retrieve_seed), 2000);
             updateWallets();
+            return;
         }
         mSeedBackupOnly = true;
         ((TextView)createWallet.findViewById(R.id.seed)).setText(mSeed);
@@ -699,13 +707,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Verify button
         View button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.verifySeedSaved);
-        ((TextView)button.findViewById(R.id.title)).setText(R.string.continue_string);
+        ((TextView)button.findViewById(R.id.button)).setText(R.string.continue_string);
         contentView.addView(button);
 
         mMode = Mode.BACKUP_WALLET;
     }
 
-    public void displayAuthorize()
+    public synchronized void displayAuthorize()
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup contentView = findViewById(R.id.content);
@@ -750,7 +758,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Authorize button
         View button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.authorize);
-        ((TextView)button.findViewById(R.id.title)).setText(R.string.authorize);
+        ((TextView)button.findViewById(R.id.button)).setText(R.string.authorize);
         contentView.addView(button);
 
         focusOnText(R.id.passcode);
@@ -758,8 +766,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.AUTHORIZE;
     }
 
-    public void displayEditWallet(int pKeyOffset)
+    public synchronized void displayEditWallet(int pViewID)
     {
+        Wallet wallet = mBitcoin.walletForViewID(pViewID);
+
+        if(wallet == null)
+            return;
+
         View button;
         ViewGroup editName;
         LayoutInflater inflater = getLayoutInflater();
@@ -776,30 +789,30 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        mEditKeyOffset = pKeyOffset;
+        mCurrentWalletViewID = pViewID;
 
         // Edit Name
         editName = (ViewGroup)inflater.inflate(R.layout.edit_name, contentView, false);
-        ((EditText)editName.findViewById(R.id.name)).setText(mBitcoin.wallets[pKeyOffset].name);
+        ((EditText)editName.findViewById(R.id.name)).setText(wallet.name);
 
         contentView.addView(editName);
 
         // Update button
         button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.updateWalletName);
-        ((TextView)button.findViewById(R.id.title)).setText(R.string.update_name);
+        ((TextView)button.findViewById(R.id.button)).setText(R.string.update_name);
         contentView.addView(button);
 
         // Backup button
         button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.backupWallet);
-        ((TextView)button.findViewById(R.id.title)).setText(R.string.backup_wallet);
+        ((TextView)button.findViewById(R.id.button)).setText(R.string.backup_wallet);
         contentView.addView(button);
 
         // Remove button
         button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.removeWallet);
-        ((TextView)button.findViewById(R.id.title)).setText(R.string.remove_wallet);
+        ((TextView)button.findViewById(R.id.button)).setText(R.string.remove_wallet);
         contentView.addView(button);
 
         mMode = Mode.EDIT_WALLET;
@@ -948,12 +961,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             pView.findViewById(R.id.walletNoTransTitle).setVisibility(View.VISIBLE);
     }
 
-    public void displayWalletHistory(int pOffset)
+    public synchronized void displayWalletHistory(int pViewID)
     {
-        if(pOffset >= mBitcoin.wallets.length)
+        Wallet wallet = mBitcoin.walletForViewID(pViewID);
+        if(wallet == null)
             return;
 
-        ViewGroup historyView;
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup contentView = findViewById(R.id.content);
 
@@ -970,9 +983,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        Wallet wallet = mBitcoin.wallets[pOffset];
-
-        historyView = (ViewGroup)inflater.inflate(R.layout.wallet_history, contentView, false);
+        ViewGroup historyView = (ViewGroup)inflater.inflate(R.layout.wallet_history, contentView, false);
         ((TextView)historyView.findViewById(R.id.title)).setText(wallet.name);
 
         ViewGroup transactions = historyView.findViewById(R.id.walletTransactions);
@@ -994,8 +1005,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case R.id.button:
             int tag = 0;
-            if(pView.getTag() != null)
-                tag = (Integer)pView.getTag();
+            if(((View)pView.getParent()).getTag() != null)
+                tag = (Integer)((View)pView.getParent()).getTag();
 
             switch(tag)
             {
@@ -1003,37 +1014,40 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     break;
                 case R.id.addWallet:
                 {
-                    // Display options for adding wallets
-                    View button;
-                    LayoutInflater inflater = getLayoutInflater();
-                    ViewGroup contentView = findViewById(R.id.content);
-
-                    contentView.removeAllViews();
-
-                    button = inflater.inflate(R.layout.button, contentView, false);
-                    button.setTag(R.id.createWallet);
-                    ((TextView)button.findViewById(R.id.title)).setText(R.string.create_new_key);
-                    contentView.addView(button);
-
-                    button = inflater.inflate(R.layout.button, contentView, false);
-                    button.setTag(R.id.recoverWallet);
-                    ((TextView)button.findViewById(R.id.title)).setText(R.string.recover_wallet);
-                    contentView.addView(button);
-
-                    button = inflater.inflate(R.layout.button, contentView, false);
-                    button.setTag(R.id.importWallet);
-                    ((TextView)button.findViewById(R.id.title)).setText(R.string.import_bip0032_key);
-                    contentView.addView(button);
-
-                    ActionBar actionBar = getSupportActionBar();
-                    if(actionBar != null)
+                    synchronized(this)
                     {
-                        actionBar.setIcon(R.drawable.ic_add_black_36dp);
-                        actionBar.setTitle(" " + getResources().getString(R.string.title_add_wallet));
-                        actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
-                    }
+                        // Display options for adding wallets
+                        View button;
+                        LayoutInflater inflater = getLayoutInflater();
+                        ViewGroup contentView = findViewById(R.id.content);
 
-                    mMode = Mode.ADD_WALLET;
+                        contentView.removeAllViews();
+
+                        button = inflater.inflate(R.layout.button, contentView, false);
+                        button.setTag(R.id.createWallet);
+                        ((TextView)button.findViewById(R.id.button)).setText(R.string.create_new_key);
+                        contentView.addView(button);
+
+                        button = inflater.inflate(R.layout.button, contentView, false);
+                        button.setTag(R.id.recoverWallet);
+                        ((TextView)button.findViewById(R.id.button)).setText(R.string.recover_wallet);
+                        contentView.addView(button);
+
+                        button = inflater.inflate(R.layout.button, contentView, false);
+                        button.setTag(R.id.importWallet);
+                        ((TextView)button.findViewById(R.id.button)).setText(R.string.import_bip0032_key);
+                        contentView.addView(button);
+
+                        ActionBar actionBar = getSupportActionBar();
+                        if(actionBar != null)
+                        {
+                            actionBar.setIcon(R.drawable.ic_add_black_36dp);
+                            actionBar.setTitle(" " + getResources().getString(R.string.title_add_wallet));
+                            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+                        }
+
+                        mMode = Mode.ADD_WALLET;
+                    }
                     break;
                 }
                 case R.id.createWallet:
@@ -1059,24 +1073,26 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     break;
                 case R.id.importWallet:
                 {
-                    LayoutInflater inflater = getLayoutInflater();
-                    ViewGroup contentView = findViewById(R.id.content);
+                    synchronized(this)
+                    {
+                        LayoutInflater inflater = getLayoutInflater();
+                        ViewGroup contentView = findViewById(R.id.content);
 
-                    contentView.removeAllViews();
-                    inflater.inflate(R.layout.import_bip32_key, contentView, true);
-                    focusOnText(R.id.importText);
+                        contentView.removeAllViews();
+                        inflater.inflate(R.layout.import_bip32_key, contentView, true);
+                        focusOnText(R.id.importText);
 
-                    Spinner derivationMethod = findViewById(R.id.derivationMethodSpinner);
-                    ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-                      R.array.derivation_methods, android.R.layout.simple_spinner_item);
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    derivationMethod.setAdapter(adapter);
+                        Spinner derivationMethod = findViewById(R.id.derivationMethodSpinner);
+                        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.derivation_methods, android.R.layout.simple_spinner_item);
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        derivationMethod.setAdapter(adapter);
 
-                    // Load button
-                    View button = inflater.inflate(R.layout.button, contentView, false);
-                    button.setTag(R.id.loadKey);
-                    ((TextView)button.findViewById(R.id.title)).setText(R.string.import_text);
-                    contentView.addView(button);
+                        // Load button
+                        View button = inflater.inflate(R.layout.button, contentView, false);
+                        button.setTag(R.id.loadKey);
+                        ((TextView)button.findViewById(R.id.button)).setText(R.string.import_text);
+                        contentView.addView(button);
+                    }
                     break;
                 }
                 case R.id.loadKey: // Import BIP-0032 encoded key
@@ -1093,8 +1109,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     ViewGroup contentView = findViewById(R.id.content);
                     EditText nameView = contentView.findViewById(R.id.name);
                     String name = nameView.getText().toString();
-                    if(mEditKeyOffset < mBitcoin.wallets.length &&
-                      mBitcoin.setName(mEditKeyOffset, name))
+                    int walletOffset = mBitcoin.walletOffsetForViewID(mCurrentWalletViewID);
+                    if(walletOffset != -1 && mBitcoin.setName(walletOffset, name))
                         updateWallets();
                     else
                         showMessage(getString(R.string.failed_update_name), 2000);
@@ -1128,11 +1144,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                                 mSeed = null;
                             }
 
-                            ViewGroup contentView = findViewById(R.id.content);
-                            contentView.removeAllViews();
+                            synchronized(this)
+                            {
+                                ViewGroup contentView = findViewById(R.id.content);
+                                contentView.removeAllViews();
 
-                            findViewById(R.id.progress).setVisibility(View.VISIBLE);
-                            mMode = Mode.IN_PROGRESS;
+                                findViewById(R.id.progress).setVisibility(View.VISIBLE);
+                                mMode = Mode.IN_PROGRESS;
+                            }
                             break;
                         }
                         case BACKUP_KEY:
@@ -1140,14 +1159,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             break;
                         case REMOVE_KEY:
                         {
-                            RemoveKeyTask task = new RemoveKeyTask(this, mBitcoin, passcode, mEditKeyOffset);
+                            RemoveKeyTask task = new RemoveKeyTask(this, mBitcoin, passcode,
+                              mBitcoin.walletOffsetForViewID(mCurrentWalletViewID));
                             task.execute();
 
-                            ViewGroup contentView = findViewById(R.id.content);
-                            contentView.removeAllViews();
+                            synchronized(this)
+                            {
+                                ViewGroup contentView = findViewById(R.id.content);
+                                contentView.removeAllViews();
 
-                            findViewById(R.id.progress).setVisibility(View.VISIBLE);
-                            mMode = Mode.IN_PROGRESS;
+                                findViewById(R.id.progress).setVisibility(View.VISIBLE);
+                                mMode = Mode.IN_PROGRESS;
+                            }
                             break;
                         }
                         case SIGN_TRANSACTION:
@@ -1220,39 +1243,48 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.walletReceive:
         {
-            ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
-            String receiveAddress = mBitcoin.getNextReceiveAddress((int)wallet.getTag(), 0);
-
-            if(receiveAddress == null)
-                showMessage(getString(R.string.failed_receive_address), 2000);
+            ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
+            int walletOffset = mBitcoin.walletOffsetForViewID(walletView.getId());
+            if(walletOffset == -1)
+                showMessage(getString(R.string.failed_receive_address_qr), 2000);
             else
             {
-                // Generate QR Image
-                Bitmap bitmap = mBitcoin.qrCode(receiveAddress);
+                String receiveAddress = mBitcoin.getNextReceiveAddress(walletOffset, 0);
 
-                if(bitmap == null)
-                    showMessage(getString(R.string.failed_receive_address_qr), 2000);
+                if(receiveAddress == null)
+                    showMessage(getString(R.string.failed_receive_address), 2000);
                 else
                 {
-                    LayoutInflater inflater = getLayoutInflater();
-                    ViewGroup contentView = findViewById(R.id.content);
+                    // Generate QR Image
+                    Bitmap bitmap = mBitcoin.qrCode(receiveAddress);
 
-                    contentView.removeAllViews();
-
-                    ViewGroup receiveView = (ViewGroup)inflater.inflate(R.layout.receive, contentView, false);
-                    ((ImageView)receiveView.findViewById(R.id.addressImage)).setImageBitmap(bitmap);
-                    ((TextView)receiveView.findViewById(R.id.addressText)).setText(receiveAddress);
-                    contentView.addView(receiveView);
-
-                    ActionBar actionBar = getSupportActionBar();
-                    if(actionBar != null)
+                    if(bitmap == null)
+                        showMessage(getString(R.string.failed_receive_address_qr), 2000);
+                    else
                     {
-                        actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
-                        actionBar.setTitle(" " + getResources().getString(R.string.receive));
-                        actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
-                    }
+                        synchronized(this)
+                        {
+                            LayoutInflater inflater = getLayoutInflater();
+                            ViewGroup contentView = findViewById(R.id.content);
 
-                    mMode = Mode.RECEIVE;
+                            contentView.removeAllViews();
+
+                            ViewGroup receiveView = (ViewGroup)inflater.inflate(R.layout.receive, contentView, false);
+                            ((ImageView)receiveView.findViewById(R.id.addressImage)).setImageBitmap(bitmap);
+                            ((TextView)receiveView.findViewById(R.id.addressText)).setText(receiveAddress);
+                            contentView.addView(receiveView);
+
+                            ActionBar actionBar = getSupportActionBar();
+                            if(actionBar != null)
+                            {
+                                actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
+                                actionBar.setTitle(" " + getResources().getString(R.string.receive));
+                                actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+                            }
+
+                            mMode = Mode.RECEIVE;
+                        }
+                    }
                 }
             }
             break;
@@ -1260,13 +1292,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.walletHistory:
         {
             ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
-            displayWalletHistory((int)wallet.getTag());
+            displayWalletHistory((int)wallet.getId());
             break;
         }
         case R.id.walletEdit:
         {
             ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
-            displayEditWallet((int)wallet.getTag());
+            displayEditWallet((int)wallet.getId());
             break;
         }
         case R.id.walletLocked:

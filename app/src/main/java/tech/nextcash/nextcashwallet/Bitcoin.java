@@ -205,6 +205,26 @@ public class Bitcoin
         return result;
     }
 
+    public Wallet walletForViewID(int pViewID)
+    {
+        for(Wallet wallet : wallets)
+            if(wallet.viewID == pViewID)
+                return wallet;
+        return null;
+    }
+
+    public int walletOffsetForViewID(int pViewID)
+    {
+        int offset = 0;
+        for(Wallet wallet : wallets)
+        {
+            if(wallet.viewID == pViewID)
+                return offset;
+            offset++;
+        }
+        return -1;
+    }
+
     private native int getChangeID();
 
     // Return the number of keys in the key store

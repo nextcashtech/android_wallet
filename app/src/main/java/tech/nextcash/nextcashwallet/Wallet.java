@@ -9,6 +9,7 @@ public class Wallet
     public Transaction[] transactions, updatedTransactions;
     public long lastUpdated;
     public int blockHeight;
+    public int viewID;
 
     public Wallet()
     {
@@ -16,6 +17,7 @@ public class Wallet
         balance = 0;
         lastUpdated = 0;
         blockHeight = 0;
+        viewID = 0;
     }
 
     private static native void setupJNI();

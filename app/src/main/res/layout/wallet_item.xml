@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
+    android:id="@+id/walletItem"
     android:padding="10dp"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -94,6 +95,7 @@
                 android:layout_alignParentTop="true"
                 android:layout_toStartOf="@+id/walletReceive"
                 android:src="@drawable/ic_send_black_36dp"
+                android:padding="5dp"
                 android:layout_marginEnd="5dp"
                 android:contentDescription="@string/send"
                 android:onClick="onClick"/>
