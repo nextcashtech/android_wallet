@@ -58,7 +58,6 @@
             android:src="@drawable/ic_lock_white_36dp"
             android:padding="5dp"
             android:contentDescription="@string/locked"
-            android:onClick="onClick"
             android:visibility="gone"/>
 
         <TextView
@@ -148,6 +147,7 @@
             android:padding="5dp"
             android:layout_marginBottom="5dp"
             android:gravity="center_vertical"
+            android:visibility="gone"
             android:text="@string/locked_message"/>
 
         <LinearLayout

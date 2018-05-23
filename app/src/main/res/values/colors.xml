@@ -12,4 +12,5 @@
     <color name="rowShade">#feee</color>
     <color name="warningBackground">#fec1</color>
     <color name="warningText">#fc66</color>
+    <color name="highlight">#fff4</color>
 </resources>

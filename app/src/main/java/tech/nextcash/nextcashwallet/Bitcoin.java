@@ -252,6 +252,8 @@ public class Bitcoin
 
     private native synchronized boolean updateWallet(Wallet pWallet, int pOffset);
 
+    public native FullTransaction getTransaction(int pWalletOffset, String pID);
+
     public native boolean setName(int pOffset, String pName);
 
     public static final int BIP0044_DERIVATION = 0;

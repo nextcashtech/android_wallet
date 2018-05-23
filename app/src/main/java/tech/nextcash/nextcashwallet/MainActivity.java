@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification;
 
     private enum Mode { LOADING, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, VERIFY_SEED, BACKUP_WALLET,
-      RECOVER_WALLET, EDIT_WALLET, HISTORY, RECEIVE, SEND, SETUP, AUTHORIZE }
+      RECOVER_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, SEND, SETUP, AUTHORIZE }
     private Mode mMode;
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private AuthorizedTask mAuthorizedTask;
@@ -703,6 +703,108 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
+    public void displayTransaction(FullTransaction pTransaction)
+    {
+        synchronized(this)
+        {
+            LayoutInflater inflater = getLayoutInflater();
+            ViewGroup contentView = findViewById(R.id.content);
+
+            contentView.removeAllViews();
+
+            findViewById(R.id.progress).setVisibility(View.GONE);
+
+            ActionBar actionBar = getSupportActionBar();
+            if(actionBar != null)
+            {
+                actionBar.setIcon(null);
+                actionBar.setTitle(" " + getResources().getString(R.string.transaction));
+                actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+            }
+
+            ViewGroup transactionView = (ViewGroup)inflater.inflate(R.layout.transaction, contentView, false);
+
+            ((TextView)transactionView.findViewById(R.id.id)).setText(pTransaction.hash);
+
+            long amount = pTransaction.amount();
+            TextView amountText = transactionView.findViewById(R.id.amount);
+            amountText.setText(Bitcoin.amountText(amount, mFiatRate));
+            if(amount > 0)
+                amountText.setTextColor(getResources().getColor(R.color.colorPositive));
+            else
+                amountText.setTextColor(getResources().getColor(R.color.colorNegative));
+
+            // Inputs
+            ViewGroup inputsView = transactionView.findViewById(R.id.inputs);
+            int offset = 0;
+            for(Input input : pTransaction.inputs)
+            {
+                ViewGroup inputView = (ViewGroup)inflater.inflate(R.layout.input, inputsView, false);
+
+                ((TextView)inputView.findViewById(R.id.title)).setText(String.format(Locale.getDefault(), "%s %d",
+                  getString(R.string.input), offset));
+
+                ((TextView)inputView.findViewById(R.id.outpoint)).setText(String.format(Locale.getDefault(), "%s %s %d",
+                  input.outpointID, getString(R.string.index), input.outpointIndex));
+
+                if(input.address != null && input.address.length() > 0)
+                    ((TextView)inputView.findViewById(R.id.address)).setText(input.address);
+                else
+                {
+                    inputView.findViewById(R.id.addressTitle).setVisibility(View.GONE);
+                    inputView.findViewById(R.id.address).setVisibility(View.GONE);
+                }
+
+                if(input.amount != 0)
+                {
+                    inputView.findViewById(R.id.body).setBackgroundColor(getResources().getColor(R.color.highlight));
+                    TextView inputAmountText = inputView.findViewById(R.id.amount);
+                    inputAmountText.setText(Bitcoin.amountText(input.amount, mFiatRate));
+                    inputAmountText.setTextColor(getResources().getColor(R.color.colorNegative));
+                }
+                else
+                    inputView.findViewById(R.id.amountGroup).setVisibility(View.GONE);
+
+                inputsView.addView(inputView);
+                offset++;
+            }
+
+            // Outputs
+            ViewGroup outputsView = transactionView.findViewById(R.id.outputs);
+            offset = 0;
+            for(Output output : pTransaction.outputs)
+            {
+                ViewGroup outputView = (ViewGroup)inflater.inflate(R.layout.output, outputsView, false);
+
+                ((TextView)outputView.findViewById(R.id.title)).setText(String.format(Locale.getDefault(),
+                  "%s %d", getString(R.string.output), offset));
+
+                if(output.related)
+                    outputView.findViewById(R.id.body).setBackgroundColor(getResources().getColor(R.color.highlight));
+
+                if(output.address != null && output.address.length() > 0)
+                    ((TextView)outputView.findViewById(R.id.address)).setText(output.address);
+                else
+                {
+                    outputView.findViewById(R.id.addressTitle).setVisibility(View.GONE);
+                    outputView.findViewById(R.id.address).setVisibility(View.GONE);
+                }
+
+                TextView outputAmountText = outputView.findViewById(R.id.amount);
+                outputAmountText.setText(Bitcoin.amountText(output.amount, mFiatRate));
+                if(output.related)
+                    outputAmountText.setTextColor(getResources().getColor(R.color.colorPositive));
+
+                outputsView.addView(outputView);
+                offset++;
+            }
+
+            contentView.addView(transactionView);
+
+            mMode = Mode.TRANSACTION;
+        }
+    }
+
     public void displayAddress(String pText, Bitmap pQRCode)
     {
         if(pText == null || pQRCode == null)
@@ -1097,10 +1199,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             transaction.updateView(this, transactionView, mFiatRate);
 
             // Set tag with transaction offset
-            if(transaction.block == null)
-                transactionView.setTag(pendingCount - 1);
-            else
-                transactionView.setTag(recentCount - 1);
+            transactionView.setTag(transaction.hash);
 
             transactionViewGroup.addView(transactionView);
         }
@@ -1393,17 +1492,35 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case R.id.walletHeader: // Expand/Compress wallet
         {
-            ViewGroup wallet = (ViewGroup)pView.getParent();
-            if(wallet != null)
+            ViewGroup walletView = (ViewGroup)pView.getParent();
+            if(walletView != null)
             {
-                View walletDetails = wallet.findViewById(R.id.walletDetails);
+                View walletDetails = walletView.findViewById(R.id.walletDetails);
                 if(walletDetails != null)
                 {
                     int visibility = walletDetails.getVisibility();
                     if(visibility == View.GONE)
                     {
+                        mCurrentWalletViewID = walletView.getId();
+
                         ((ImageView)pView.findViewById(R.id.walletExpand)).setImageResource(R.drawable.ic_expand_less_white_36dp);
                         walletDetails.setVisibility(View.VISIBLE);
+
+                        // Make all others gone
+                        ViewGroup content = findViewById(R.id.content);
+
+                        synchronized(this)
+                        {
+                            synchronized(mBitcoin)
+                            {
+                                for(Wallet wallet : mBitcoin.wallets)
+                                    if(wallet.viewID != 0 && wallet.viewID != mCurrentWalletViewID)
+                                    {
+                                        ViewGroup otherWalletView = content.findViewById(wallet.viewID);
+                                        otherWalletView.findViewById(R.id.walletDetails).setVisibility(View.GONE);
+                                    }
+                            }
+                        }
                     }
                     else
                     {
@@ -1464,12 +1581,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayEditWallet(wallet.getId());
             break;
         }
-        case R.id.walletLocked:
-            showMessage(getString(R.string.locked_message), 2000);
-            break;
         case R.id.walletTransaction:
-            // TODO Show transaction details
+        {
+            FullTransaction transaction = mBitcoin.getTransaction(mBitcoin.walletOffsetForViewID(mCurrentWalletViewID),
+              (String)pView.getTag());
+            displayTransaction(transaction);
             break;
+        }
         case R.id.addressText:
         {
             ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);

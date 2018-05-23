@@ -68,9 +68,7 @@ public class Transaction
               "%1$tY-%1$tm-%1$td", date * 1000));
 
         if(block == null)
-        {
             ((TextView)pView.findViewById(R.id.count)).setText(String.format(Locale.getDefault(), "%d", count));
-        }
         else if(count > 9)
             ((TextView)pView.findViewById(R.id.count)).setText(pContext.getString(R.string.nine_plus));
         else
