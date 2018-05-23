@@ -7,8 +7,8 @@ import android.util.Log;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
+import com.google.zxing.common.BitArray;
 import com.google.zxing.common.BitMatrix;
-import com.journeyapps.barcodescanner.BarcodeEncoder;
 
 import java.util.Locale;
 
@@ -17,9 +17,10 @@ import java.util.Locale;
 public class Bitcoin
 {
     private static final String logTag = "Bitcoin";
-    private static final int sExampleBlockHeight = 526256;
-    private static final long sExampleTime = 1523978805;
+    private static final int sSampleBlockHeight = 526256;
+    private static final long sSampleTime = 1523978805;
     private static final long sSecondsPerBlock = 600;
+    private static final int sQRWidth = 200;
 
     private long mHandle; // Used by JNI
     private boolean mLoaded;
@@ -66,8 +67,8 @@ public class Bitcoin
     public int estimatedBlockHeight()
     {
         int height = blockHeight();
-        if(height < sExampleBlockHeight)
-            return sExampleBlockHeight + (int)(((System.currentTimeMillis() / 1000) - sExampleTime) / sSecondsPerBlock);
+        if(height < sSampleBlockHeight)
+            return sSampleBlockHeight + (int)(((System.currentTimeMillis() / 1000) - sSampleTime) / sSecondsPerBlock);
         else
         {
             Block block = getBlockFromHeight(height);
@@ -122,24 +123,41 @@ public class Bitcoin
 
     public Bitmap qrCode(String pText)
     {
-        Bitmap result;
         MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
 
         try
         {
             BitMatrix bitMatrix = multiFormatWriter.encode(pText, BarcodeFormat.QR_CODE,
-              200,200);
-            BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
-            result = barcodeEncoder.createBitmap(bitMatrix);
+              sQRWidth,sQRWidth);
+            Bitmap bitmap = Bitmap.createBitmap(sQRWidth, sQRWidth, Bitmap.Config.ALPHA_8);
+            BitArray rowBits = new BitArray(sQRWidth);
+            int row[] = new int[sQRWidth];
+            int on = 0xffffffff;
+
+            for(int y = 0; y < sQRWidth; y++)
+            {
+                rowBits = bitMatrix.getRow(y, rowBits);
+                for(int x = 0; x < sQRWidth; x++)
+                {
+                    if(rowBits.get(x))
+                        row[x] = on;
+                    else
+                        row[x] = 0;
+                }
+                bitmap.setPixels(row, 0, sQRWidth, 0, y, sQRWidth, 1);
+            }
+
+            return bitmap;
         }
         catch (WriterException pException)
         {
             Log.e(logTag, String.format("Failed to create QR Code : %s", pException.toString()));
             return null;
         }
-
-        return result;
     }
+
+    public native String encodePaymentCode(String pAddressHash, int pFormat, int pProtocol);
+    public native PaymentRequest decodePaymentCode(String pPaymentCode);
 
     public Wallet[] wallets;
 

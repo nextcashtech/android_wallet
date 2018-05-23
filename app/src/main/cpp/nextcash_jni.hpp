@@ -119,6 +119,18 @@ extern "C"
                                                                                               jint pOffset,
                                                                                               jint pIndex);
 
+    JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_encodePaymentCode(JNIEnv *pEnvironment,
+                                                                                          jobject pObject,
+                                                                                          jstring pAddress,
+                                                                                          jint pFormat,
+                                                                                          jint pProtocol);
+
+    JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_decodePaymentCode(JNIEnv *pEnvironment,
+                                                                                          jobject pObject,
+                                                                                          jstring pPaymentCode);
+
+
+
 
 }
 

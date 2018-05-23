@@ -51,8 +51,11 @@
     <string name="nextcash_link">https://nextcash.tech</string>
     <string name="title_network_name">Network Name</string>
     <string name="title_open_source">Open Source Licenses</string>
-    <string name="secp256k1">
+    <string name="secp256k1_library">
         Cryptographic Library - secp256k1 Copyright &#169; 2013 Pieter Wuille
+    </string>
+    <string name="zxing_library">
+            QR Library - Copyright &#169; Zebra Crossing (zxing) https://github.com/zxing/zxing
     </string>
 
     <string name="wallet">Wallet</string>
@@ -77,6 +80,8 @@
     <string name="failed_update_name">Failed to update name</string>
     <string name="success_remove_wallet">Successfully removed wallet</string>
     <string name="failed_remove_wallet">Failed to remove wallet</string>
+    <string name="failed_generate_address">Failed to generate address</string>
+    <string name="invalid_payment_code">Invalid Payment Code</string>
     <string name="locked">View Only</string>
     <string name="locked_message">
         View Only. Wallet has a &quot;public only&quot; key and can not spend.
@@ -173,6 +178,25 @@
     <string name="failed_invalid_seed">Invalid seed</string>
     <string name="failed_retrieve_seed">Failed to retrieve seed</string>
     <string name="send_payment">Send Payment</string>
+    <string name="payment_details">Payment Details</string>
+    <string name="scan_payment_code">Scan Payment Code</string>
+    <string name="legacy">Legacy</string>
+    <string name="cash">Cash</string>
+    <string name="address">Address</string>
+    <string name="amount_request">Amount Request</string>
+    <string name="secure">Secure</string>
+    <string name="payment_code">Payment Code</string>
+    <string name="description">Description</string>
+    <string name="not_supported">Not Supported Yet</string>
+    <string name="legacy_warning">
+        This is a &quot;Legacy&quot; address! Do not send Bitcoin Cash to it unless you are sure
+        that is what they want Bitcoin Cash (BCH) and not Bitcoin Core (BTC).
+    </string>
+    <string-array name="amount_units">
+        <item>USD</item>
+        <item>bits</item>
+        <item>bitcoins</item>
+    </string-array>
 
     <string name="mnemonic_seed_entropy">Entropy</string>
     <string-array name="mnemonic_seed_length_titles">
@@ -185,5 +209,6 @@
         <item>28</item>
         <item>32</item>
     </integer-array>
+
 
 </resources>

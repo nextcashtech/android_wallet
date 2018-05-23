@@ -68,6 +68,7 @@
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             android:gravity="center_vertical"
             android:padding="5dp"
+            android:layout_marginStart="5dp"
             android:textColor="#fff"/>
 
     </LinearLayout>

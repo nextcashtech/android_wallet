@@ -11,4 +11,5 @@
     <item type="id" name="authorize" />
     <item type="id" name="verifySeedSaved" />
     <item type="id" name="skipCheckSeed" />
+    <item type="id" name="sendPayment" />
 </resources>

@@ -44,6 +44,18 @@ extern "C"
     jfieldID sBlockHashID = NULL;
     jfieldID sBlockTimeID = NULL;
 
+    // PaymentRequest
+    jclass sPaymentRequestClass = NULL;
+    jmethodID sPaymentRequestConstructor = NULL;
+    jfieldID sPaymentRequestCodeID = NULL;
+    jfieldID sPaymentRequestFormatID = NULL;
+    jfieldID sPaymentRequestProtocolID = NULL;
+    jfieldID sPaymentRequestAddressID = NULL;
+    jfieldID sPaymentRequestAmountID = NULL;
+    jfieldID sPaymentRequestDescriptionID = NULL;
+    jfieldID sPaymentRequestSecureID = NULL;
+
+
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_NextCash_destroy(JNIEnv *pEnvironment,
                                                                               jobject pObject)
     {
@@ -73,8 +85,7 @@ extern "C"
     void setupTransactionClass(JNIEnv *pEnvironment)
     {
         sTransactionClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Transaction");
-        sTransactionConstructor = pEnvironment->GetMethodID(sTransactionClass, "<init>",
-          "()V");
+        sTransactionConstructor = pEnvironment->GetMethodID(sTransactionClass, "<init>", "()V");
         sTransactionHashID = pEnvironment->GetFieldID(sTransactionClass, "hash",
           "Ljava/lang/String;");
         sTransactionBlockID = pEnvironment->GetFieldID(sTransactionClass, "block",
@@ -87,14 +98,28 @@ extern "C"
     void setupBlockClass(JNIEnv *pEnvironment)
     {
         sBlockClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Block");
-        sBlockConstructor = pEnvironment->GetMethodID(sBlockClass, "<init>",
+        sBlockConstructor = pEnvironment->GetMethodID(sBlockClass, "<init>", "()V");
+        sBlockHeightID = pEnvironment->GetFieldID(sBlockClass, "height", "I");
+        sBlockHashID = pEnvironment->GetFieldID(sBlockClass, "hash", "Ljava/lang/String;");
+        sBlockTimeID = pEnvironment->GetFieldID(sBlockClass, "time", "J");
+    }
+
+    void setupPaymentRequestClass(JNIEnv *pEnvironment)
+    {
+        sPaymentRequestClass =
+          pEnvironment->FindClass("tech/nextcash/nextcashwallet/PaymentRequest");
+        sPaymentRequestConstructor = pEnvironment->GetMethodID(sPaymentRequestClass, "<init>",
           "()V");
-        sBlockHeightID = pEnvironment->GetFieldID(sBlockClass, "height",
-          "I");
-        sBlockHashID = pEnvironment->GetFieldID(sBlockClass, "hash",
+        sPaymentRequestCodeID = pEnvironment->GetFieldID(sPaymentRequestClass, "code",
           "Ljava/lang/String;");
-        sBlockTimeID = pEnvironment->GetFieldID(sBlockClass, "time",
-          "J");
+        sPaymentRequestFormatID = pEnvironment->GetFieldID(sPaymentRequestClass, "format", "I");
+        sPaymentRequestProtocolID = pEnvironment->GetFieldID(sPaymentRequestClass, "protocol", "I");
+        sPaymentRequestAddressID = pEnvironment->GetFieldID(sPaymentRequestClass, "address",
+          "Ljava/lang/String;");
+        sPaymentRequestAmountID = pEnvironment->GetFieldID(sPaymentRequestClass, "amount", "J");
+        sPaymentRequestDescriptionID = pEnvironment->GetFieldID(sPaymentRequestClass, "description",
+          "Ljava/lang/String;");
+        sPaymentRequestSecureID = pEnvironment->GetFieldID(sPaymentRequestClass, "secure", "Z");
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setupJNI(JNIEnv *pEnvironment,
@@ -980,5 +1005,111 @@ extern "C"
                 }
 
         return NULL;
+    }
+
+    JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_encodePaymentCode(JNIEnv *pEnvironment,
+                                                                                          jobject pObject,
+                                                                                          jstring pAddress,
+                                                                                          jint pFormat,
+                                                                                          jint pProtocol)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return NULL;
+
+        if(pProtocol != 1)
+            return NULL; // Not supported
+
+        BitCoin::PaymentRequest::Format format = BitCoin::PaymentRequest::Format::INVALID;
+
+        switch(pFormat)
+        {
+            case 0: // INVALILD
+                return NULL;
+            case 1: // Legacy
+                format = BitCoin::PaymentRequest::Format::LEGACY;
+                break;
+            case 2: // Cash
+                format = BitCoin::PaymentRequest::Format::CASH;
+                break;
+        }
+
+        // Parse
+        const char *addressHashHex = pEnvironment->GetStringUTFChars(pAddress, NULL);
+        NextCash::String result = BitCoin::encodePaymentCode(addressHashHex, format,
+          BitCoin::MAINNET);
+        pEnvironment->ReleaseStringUTFChars(pAddress, addressHashHex);
+
+        return pEnvironment->NewStringUTF(result.text());
+    }
+
+    JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_decodePaymentCode(JNIEnv *pEnvironment,
+                                                                                          jobject pObject,
+                                                                                          jstring pPaymentCode)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return NULL;
+
+        // Parse
+        const char *paymentCode = pEnvironment->GetStringUTFChars(pPaymentCode, NULL);
+        BitCoin::PaymentRequest request = BitCoin::decodePaymentCode(paymentCode);
+        pEnvironment->ReleaseStringUTFChars(pPaymentCode, paymentCode);
+
+        if(request.network != BitCoin::MAINNET)
+            request.format = BitCoin::PaymentRequest::Format::INVALID;
+
+        // Create result object
+        setupPaymentRequestClass(pEnvironment);
+        jobject result = pEnvironment->NewObject(sPaymentRequestClass, sPaymentRequestConstructor);
+
+        // Set code
+        pEnvironment->SetObjectField(result, sPaymentRequestCodeID, pPaymentCode);
+
+        // Set format
+        switch(request.format)
+        {
+            case BitCoin::PaymentRequest::Format::INVALID:
+                pEnvironment->SetIntField(result, sPaymentRequestFormatID, (jint)0);
+                break;
+            case BitCoin::PaymentRequest::Format::LEGACY:
+                pEnvironment->SetIntField(result, sPaymentRequestFormatID, (jint)1);
+                break;
+            case BitCoin::PaymentRequest::Format::CASH:
+                pEnvironment->SetIntField(result, sPaymentRequestFormatID, (jint)2);
+                break;
+        }
+
+        // Set protocol
+        switch(request.protocol)
+        {
+            case BitCoin::PaymentRequest::Protocol::NONE:
+                pEnvironment->SetIntField(result, sPaymentRequestProtocolID, (jint)0);
+                break;
+            case BitCoin::PaymentRequest::Protocol::ADDRESS:
+                pEnvironment->SetIntField(result, sPaymentRequestProtocolID, (jint)1);
+                break;
+            case BitCoin::PaymentRequest::Protocol::REQUEST_AMOUNT:
+                pEnvironment->SetIntField(result, sPaymentRequestProtocolID, (jint)2);
+                break;
+        }
+
+        // Set address
+        if(!request.address.isEmpty())
+            pEnvironment->SetObjectField(result, sPaymentRequestAddressID,
+              pEnvironment->NewStringUTF(request.address.hex()));
+
+        // Set amount
+        pEnvironment->SetLongField(result, sPaymentRequestAmountID, (jlong)request.amount);
+
+        // Set description
+        if(request.description)
+            pEnvironment->SetObjectField(result, sPaymentRequestDescriptionID,
+              pEnvironment->NewStringUTF(request.description));
+
+        // Set secure
+        pEnvironment->SetBooleanField(result, sPaymentRequestSecureID, (jboolean)request.secure);
+
+        return result;
     }
 }

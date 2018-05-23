@@ -177,7 +177,17 @@
                 android:id="@+id/openSourceLicense_1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/secp256k1"
+                android:text="@string/secp256k1_library"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="10dp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Small"/>
+
+            <TextView
+                android:id="@+id/openSourceLicense_2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/zxing_library"
+                android:autoLink="web"
                 android:layout_marginLeft="20dp"
                 android:layout_marginRight="10dp"
                 android:textAppearance="@style/TextAppearance.AppCompat.Small"/>

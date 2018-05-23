@@ -10,4 +10,6 @@
     <color name="colorPositive">#f4b4</color>
     <color name="colorNegative">#fc66</color>
     <color name="rowShade">#feee</color>
+    <color name="warningBackground">#fec1</color>
+    <color name="warningText">#fc66</color>
 </resources>
