@@ -166,7 +166,7 @@ public class Bitcoin
         mLoaded = true;
     }
 
-    public boolean update(boolean pForce)
+    public synchronized boolean update(boolean pForce)
     {
         if(!mLoaded)
             return false;
@@ -188,6 +188,8 @@ public class Bitcoin
         // Check if wallets needs to be expanded
         if(wallets.length != count)
         {
+            Log.i(logTag, String.format("Allocating %d wallets", count));
+
             Wallet[] newWallets = new Wallet[count];
 
             if(wallets.length < count) // don't copy if one was removed
@@ -208,7 +210,7 @@ public class Bitcoin
         // Update wallets
         boolean result = true;
         for(int offset = 0; offset < wallets.length; offset++)
-            if(!updateWallet(offset))
+            if(!updateWallet(wallets[offset], offset))
             {
                 mNeedsUpdate = true;
                 result = false;
@@ -248,7 +250,7 @@ public class Bitcoin
     // Return the number of keys in the key store
     public native int keyCount();
 
-    private native boolean updateWallet(int pOffset);
+    private native synchronized boolean updateWallet(Wallet pWallet, int pOffset);
 
     public native boolean setName(int pOffset, String pName);
 

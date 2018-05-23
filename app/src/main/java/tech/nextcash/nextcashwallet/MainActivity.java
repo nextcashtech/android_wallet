@@ -425,85 +425,89 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         View view;
         boolean addButtonNeeded = false, addView, rebuild = mMode != Mode.WALLETS;
 
-        for(Wallet wallet : mBitcoin.wallets)
-            if(wallet.viewID == 0)
-                rebuild = true;
-
-        mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
-
-        findViewById(R.id.progress).setVisibility(View.GONE);
-
-        if(rebuild)
+        synchronized(mBitcoin)
         {
-            Log.i(logTag, String.format("Rebuilding %d wallets", mBitcoin.wallets.length));
-
-            // Rebuild all wallets
-            addButtonNeeded = true;
-            content.removeAllViews();
-
-            // Setup action bar
-            ActionBar actionBar = getSupportActionBar();
-            if(actionBar != null)
-            {
-                actionBar.setIcon(null);
-                actionBar.setTitle(getResources().getString(R.string.app_name));
-                actionBar.setDisplayHomeAsUpEnabled(false); // Show the Up button in the action bar.
-            }
-        }
-
-        if(mBitcoin.wallets != null)
-        {
-            Log.i(logTag, String.format("Updating %d wallets", mBitcoin.wallets.length));
-
             for(Wallet wallet : mBitcoin.wallets)
+                if(wallet.viewID == 0)
+                    rebuild = true;
+
+            mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
+
+            findViewById(R.id.progress).setVisibility(View.GONE);
+
+            if(rebuild)
             {
-                addView = false;
-                view = null;
+                Log.i(logTag, String.format("Rebuilding %d wallets", mBitcoin.wallets.length));
 
-                if(!rebuild && wallet.viewID != 0)
-                    view = content.findViewById(wallet.viewID);
+                // Rebuild all wallets
+                addButtonNeeded = true;
+                content.removeAllViews();
 
-                if(view == null)
+                // Setup action bar
+                ActionBar actionBar = getSupportActionBar();
+                if(actionBar != null)
                 {
-                    // Remove add wallet button
-                    view = content.findViewWithTag(R.id.addWallet);
-                    if(view != null)
-                        content.removeView(view);
-                    addButtonNeeded = true;
-
-                    // Add wallet
-                    view = inflater.inflate(R.layout.wallet_item, content, false);
-                    wallet.viewID = View.generateViewId();
-                    view.setId(wallet.viewID);
-                    addView = true;
-
-                    view.findViewById(R.id.walletDetails).setVisibility(View.GONE);
+                    actionBar.setIcon(null);
+                    actionBar.setTitle(getResources().getString(R.string.app_name));
+                    actionBar.setDisplayHomeAsUpEnabled(false); // Show the Up button in the action bar.
                 }
+            }
 
-                ((TextView)view.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance, mFiatRate));
+            if(mBitcoin.wallets != null)
+            {
+                Log.i(logTag, String.format("Updating %d wallets", mBitcoin.wallets.length));
 
-                if(mFiatRate != 0.0)
+                for(Wallet wallet : mBitcoin.wallets)
                 {
-                    ((TextView)view.findViewById(R.id.walletBitcoinBalance)).setText(String.format(Locale.getDefault(),
-                      "%,.5f BCH", Bitcoin.bitcoins(wallet.balance)));
+                    addView = false;
+                    view = null;
+
+                    if(!rebuild && wallet.viewID != 0)
+                        view = content.findViewById(wallet.viewID);
+
+                    if(view == null)
+                    {
+                        // Remove add wallet button
+                        view = content.findViewWithTag(R.id.addWallet);
+                        if(view != null)
+                            content.removeView(view);
+                        addButtonNeeded = true;
+
+                        // Add wallet
+                        view = inflater.inflate(R.layout.wallet_item, content, false);
+                        wallet.viewID = View.generateViewId();
+                        view.setId(wallet.viewID);
+                        addView = true;
+
+                        view.findViewById(R.id.walletDetails).setVisibility(View.GONE);
+                    }
+
+                    ((TextView)view.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance,
+                      mFiatRate));
+
+                    if(mFiatRate != 0.0)
+                    {
+                        ((TextView)view.findViewById(R.id.walletBitcoinBalance)).setText(String.format(Locale.getDefault(),
+                          "%,.5f BCH", Bitcoin.bitcoins(wallet.balance)));
+                    }
+
+                    ((TextView)view.findViewById(R.id.walletName)).setText(wallet.name);
+
+                    if(!wallet.isPrivate)
+                    {
+                        view.findViewById(R.id.walletLocked).setVisibility(View.VISIBLE);
+                        view.findViewById(R.id.walletSend).setVisibility(View.GONE);
+                        view.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
+                    }
+
+                    transactions = view.findViewById(R.id.walletTransactions);
+                    populateTransactions(transactions, wallet.transactions, 3);
+
+                    if(addView)
+                        content.addView(view);
+
+                    alignTransactions(transactions);
                 }
-
-                ((TextView)view.findViewById(R.id.walletName)).setText(wallet.name);
-
-                if(!wallet.isPrivate)
-                {
-                    view.findViewById(R.id.walletLocked).setVisibility(View.VISIBLE);
-                    view.findViewById(R.id.walletSend).setVisibility(View.GONE);
-                    view.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
-                }
-
-                transactions = view.findViewById(R.id.walletTransactions);
-                populateTransactions(transactions, wallet.transactions, 3);
-
-                if(addView)
-                    content.addView(view);
-
-                alignTransactions(transactions);
             }
         }
 

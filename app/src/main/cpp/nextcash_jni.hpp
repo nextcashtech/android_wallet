@@ -82,7 +82,8 @@ extern "C"
                                                                                  jobject pObject);
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_updateWallet(JNIEnv *pEnvironment,
-                                                                                      jobject pObject,
+                                                                                      jobject pBitcoin,
+                                                                                      jobject pWallet,
                                                                                       jint pOffset);
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setName(JNIEnv *pEnvironment,
