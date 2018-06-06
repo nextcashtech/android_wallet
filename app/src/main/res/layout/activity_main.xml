@@ -60,19 +60,11 @@
                 android:layout_alignParentStart="true"/>
 
             <TextView
-                android:id="@+id/peersLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/peers"
-                android:textAlignment="textEnd"
-                android:layout_alignParentEnd="true"/>
-
-            <TextView
                 android:id="@+id/peerCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="5dp"
-                android:layout_toStartOf="@id/peersLabel"/>
+                android:layout_alignParentEnd="true"/>
 
         </RelativeLayout>
 

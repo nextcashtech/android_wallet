@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Vector;
 
@@ -41,6 +43,8 @@ public class BitcoinService extends Service
     private int mNextNotificationID;
     private Notification mProgressNotification;
     private int mStartBlockHeight, mStartMerkleHeight;
+    private boolean mIsStopped;
+    private HashMap<String, Integer> mTransactionNotificationIDs;
 
     public class LocalBinder extends Binder
     {
@@ -66,6 +70,8 @@ public class BitcoinService extends Service
         mBitcoinThread = null;
         mMonitorThread= null;
         mCallBacks = new CallBacks[0];
+        mIsStopped = false;
+        mTransactionNotificationIDs = new HashMap<>();
 
         mBitcoinRunnable = new Runnable()
         {
@@ -73,13 +79,23 @@ public class BitcoinService extends Service
             public void run()
             {
                 Log.i(logTag, "Bitcoin thread starting");
+
+                // Prepare notifications
+                mIsStopped = false;
                 register();
                 updateProgressNotification();
                 startForeground(sProgressNotificationID, mProgressNotification);
+
+                // Load daemon
                 mBitcoin.setPath(getFilesDir().getPath() + "/bitcoin");
                 mBitcoin.load();
                 onLoaded();
+
+                // Run daemon
                 mBitcoin.run(mFinishMode);
+                mIsStopped = true;
+
+                // Finish everything
                 onFinished();
                 clearProgress();
                 Log.i(logTag, "Bitcoin thread finished");
@@ -268,6 +284,9 @@ public class BitcoinService extends Service
 
     private void updateProgressNotification()
     {
+        if(mIsStopped)
+            return;
+
         boolean sync = mBitcoin.isInSync();
         if(sync && mBitcoin.merkleHeight() == mBitcoin.blockHeight())
         {
@@ -308,6 +327,8 @@ public class BitcoinService extends Service
         }
         else if(mBitcoin.isInSync())
         {
+            if(mStartMerkleHeight > mBitcoin.merkleHeight())
+                mStartMerkleHeight = mBitcoin.merkleHeight();
             max = mBitcoin.blockHeight() - mStartMerkleHeight;
             progress = mBitcoin.merkleHeight() - mStartMerkleHeight;
             builder.setContentText(getString(R.string.looking_for_transactions));
@@ -336,7 +357,7 @@ public class BitcoinService extends Service
         notificationManager.notify(sProgressNotificationID, mProgressNotification);
     }
 
-    private void notify(String pTitle, String pText, String pTransactionHash)
+    private void notify(String pTitle, String pText, int pWalletOffset, String pTransactionHash)
     {
         Settings settings = Settings.getInstance(getFilesDir());
         if(settings.containsValue("notify_transactions") &&
@@ -344,7 +365,12 @@ public class BitcoinService extends Service
             return;
 
         Intent intent = new Intent(this, MainActivity.class);
-        // TODO Add intent extra to show specific wallet/transaction
+        intent.setAction("Transaction");
+        Uri.Builder uriBuilder = new Uri.Builder();
+        uriBuilder.encodedPath(pTransactionHash);
+        uriBuilder.appendEncodedPath(String.format(Locale.getDefault(), "%d", pWalletOffset));
+        intent.setData(uriBuilder.build());
+        intent.putExtra("Wallet", pWalletOffset);
         intent.putExtra("Transaction", pTransactionHash);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
         Bitmap iconBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.icon);
@@ -361,23 +387,32 @@ public class BitcoinService extends Service
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
 
+        int notificationID;
+        String id = String.format(Locale.getDefault(), "%s_%d", pTransactionHash, pWalletOffset);
+        if(mTransactionNotificationIDs.containsKey(id))
+            notificationID = mTransactionNotificationIDs.get(id);
+        else
+        {
+            notificationID = mNextNotificationID++;
+            mTransactionNotificationIDs.put(id, notificationID);
+        }
+
         // notificationId is a unique int for each notification that you must define
-        notificationManager.notify(mNextNotificationID++, builder.build());
+        notificationManager.notify(notificationID, builder.build());
     }
 
     private void clearProgress()
     {
-        if(mProgressNotification != null)
-        {
-            NotificationManagerCompat.from(this).cancel(sProgressNotificationID);
-            mProgressNotification = null;
-        }
+        NotificationManagerCompat.from(this).cancel(sProgressNotificationID);
+        mProgressNotification = null;
+        stopForeground(true);
     }
 
     // Returns true if hash was added to the file.
-    private boolean addToPendingFile(String pHash)
+    private boolean addToPendingFile(String pHash, int pWalletOffset)
     {
         boolean found = false;
+        String id = String.format(Locale.getDefault(), "%s_%d", pHash, pWalletOffset);
 
         try
         {
@@ -393,10 +428,10 @@ public class BitcoinService extends Service
                 if(line == null)
                     break;
 
-                if(line.equals(pHash))
+                if(line.equals(id))
                 {
                     Log.d(logTag, String.format(Locale.getDefault(), "Pending hash found at line %d : %s",
-                      lineNo, pHash));
+                      lineNo, id));
                     found = true;
                     break;
                 }
@@ -413,14 +448,14 @@ public class BitcoinService extends Service
             return false;
         else
         {
-            Log.d(logTag,String.format("Adding pending hash : %s", pHash));
+            Log.d(logTag,String.format("Adding pending hash : %s", id));
 
             // Add hash to file
             try
             {
                 FileOutputStream outFile =
                   new FileOutputStream(getFilesDir().getPath().concat("/pending_hashes"), true);
-                outFile.write(pHash.getBytes());
+                outFile.write(id.getBytes());
                 outFile.write('\n');
             }
             catch(IOException pException)
@@ -433,10 +468,12 @@ public class BitcoinService extends Service
         }
     }
 
-    private void removeFromPendingFile(String pHash)
+    private void removeFromPendingFile(String pHash, int pWalletOffset)
     {
         Vector<String> hashes = new Vector<String>();
         boolean found = false;
+        String id = String.format(Locale.getDefault(), "%s_%d", pHash, pWalletOffset);
+
         try
         {
             // Look in file for hash
@@ -450,7 +487,7 @@ public class BitcoinService extends Service
                 if(line == null)
                     break;
 
-                if(line.equals(pHash))
+                if(line.equals(id))
                     found = true;
                 else
                     hashes.add(line);
@@ -463,7 +500,7 @@ public class BitcoinService extends Service
 
         if(found)
         {
-            Log.d(logTag,String.format("Removing pending hash not found. Adding. : %s", pHash));
+            Log.d(logTag,String.format("Removing pending hash not found. Adding. : %s", id));
 
             // Delete and rewrite file
             File file = new File(getFilesDir().getPath().concat("/pending_hashes"));
@@ -523,7 +560,7 @@ public class BitcoinService extends Service
                                   transaction.hash));
 
                                 // Pending
-                                if(!addToPendingFile(transaction.hash))
+                                if(!addToPendingFile(transaction.hash, offset))
                                     continue; // Already notified about this pending transaction
 
                                 if(transaction.amount > 0)
@@ -537,7 +574,7 @@ public class BitcoinService extends Service
                                   transaction.hash));
 
                                 // Confirmed
-                                removeFromPendingFile(transaction.hash);
+                                removeFromPendingFile(transaction.hash, offset);
 
                                 if(transaction.amount > 0)
                                     title = getString(R.string.confirmed_receive_title);
@@ -548,9 +585,11 @@ public class BitcoinService extends Service
                             for(CallBacks callBacks : mCallBacks)
                                 callBacks.onTransactionUpdate(offset, transaction);
 
-                            notify(title, transaction.description(this), transaction.hash);
+                            notify(title, transaction.description(this), offset, transaction.hash);
                         }
                     }
+
+                    offset++;
                 }
 
                 for(CallBacks callBacks : mCallBacks)

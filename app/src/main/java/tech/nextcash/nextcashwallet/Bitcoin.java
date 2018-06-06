@@ -35,9 +35,24 @@ public class Bitcoin
         mChangeID = -1;
     }
 
-    public static float bitcoins(long pValue)
+    public static double bitcoins(long pSatoshis)
     {
-        return (float)pValue / 100000000;
+        return (double)pSatoshis / 100000000;
+    }
+
+    public static long satoshisFromBitcoins(double pBitcoins)
+    {
+        return (long)(pBitcoins * 100000000.0);
+    }
+
+    public static double bitsFromBitcoins(double pBitcoins)
+    {
+        return pBitcoins * 1000000.0;
+    }
+
+    public static long satoshisFromBits(double pBits)
+    {
+        return (long)(pBits * 100.0);
     }
 
     public static String amountText(long pAmount, double pFiatRate)
@@ -62,6 +77,20 @@ public class Bitcoin
         else
             return String.format(Locale.getDefault(), "%,.5f",
               Bitcoin.bitcoins(Math.abs(pAmount)));
+    }
+
+    public static String satoshiText(long pAmount)
+    {
+        long remaining = Math.abs(pAmount);
+        long bitcoins = remaining / 100000000;
+        remaining -= (bitcoins * 100000000);
+        long sub1 = remaining / 1000000;
+        remaining -= (sub1 * 1000000);
+        long sub2 = remaining / 1000;
+        remaining -= (sub2 * 1000);
+        long sub3 = remaining;
+
+        return String.format(Locale.getDefault(), "%d %02d %03d %03d", bitcoins, sub1, sub2, sub3);
     }
 
     public int estimatedBlockHeight()
@@ -263,8 +292,11 @@ public class Bitcoin
     // Load a key from BIP-0032 encoded text.
     public native int loadKey(String pPassCode, String pEncodedKey, int pDerivationPath, String pName);
 
+    public native String[] getMnemonicWords(String pStartingWith);
+
     // Add a key from a mnemonic seed.
-    public native int addSeed(String pPassCode, String pMnemonicSeed, int pDerivationPath, String pName);
+    public native int addSeed(String pPassCode, String pMnemonicSeed, int pDerivationPath, String pName,
+      boolean pStartNewPass);
 
     public native int removeKey(String pPassCode, int pOffset);
 
@@ -273,12 +305,16 @@ public class Bitcoin
 
     public native boolean hasPassCode();
 
+    public native int sendPayment(int pWalletOffset, String pPassCode, String pPublicKeyHash, long pAmount);
+
     //TODO Generate a mnemonic sentence that can be used to create an HD key.
     //public native String generateMnemonic();
 
     //TODO Create an HD key from the mnemonic sentence and add it to be monitored.
     // If pRecovered is true then the entire block chain will be searched for related transactions.
     //public native void addKeyFromMnemonic(String pMnemonic, boolean pRecovered);
+
+    public native boolean test();
 
     private static native void setupJNI();
 

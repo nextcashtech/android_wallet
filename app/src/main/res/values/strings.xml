@@ -81,6 +81,12 @@
     <string name="success_remove_wallet">Successfully removed wallet</string>
     <string name="failed_remove_wallet">Failed to remove wallet</string>
     <string name="failed_generate_address">Failed to generate address</string>
+    <string name="sent_payment">Sent Payment</string>
+    <string name="failed_send_payment">Failed to send payment</string>
+    <string name="failed_insufficient_funds">Insufficient Funds</string>
+    <string name="failed_invalid_address">Invalid Address</string>
+    <string name="failed_change_address">Change Address Not Found</string>
+    <string name="failed_signing">Failed to Sign Transaction</string>
     <string name="invalid_payment_code">Invalid Payment Code</string>
     <string name="locked">View Only</string>
     <string name="locked_message">
@@ -101,6 +107,7 @@
     <string name="confirmed_transactions">Confirmed Transactions</string>
     <string name="no_transactions">No Transactions</string>
     <string name="amount_title">Amount</string>
+    <string name="bitcoins_amount_title">bitcoins</string>
     <string name="time_title">Time</string>
     <string name="confirms_title">Confirms</string>
     <string name="peers_title">Peers</string>
@@ -155,6 +162,7 @@
     <string name="authorize">Authorize</string>
     <string name="create_wallet">Create Wallet</string>
     <string name="wallet_seed">Wallet Seed</string>
+    <string name="enter_wallet_seed">Enter Wallet Seed</string>
     <string name="wallet_seed_description">
         These words are the &quot;mnemonic seed&quot; for your new wallet.
         You need to write this down and store this in a safe place so you can recover your wallet if
@@ -162,13 +170,20 @@
         No one else can recover your bitcoins for you.
         Anyone who has access to this seed can spend all of your bitcoins.
     </string>
+    <string name="wallet_seed_recover_description">
+        Enter the words in your wallet&apos;s seed in order.
+        Type the beginning of each word and click on the correct word when you see it.
+    </string>
+    <string name="next_word">Next Word</string>
     <string name="wallet_seed_written">
         Press continue when you have written down your &quot;mnemonic seed&quot;.
     </string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
+    <string name="okay">Okay</string>
     <string name="continue_string">Continue</string>
     <string name="check_seed">Check Seed</string>
     <string name="skip_check_seed">Skip (at your own risk)</string>
-    <string name="enter_wallet_seed">Select Seed Words in Order</string>
+    <string name="select_seed_words">Select Seed Words in Order</string>
     <string name="scroll_left_right">Scroll Left and Right</string>
     <string name="seed_doesnt_match">Seed Doesn\'t Match</string>
     <string name="seed_matches">Seed Matches</string>
@@ -177,6 +192,8 @@
     <string name="failed_invalid_passcode">Invalid pass code</string>
     <string name="failed_invalid_seed">Invalid seed</string>
     <string name="failed_retrieve_seed">Failed to retrieve seed</string>
+    <string name="failed_payment_code">Failed to get payment code</string>
+    <string name="failed_payment_amount">Failed to get payment amount</string>
     <string name="send_payment">Send Payment</string>
     <string name="payment_details">Payment Details</string>
     <string name="scan_payment_code">Scan Payment Code</string>
@@ -199,12 +216,19 @@
     </string-array>
     <string name="transaction">Transaction</string>
     <string name="id">ID</string>
+    <string name="version">Version</string>
+    <string name="lock_time">Lock Time</string>
+    <string name="none">None</string>
+    <string name="block">Block</string>
     <string name="inputs">Inputs</string>
     <string name="input">Input</string>
+    <string name="sequence">Sequence</string>
     <string name="index">index</string>
     <string name="outpoint">Outpoint</string>
     <string name="outputs">Outputs</string>
     <string name="output">Output</string>
+    <string name="enter_payment_code">Enter Payment Code/Address</string>
+    <string name="scan">Scan</string>
 
     <string name="mnemonic_seed_entropy">Entropy</string>
     <string-array name="mnemonic_seed_length_titles">

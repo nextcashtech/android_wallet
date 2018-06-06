@@ -14,7 +14,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         android:textStyle="bold"
         android:textAlignment="center"
-        android:text="@string/enter_wallet_seed"/>
+        android:text="@string/select_seed_words"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -50,7 +50,8 @@
             android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp"/>
+            android:layout_margin="10dp"
+            android:animateLayoutChanges="true"/>
     </HorizontalScrollView>
 
 </LinearLayout>

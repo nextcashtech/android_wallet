@@ -15,7 +15,9 @@ import android.os.IBinder;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -33,14 +35,13 @@ import android.widget.TextView;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 
-import org.w3c.dom.Text;
-
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
 
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener, TextWatcher
 {
     public static final String logTag = "MainActivity";
     public static final int SETTINGS_REQUEST_CODE = 20;
@@ -55,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private AuthorizedTask mAuthorizedTask;
     private String mKeyToLoad, mSeed;
+    private boolean mSeedIsRecovered;
     private int mCurrentWalletViewID;
     private boolean mSeedBackupOnly;
     private int mDerivationPathMethodToLoad;
@@ -66,6 +68,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private boolean mServiceIsBound;
     private ServiceConnection mServiceConnection;
     private IntentIntegrator mQRScanner;
+    private long mPaymentAmount;
+    private PaymentRequest mPaymentRequest;
 
 
     public class TransactionRunnable implements Runnable
@@ -240,6 +244,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                       new ComponentName(this, BitcoinJob.class));
                     updateJobInfoBuilder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
                     updateJobInfoBuilder.setPeriodic(syncFrequency * 60 * 1000);
+                    if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+                        updateJobInfoBuilder.setRequiresBatteryNotLow(true);
                     jobScheduler.schedule(updateJobInfoBuilder.build());
                 }
             }
@@ -251,32 +257,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onNewIntent(Intent pIntent)
     {
+        String action = pIntent.getAction();
         Bundle extras = pIntent.getExtras();
 
-        if(extras != null)
-        {
-            if(extras.containsKey("Message"))
-                showMessage(getString(extras.getInt("Message")), 2000);
+        if(action != null && action.equals("Transaction") &&
+          extras != null && extras.containsKey("Wallet") && extras.containsKey("Transaction"))
+            openTransaction(extras.getInt("Wallet"), extras.getString("Transaction"));
 
-            if(extras.containsKey("UpdateWallet"))
-            {
-                if(mBitcoin.isLoaded())
-                {
-                    mBitcoin.update(true);
-                    updateWallets();
-
-                    if(extras.getInt("UpdateWallet") != -1)
-                    {
-                        //TODO Open wallet at specified offset
-                    }
-                }
-            }
-
-            if(extras.containsKey("Transaction"))
-            {
-                // TODO Open Transaction view
-            }
-        }
+        if(action != null && action.equals("Message") &&
+          extras != null && extras.containsKey("Message"))
+            showMessage(getString(extras.getInt("Message")), 2000);
 
         super.onNewIntent(pIntent);
     }
@@ -367,25 +357,33 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
         }
 
-        boolean isLoaded = mBitcoin.isLoaded();
-        boolean exchangeRateUpdated = false;
-        TextView blocks = findViewById(R.id.blockHeight);
-        TextView peerCount = findViewById(R.id.peerCount);
+        double fiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
+        boolean exchangeRateUpdated = fiatRate != mFiatRate;
         TextView exchangeRate = findViewById(R.id.exchangeRate);
+
+        if(fiatRate == 0.0)
+            exchangeRate.setText("");
+        else
+            exchangeRate.setText(String.format(Locale.getDefault(), "1 BCH = $%,d USD", (int)fiatRate));
+
+        boolean isLoaded = mBitcoin.isLoaded();
+        TextView blocks = findViewById(R.id.blockHeight);
+        TextView peerCountField = findViewById(R.id.peerCount);
         if(isLoaded)
         {
             blocks.setText(String.format(Locale.getDefault(), "%,d / %,d", mBitcoin.merkleHeight(),
               mBitcoin.blockHeight()));
-            peerCount.setText(String.format(Locale.getDefault(), "%,d", mBitcoin.peerCount()));
 
-            double fiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
-            if(fiatRate != mFiatRate)
-                exchangeRateUpdated = true;
+            int count = mBitcoin.peerCount();
+            peerCountField.setText(String.format(Locale.getDefault(), "%,d %s", count,
+              getString(R.string.peers)));
 
-            if(fiatRate == 0.0)
-                exchangeRate.setText("");
+            if(count == 0)
+                peerCountField.setTextColor(getResources().getColor(R.color.textNegative));
+            else if(count < 3)
+                peerCountField.setTextColor(getResources().getColor(R.color.textWarning));
             else
-                exchangeRate.setText(String.format(Locale.getDefault(), "1 BCH = $%,d USD", (int)fiatRate));
+                peerCountField.setTextColor(getResources().getColor(R.color.textPositive));
 
             if(mMode == Mode.LOADING)
                 updateWallets();
@@ -393,7 +391,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         else
         {
             blocks.setText("- / -");
-            peerCount.setText("-");
+            peerCountField.setText(String.format("- %s", getString(R.string.peers)));
             exchangeRate.setText("");
             if(mMode != Mode.LOADING)
             {
@@ -423,7 +421,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup content = findViewById(R.id.content), transactions;
         View view;
-        boolean addButtonNeeded = false, addView, rebuild = mMode != Mode.WALLETS;
+        boolean addButtonNeeded = false, addView, rebuild;
 
         synchronized(mBitcoin)
         {
@@ -434,6 +432,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
 
             findViewById(R.id.progress).setVisibility(View.GONE);
+
+            rebuild = mMode != Mode.WALLETS;
 
             if(rebuild)
             {
@@ -496,6 +496,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     if(!wallet.isPrivate)
                     {
                         view.findViewById(R.id.walletLocked).setVisibility(View.VISIBLE);
+                        view.findViewById(R.id.walletScan).setVisibility(View.GONE);
                         view.findViewById(R.id.walletSend).setVisibility(View.GONE);
                         view.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
                     }
@@ -515,9 +516,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             view = inflater.inflate(R.layout.button, content, false);
             view.setTag(R.id.addWallet);
-            ((TextView)view.findViewById(R.id.button)).setText(R.string.add_wallet);
+            ((TextView)view.findViewById(R.id.text)).setText(R.string.add_wallet);
             content.addView(view);
         }
+
+        findViewById(R.id.statusBar).setVisibility(View.VISIBLE);
 
         mMode = Mode.WALLETS;
     }
@@ -587,11 +590,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         Log.i(logTag, String.format("Displaying Payment Code : %s", pPaymentCode));
 
-        PaymentRequest request = mBitcoin.decodePaymentCode(pPaymentCode);
+        mPaymentRequest = mBitcoin.decodePaymentCode(pPaymentCode);
 
         mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
 
-        if(request.format == PaymentRequest.FORMAT_INVALID || request.protocol == PaymentRequest.PROTOCOL_NONE)
+        if(mPaymentRequest.format == PaymentRequest.FORMAT_INVALID ||
+          mPaymentRequest.protocol == PaymentRequest.PROTOCOL_NONE)
         {
             showMessage(getString(R.string.invalid_payment_code), 2000);
             updateWallets();
@@ -604,6 +608,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 ViewGroup contentView = findViewById(R.id.content);
 
                 contentView.removeAllViews();
+                findViewById(R.id.statusBar).setVisibility(View.GONE);
 
                 findViewById(R.id.progress).setVisibility(View.GONE);
 
@@ -619,7 +624,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 // Display payment details
                 String formatText;
-                switch(request.format)
+                switch(mPaymentRequest.format)
                 {
                 default:
                 case PaymentRequest.FORMAT_LEGACY:
@@ -632,7 +637,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
 
                 String protocolText;
-                switch(request.protocol)
+                switch(mPaymentRequest.protocol)
                 {
                 default:
                 case PaymentRequest.PROTOCOL_ADDRESS:
@@ -644,7 +649,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
 
                 String title;
-                if(request.secure)
+                if(mPaymentRequest.secure)
                     title = String.format("%s %s %s", getString(R.string.secure), formatText, protocolText);
                 else
                     title = String.format("%s %s", formatText, protocolText);
@@ -652,7 +657,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 ((TextView)sendView.findViewById(R.id.title)).setText(title);
 
                 EditText amount = sendView.findViewById(R.id.amount);
-                amount.setText(Bitcoin.amountText(request.amount, mFiatRate));
+                if(mPaymentRequest.amount != 0)
+                    amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mFiatRate));
 
                 Spinner units = sendView.findViewById(R.id.units);
                 ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.amount_units,
@@ -661,7 +667,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 units.setAdapter(adapter);
                 units.setOnItemSelectedListener(this);
 
-                if(request.protocol == PaymentRequest.PROTOCOL_REQUEST_AMOUNT)
+                if(mPaymentRequest.protocol == PaymentRequest.PROTOCOL_REQUEST_AMOUNT)
                 {
                     // Make amount not modifiable
                     amount.setInputType(InputType.TYPE_NULL);
@@ -673,10 +679,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 // TODO Update amount conversion text
                 TextView amountConverted = sendView.findViewById(R.id.amountConverted);
 
-                ((TextView)sendView.findViewById(R.id.paymentCode)).setText(request.code.toLowerCase());
+                ((TextView)sendView.findViewById(R.id.paymentCode)).setText(mPaymentRequest.code.toLowerCase());
 
                 // Description
-                if(request.description != null && request.description.length() > 0)
+                if(mPaymentRequest.description != null && mPaymentRequest.description.length() > 0)
                 {
 
 
@@ -692,15 +698,28 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 // Verify button
                 View button = inflater.inflate(R.layout.button, contentView, false);
                 button.setTag(R.id.sendPayment);
-                ((TextView)button.findViewById(R.id.button)).setText(R.string.authorize);
+                ((TextView)button.findViewById(R.id.text)).setText(R.string.continue_string);
                 contentView.addView(button);
 
-                if(request.protocol != PaymentRequest.PROTOCOL_REQUEST_AMOUNT)
+                if(mPaymentRequest.protocol != PaymentRequest.PROTOCOL_REQUEST_AMOUNT)
+                {
                     focusOnText(R.id.amount);
+                    amount.selectAll();
+                }
 
                 mMode = Mode.SEND;
             }
         }
+    }
+
+    public void openTransaction(int pWalletOffset, String pTransactionHash)
+    {
+        ViewGroup contentView = findViewById(R.id.content);
+        contentView.removeAllViews();
+        findViewById(R.id.progress).setVisibility(View.VISIBLE);
+
+        GetTransactionTask task = new GetTransactionTask(this, mBitcoin, pWalletOffset, pTransactionHash);
+        task.execute();
     }
 
     public void displayTransaction(FullTransaction pTransaction)
@@ -711,6 +730,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ViewGroup contentView = findViewById(R.id.content);
 
             contentView.removeAllViews();
+            findViewById(R.id.statusBar).setVisibility(View.GONE);
 
             findViewById(R.id.progress).setVisibility(View.GONE);
 
@@ -725,27 +745,44 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ViewGroup transactionView = (ViewGroup)inflater.inflate(R.layout.transaction, contentView, false);
 
             ((TextView)transactionView.findViewById(R.id.id)).setText(pTransaction.hash);
+            ((TextView)transactionView.findViewById(R.id.lockTime)).setText(pTransaction.lockTimeString(this));
+            ((TextView)transactionView.findViewById(R.id.version)).setText(String.format(Locale.getDefault(), "%d",
+              pTransaction.version));
 
             long amount = pTransaction.amount();
             TextView amountText = transactionView.findViewById(R.id.amount);
+            TextView bitcoinsAmountText = transactionView.findViewById(R.id.bitcoinsAmount);
             amountText.setText(Bitcoin.amountText(amount, mFiatRate));
+            bitcoinsAmountText.setText(Bitcoin.satoshiText(amount));
             if(amount > 0)
+            {
                 amountText.setTextColor(getResources().getColor(R.color.colorPositive));
+                bitcoinsAmountText.setTextColor(getResources().getColor(R.color.colorPositive));
+            }
             else
+            {
                 amountText.setTextColor(getResources().getColor(R.color.colorNegative));
+                bitcoinsAmountText.setTextColor(getResources().getColor(R.color.colorNegative));
+            }
 
             // Inputs
+            if(pTransaction.inputs.length > 1)
+                ((TextView)transactionView.findViewById(R.id.inputsTitle)).setText(String.format(Locale.getDefault(),
+                  "%d %s", pTransaction.inputs.length, getString(R.string.inputs)));
+            else
+                ((TextView)transactionView.findViewById(R.id.inputsTitle)).setText(String.format(Locale.getDefault(),
+                  "%d %s", pTransaction.inputs.length, getString(R.string.input)));
             ViewGroup inputsView = transactionView.findViewById(R.id.inputs);
-            int offset = 0;
             for(Input input : pTransaction.inputs)
             {
                 ViewGroup inputView = (ViewGroup)inflater.inflate(R.layout.input, inputsView, false);
 
-                ((TextView)inputView.findViewById(R.id.title)).setText(String.format(Locale.getDefault(), "%s %d",
-                  getString(R.string.input), offset));
+                ((TextView)inputView.findViewById(R.id.outpointHash)).setText(input.outpointID);
+                ((TextView)inputView.findViewById(R.id.outpointIndex)).setText(String.format(Locale.getDefault(),
+                  "%s %d", getString(R.string.index), input.outpointIndex));
 
-                ((TextView)inputView.findViewById(R.id.outpoint)).setText(String.format(Locale.getDefault(), "%s %s %d",
-                  input.outpointID, getString(R.string.index), input.outpointIndex));
+                ((TextView)inputView.findViewById(R.id.sequence)).setText(String.format(Locale.getDefault(), "0x%08x",
+                  input.sequence));
 
                 if(input.address != null && input.address.length() > 0)
                     ((TextView)inputView.findViewById(R.id.address)).setText(input.address);
@@ -757,30 +794,38 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 if(input.amount != 0)
                 {
-                    inputView.findViewById(R.id.body).setBackgroundColor(getResources().getColor(R.color.highlight));
+                    inputView.setBackgroundColor(getResources().getColor(R.color.highlight));
                     TextView inputAmountText = inputView.findViewById(R.id.amount);
                     inputAmountText.setText(Bitcoin.amountText(input.amount, mFiatRate));
                     inputAmountText.setTextColor(getResources().getColor(R.color.colorNegative));
+
+                    TextView inputBitcoinAmountText = inputView.findViewById(R.id.bitcoinsAmount);
+                    inputBitcoinAmountText.setText(Bitcoin.satoshiText(input.amount));
+                    inputBitcoinAmountText.setTextColor(getResources().getColor(R.color.colorNegative));
                 }
                 else
+                {
                     inputView.findViewById(R.id.amountGroup).setVisibility(View.GONE);
+                    inputView.findViewById(R.id.bitcoinAmountGroup).setVisibility(View.GONE);
+                }
 
                 inputsView.addView(inputView);
-                offset++;
             }
 
             // Outputs
+            if(pTransaction.outputs.length > 1)
+                ((TextView)transactionView.findViewById(R.id.outputsTitle)).setText(String.format(Locale.getDefault(),
+                  "%d %s", pTransaction.outputs.length, getString(R.string.outputs)));
+            else
+                ((TextView)transactionView.findViewById(R.id.outputsTitle)).setText(String.format(Locale.getDefault(),
+                  "%d %s", pTransaction.outputs.length, getString(R.string.output)));
             ViewGroup outputsView = transactionView.findViewById(R.id.outputs);
-            offset = 0;
             for(Output output : pTransaction.outputs)
             {
                 ViewGroup outputView = (ViewGroup)inflater.inflate(R.layout.output, outputsView, false);
 
-                ((TextView)outputView.findViewById(R.id.title)).setText(String.format(Locale.getDefault(),
-                  "%s %d", getString(R.string.output), offset));
-
                 if(output.related)
-                    outputView.findViewById(R.id.body).setBackgroundColor(getResources().getColor(R.color.highlight));
+                    outputView.setBackgroundColor(getResources().getColor(R.color.highlight));
 
                 if(output.address != null && output.address.length() > 0)
                     ((TextView)outputView.findViewById(R.id.address)).setText(output.address);
@@ -791,17 +836,66 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
 
                 TextView outputAmountText = outputView.findViewById(R.id.amount);
+                TextView outputBitcoinsAmountText = outputView.findViewById(R.id.bitcoinsAmount);
                 outputAmountText.setText(Bitcoin.amountText(output.amount, mFiatRate));
+                outputBitcoinsAmountText.setText(Bitcoin.satoshiText(output.amount));
                 if(output.related)
+                {
                     outputAmountText.setTextColor(getResources().getColor(R.color.colorPositive));
+                    outputBitcoinsAmountText.setTextColor(getResources().getColor(R.color.colorPositive));
+                }
 
                 outputsView.addView(outputView);
-                offset++;
             }
 
             contentView.addView(transactionView);
 
             mMode = Mode.TRANSACTION;
+        }
+    }
+
+    public void displayEnterPaymentCode()
+    {
+        synchronized(this)
+        {
+            LayoutInflater inflater = getLayoutInflater();
+            ViewGroup contentView = findViewById(R.id.content);
+
+            contentView.removeAllViews();
+            findViewById(R.id.statusBar).setVisibility(View.GONE);
+
+            findViewById(R.id.progress).setVisibility(View.GONE);
+
+            ActionBar actionBar = getSupportActionBar();
+            if(actionBar != null)
+            {
+                actionBar.setIcon(R.drawable.ic_send_black_36dp);
+                actionBar.setTitle(" " + getResources().getString(R.string.send_payment));
+                actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+            }
+
+            ViewGroup paymentCodeView = (ViewGroup)inflater.inflate(R.layout.enter_payment_code, contentView,
+              false);
+            contentView.addView(paymentCodeView);
+
+            // Continue button
+            View continueButton = inflater.inflate(R.layout.button, contentView, false);
+            continueButton.setTag(R.id.enterPaymentDetails);
+            ((TextView)continueButton.findViewById(R.id.text)).setText(R.string.continue_string);
+            contentView.addView(continueButton);
+
+            // Scan button
+            View scanButton = inflater.inflate(R.layout.button, contentView, false);
+            scanButton.setTag(R.id.openScanner);
+            ImageView scanIcon = scanButton.findViewById(R.id.image);
+            scanIcon.setImageResource(R.drawable.ic_scan_white_36dp);
+            scanIcon.setVisibility(View.VISIBLE);
+            ((TextView)scanButton.findViewById(R.id.text)).setText(R.string.scan);
+            contentView.addView(scanButton);
+
+            focusOnText(R.id.paymentCode);
+
+            mMode = Mode.SEND;
         }
     }
 
@@ -819,6 +913,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 contentView.removeAllViews();
 
                 findViewById(R.id.progress).setVisibility(View.GONE);
+                findViewById(R.id.statusBar).setVisibility(View.GONE);
 
                 ViewGroup receiveView = (ViewGroup)inflater.inflate(R.layout.receive, contentView, false);
                 ((ImageView)receiveView.findViewById(R.id.addressImage)).setImageBitmap(pQRCode);
@@ -844,6 +939,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup contentView = findViewById(R.id.content);
 
         contentView.removeAllViews();
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -856,6 +952,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.view_seed, contentView, false);
         mSeed = mBitcoin.generateMnemonicSeed(28);
+        mSeedIsRecovered = false;
         mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION;
         mSeedBackupOnly = false;
         ((TextView)createWallet.findViewById(R.id.seed)).setText(mSeed);
@@ -873,7 +970,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Verify button
         View button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.verifySeedSaved);
-        ((TextView)button.findViewById(R.id.button)).setText(R.string.continue_string);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.continue_string);
         contentView.addView(button);
 
         mMode = Mode.CREATE_WALLET;
@@ -882,7 +979,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onItemSelected(AdapterView<?> pParent, View pView, int pPosition, long pID)
     {
-        if(pView.getId() == R.id.seedEntropy)
+        if(pParent.getId() == R.id.seedEntropy)
         {
             int[] values = getResources().getIntArray(R.array.mnemonic_seed_length_values);
 
@@ -891,10 +988,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             else
             {
                 mSeed = mBitcoin.generateMnemonicSeed(values[pPosition]);
+                mSeedIsRecovered = false;
                 ((TextView)findViewById(R.id.seed)).setText(mSeed);
             }
         }
-        else if(pView.getId() == R.id.units)
+        else if(pParent.getId() == R.id.units)
         {
             // TODO Handle changing units
         }
@@ -912,6 +1010,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup contentView = findViewById(R.id.content);
 
         contentView.removeAllViews();
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -942,10 +1041,88 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Skip button
         View button = inflater.inflate(R.layout.negative_button, contentView, false);
         button.setTag(R.id.skipCheckSeed);
-        ((TextView)button.findViewById(R.id.button)).setText(R.string.skip_check_seed);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.skip_check_seed);
         contentView.addView(button);
 
         mMode = Mode.VERIFY_SEED;
+    }
+
+    @Override
+    public void beforeTextChanged(CharSequence pString, int pStart, int pCount, int pAfter)
+    {
+
+    }
+
+    @Override
+    public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
+    {
+        LinearLayout wordButtons = findViewById(R.id.seedButtons);
+        EditText textField = findViewById(R.id.seedWordEntry);
+
+        if(wordButtons == null || textField == null)
+            return;
+
+        wordButtons.removeAllViews();
+
+        if(pString.length() == 0)
+            return;
+
+        // Find all seed words that start with the text field
+        String[] matchingWords = mBitcoin.getMnemonicWords(pString.toString());
+
+        if(matchingWords.length > 20)
+            return;
+
+        // Put those words into the word buttons group
+        LayoutInflater inflater = getLayoutInflater();
+        TextView wordButton;
+
+        for(String word : matchingWords)
+        {
+            wordButton = (TextView)inflater.inflate(R.layout.seed_word_button, wordButtons, false);
+            wordButton.setText(word);
+            wordButtons.addView(wordButton);
+        }
+    }
+
+    @Override
+    public void afterTextChanged(Editable pString)
+    {
+
+    }
+
+    public synchronized void displayRecoverWallet()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup contentView = findViewById(R.id.content);
+
+        contentView.removeAllViews();
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(null);
+            actionBar.setTitle(" " + getResources().getString(R.string.recover_wallet));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup enterSeed = (ViewGroup)inflater.inflate(R.layout.enter_seed, contentView, false);
+        ((EditText)enterSeed.findViewById(R.id.seedWordEntry)).addTextChangedListener(this);
+
+        contentView.addView(enterSeed);
+
+        // Done button
+        View button = inflater.inflate(R.layout.button, contentView, false);
+        button.setTag(R.id.importSeed);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.okay);
+        contentView.addView(button);
+
+        focusOnText(R.id.seedWordEntry);
+        mSeedIsRecovered = true;
+
+        mMode = Mode.RECOVER_WALLET;
     }
 
     public synchronized void displayBackupWallet(String pPassCode)
@@ -954,6 +1131,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup contentView = findViewById(R.id.content);
 
         contentView.removeAllViews();
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -972,6 +1150,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             updateWallets();
             return;
         }
+        mSeedIsRecovered = false;
         mSeedBackupOnly = true;
         ((TextView)createWallet.findViewById(R.id.seed)).setText(mSeed);
 
@@ -982,7 +1161,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Verify button
         View button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.verifySeedSaved);
-        ((TextView)button.findViewById(R.id.button)).setText(R.string.continue_string);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.continue_string);
         contentView.addView(button);
 
         mMode = Mode.BACKUP_WALLET;
@@ -994,6 +1173,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup contentView = findViewById(R.id.content);
 
         contentView.removeAllViews();
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -1033,7 +1213,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Authorize button
         View button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.authorize);
-        ((TextView)button.findViewById(R.id.button)).setText(R.string.authorize);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.authorize);
         contentView.addView(button);
 
         focusOnText(R.id.passcode);
@@ -1054,6 +1234,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup contentView = findViewById(R.id.content);
 
         contentView.removeAllViews();
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -1075,19 +1256,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Update button
         button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.updateWalletName);
-        ((TextView)button.findViewById(R.id.button)).setText(R.string.update_name);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.update_name);
         contentView.addView(button);
 
         // Backup button
         button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.backupWallet);
-        ((TextView)button.findViewById(R.id.button)).setText(R.string.backup_wallet);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.backup_wallet);
         contentView.addView(button);
 
         // Remove button
         button = inflater.inflate(R.layout.button, contentView, false);
         button.setTag(R.id.removeWallet);
-        ((TextView)button.findViewById(R.id.button)).setText(R.string.remove_wallet);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.remove_wallet);
         contentView.addView(button);
 
         mMode = Mode.EDIT_WALLET;
@@ -1238,12 +1419,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(wallet == null)
             return;
 
+        mCurrentWalletViewID = pViewID;
+
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup contentView = findViewById(R.id.content);
 
         mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
 
         contentView.removeAllViews();
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -1266,6 +1450,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         alignTransactions(transactions);
 
         mMode = Mode.HISTORY;
+    }
+
+    public void copyToClipBoard(View pView)
+    {
+        ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+        if(manager != null)
+        {
+            ClipData clip = ClipData.newPlainText("Bitcoin Cash Address",
+              ((TextView)pView).getText().toString());
+            manager.setPrimaryClip(clip);
+            showMessage(getString(R.string.copied_to_clipboard), 2000);
+        }
     }
 
     public void onClick(View pView)
@@ -1296,17 +1492,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                         button = inflater.inflate(R.layout.button, contentView, false);
                         button.setTag(R.id.createWallet);
-                        ((TextView)button.findViewById(R.id.button)).setText(R.string.create_new_key);
+                        ((TextView)button.findViewById(R.id.text)).setText(R.string.create_new_key);
                         contentView.addView(button);
 
                         button = inflater.inflate(R.layout.button, contentView, false);
                         button.setTag(R.id.recoverWallet);
-                        ((TextView)button.findViewById(R.id.button)).setText(R.string.recover_wallet);
+                        ((TextView)button.findViewById(R.id.text)).setText(R.string.recover_wallet);
                         contentView.addView(button);
 
                         button = inflater.inflate(R.layout.button, contentView, false);
                         button.setTag(R.id.importWallet);
-                        ((TextView)button.findViewById(R.id.button)).setText(R.string.import_bip0032_key);
+                        ((TextView)button.findViewById(R.id.text)).setText(R.string.import_bip0032_key);
                         contentView.addView(button);
 
                         ActionBar actionBar = getSupportActionBar();
@@ -1341,6 +1537,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     }
                     break;
                 case R.id.recoverWallet:
+                    displayRecoverWallet();
+                    break;
+                case R.id.importSeed:
+                    mSeed = ((TextView)findViewById(R.id.seed)).getText().toString();
+                    mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION; // TODO Add options to specify this
+                    mKeyToLoad = null;
+                    mAuthorizedTask = AuthorizedTask.ADD_KEY;
+                    displayAuthorize();
                     break;
                 case R.id.importWallet:
                 {
@@ -1361,7 +1565,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         // Load button
                         View button = inflater.inflate(R.layout.button, contentView, false);
                         button.setTag(R.id.loadKey);
-                        ((TextView)button.findViewById(R.id.button)).setText(R.string.import_text);
+                        ((TextView)button.findViewById(R.id.text)).setText(R.string.import_text);
                         contentView.addView(button);
                     }
                     break;
@@ -1396,10 +1600,87 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     mAuthorizedTask = AuthorizedTask.REMOVE_KEY;
                     displayAuthorize();
                     break;
+                case R.id.enterPaymentDetails:
+                {
+                    TextView paymentCode = findViewById(R.id.paymentCode);
+                    if(paymentCode != null)
+                        displaySendPayment(paymentCode.getText().toString());
+                    else
+                    {
+                        showMessage(getString(R.string.failed_payment_code), 2000);
+                        updateWallets();
+                    }
+                    break;
+                }
+                case R.id.openScanner:
+                    mQRScanner.initiateScan(IntentIntegrator.QR_CODE_TYPES);
+                    break;
                 case R.id.sendPayment:
+                {
                     mAuthorizedTask = AuthorizedTask.SIGN_TRANSACTION;
+
+                    if(mPaymentRequest.protocol == PaymentRequest.PROTOCOL_REQUEST_AMOUNT)
+                        mPaymentAmount = mPaymentRequest.amount;
+                    else
+                    {
+                        EditText amount = findViewById(R.id.amount);
+                        if(amount == null)
+                        {
+                            Log.e(logTag, "Failed to find amount edit text view");
+                            showMessage(getString(R.string.failed_payment_amount), 2000);
+                            updateWallets();
+                            return;
+                        }
+
+                        String paymentAmountString = amount.getText().toString();
+                        if(paymentAmountString == null || paymentAmountString.length() == 0)
+                        {
+                            Log.e(logTag, "Amount string empty");
+                            showMessage(getString(R.string.failed_payment_amount), 2000);
+                            updateWallets();
+                            return;
+                        }
+
+                        Spinner units = findViewById(R.id.units);
+                        if(units == null)
+                        {
+                            Log.e(logTag, "Failed to find units spinner");
+                            showMessage(getString(R.string.failed_payment_amount), 2000);
+                            updateWallets();
+                            return;
+                        }
+
+                        double rawAmount;
+                        try
+                        {
+                            rawAmount = Double.parseDouble(paymentAmountString);
+                        }
+                        catch(Exception pException)
+                        {
+                            Log.e(logTag, String.format("Failed to parse amount \"%s\" : %s", paymentAmountString,
+                              pException.toString()));
+                            showMessage(getString(R.string.failed_payment_amount), 2000);
+                            updateWallets();
+                            return;
+                        }
+
+                        switch(units.getSelectedItemPosition())
+                        {
+                            case 0: // USD
+                                mPaymentAmount = Bitcoin.satoshisFromBitcoins(rawAmount / mFiatRate);
+                                break;
+                            case 1: // bits
+                                mPaymentAmount = Bitcoin.satoshisFromBits(rawAmount);
+                                break;
+                            case 2: // bitcoins
+                                mPaymentAmount = Bitcoin.satoshisFromBitcoins(rawAmount);
+                                break;
+                        }
+                    }
+
                     displayAuthorize();
                     break;
+                }
                 case R.id.authorize:
                     String passcode = ((EditText)findViewById(R.id.passcode)).getText().toString();
                     switch(mAuthorizedTask)
@@ -1408,13 +1689,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         {
                             if(mKeyToLoad != null)
                             {
-                                ImportKeyTask task = new ImportKeyTask(this, mBitcoin, passcode, mKeyToLoad, mDerivationPathMethodToLoad);
+                                ImportKeyTask task = new ImportKeyTask(this, mBitcoin, passcode, mKeyToLoad,
+                                  mDerivationPathMethodToLoad);
                                 task.execute();
                                 mKeyToLoad = null;
                             }
                             else
                             {
-                                CreateKeyTask task = new CreateKeyTask(this, mBitcoin, passcode, mSeed, mDerivationPathMethodToLoad);
+                                CreateKeyTask task = new CreateKeyTask(this, mBitcoin, passcode, mSeed,
+                                  mDerivationPathMethodToLoad, mSeedIsRecovered);
                                 task.execute();
                                 mSeed = null;
                             }
@@ -1449,44 +1732,69 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             break;
                         }
                         case SIGN_TRANSACTION:
-                            showMessage(getString(R.string.not_supported), 2000);
+                        {
+                            CreateTransactionTask task = new CreateTransactionTask(this, mBitcoin, passcode,
+                              mBitcoin.walletOffsetForViewID(mCurrentWalletViewID), mPaymentRequest.address,
+                              mPaymentAmount);
+                            task.execute();
+
+                            synchronized(this)
+                            {
+                                ViewGroup contentView = findViewById(R.id.content);
+                                contentView.removeAllViews();
+
+                                findViewById(R.id.progress).setVisibility(View.VISIBLE);
+                                mMode = Mode.IN_PROGRESS;
+                            }
                             break;
+                        }
                     }
                     break;
             }
             break;
         case R.id.seedWordButton:
             ViewGroup wordButtons = (ViewGroup)pView.getParent();
-            wordButtons.removeView(pView);
+
+            // Add word to seed
             TextView seed = findViewById(R.id.seed);
             if(seed.getText().length() > 0)
                 seed.setText(String.format("%s %s", seed.getText(), ((TextView)pView).getText()));
             else
                 seed.setText(((TextView)pView).getText());
 
-            if(wordButtons.getChildCount() == 0)
+            if(mMode == Mode.RECOVER_WALLET)
             {
-                // Verify seed matches
-                String seedText = (String)seed.getText();
-                if(seedText.equals(mSeed))
+                wordButtons.removeAllViews();
+                ((EditText)findViewById(R.id.seedWordEntry)).setText("");
+            }
+            else
+            {
+                wordButtons.removeView(pView);
+
+                if(wordButtons.getChildCount() == 0)
                 {
-                    if(mSeedBackupOnly)
+                    // Verify seed matches
+                    String seedText = (String)seed.getText();
+                    if(seedText.equals(mSeed))
                     {
-                        mSeed = null;
-                        showMessage(getString(R.string.seed_matches), 2000);
-                        updateWallets();
+                        if(mSeedBackupOnly)
+                        {
+                            mSeed = null;
+                            showMessage(getString(R.string.seed_matches), 2000);
+                            updateWallets();
+                        }
+                        else
+                        {
+                            mAuthorizedTask = AuthorizedTask.ADD_KEY;
+                            mKeyToLoad = null;
+                            displayAuthorize();
+                        }
                     }
                     else
                     {
-                        mAuthorizedTask = AuthorizedTask.ADD_KEY;
-                        mKeyToLoad = null;
-                        displayAuthorize();
+                        showMessage(getString(R.string.seed_doesnt_match), 2000);
+                        displayVerifySeed();
                     }
-                }
-                else
-                {
-                    showMessage(getString(R.string.seed_doesnt_match), 2000);
-                    displayVerifySeed();
                 }
             }
             break;
@@ -1535,22 +1843,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
             mCurrentWalletViewID = wallet.getId();
-
-//            IntentIntegrator qrScanner = new IntentIntegrator(this);
-//            qrScanner.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE_TYPES);
-//            qrScanner.setPrompt(getString(R.string.scan_payment_code));
-//            qrScanner.setCameraId(0);
-//            qrScanner.setBeepEnabled(false);
-//            qrScanner.setBarcodeImageEnabled(true);
-//            qrScanner.initiateScan();
+            displayEnterPaymentCode();
+            break;
+        }
+        case R.id.walletScan:
+        {
+            ViewGroup wallet = (ViewGroup)pView.getParent().getParent().getParent();
+            mCurrentWalletViewID = wallet.getId();
             mQRScanner.initiateScan(IntentIntegrator.QR_CODE_TYPES);
-
             break;
         }
         case R.id.walletReceive:
         {
             ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
-            int walletOffset = mBitcoin.walletOffsetForViewID(walletView.getId());
+            mCurrentWalletViewID = walletView.getId();
+            int walletOffset = mBitcoin.walletOffsetForViewID(mCurrentWalletViewID);
             if(walletOffset == -1)
                 showMessage(getString(R.string.failed_receive_address_qr), 2000);
             else
@@ -1583,9 +1890,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.walletTransaction:
         {
-            FullTransaction transaction = mBitcoin.getTransaction(mBitcoin.walletOffsetForViewID(mCurrentWalletViewID),
-              (String)pView.getTag());
-            displayTransaction(transaction);
+            openTransaction(mBitcoin.walletOffsetForViewID(mCurrentWalletViewID), (String)pView.getTag());
             break;
         }
         case R.id.addressText:

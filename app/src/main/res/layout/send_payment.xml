@@ -15,12 +15,18 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         android:textStyle="bold"/>
 
-    <TextView
-        android:id="@+id/paymentCode"
+
+    <HorizontalScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:textAlignment="center"/>
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/paymentCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:maxLines="1"
+            android:minWidth="200dp"/>
+    </HorizontalScrollView>
 
     <LinearLayout
         android:id="@+id/legacyWarning"
@@ -44,11 +50,20 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="@string/amount_title"
+            android:labelFor="@id/amount"
+            android:textStyle="bold"/>
+
         <EditText
             android:id="@+id/amount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="5dp"/>
+            android:layout_margin="5dp"
+            android:inputType="numberDecimal"/>
 
         <Spinner
             android:id="@+id/units"

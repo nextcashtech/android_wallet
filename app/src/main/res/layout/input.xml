@@ -3,75 +3,106 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:padding="10dp"
+    android:background="#feee">
 
     <TextView
-        android:id="@+id/title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"
-        android:text="Input 0"/>
+        style="@style/SubHeadingText"
+        android:text="@string/outpoint"/>
 
-    <LinearLayout
-        android:id="@+id/body"
-        android:orientation="vertical"
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/outpointHash"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:onClick="copyToClipBoard"/>
+    </HorizontalScrollView>
+
+    <TextView
+        android:id="@+id/outpointIndex"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/addressTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:layout_marginLeft="10dp"
-        android:padding="5dp">
+        style="@style/SubHeadingText"
+        android:text="@string/address"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:textStyle="bold"
-            android:text="@string/outpoint"/>
-
-        <TextView
-            android:id="@+id/outpoint"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="163e5d9c1b2868f31b3a81b5987f0906c50c269404ce61eb426866eec9474efc index 0"/>
-
-        <TextView
-            android:id="@+id/addressTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:textStyle="bold"
-            android:text="@string/address"/>
-
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
         <TextView
             android:id="@+id/address"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="bitcoincash:qqlx5tkjsv8ummavd2u0nfxf2xh49fqtygcxhgd3k3"/>
+            android:maxLines="1"
+            android:onClick="copyToClipBoard"/>
+    </HorizontalScrollView>
 
-        <LinearLayout
-            android:id="@+id/amountGroup"
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
+    <LinearLayout
+        android:id="@+id/amountGroup"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp">
+            style="@style/SubHeadingText"
+            android:text="@string/amount_title"/>
+        <TextView
+            android:id="@+id/amount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"/>
+    </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-                android:textStyle="bold"
-                android:text="@string/amount_title"/>
+    <LinearLayout
+        android:id="@+id/bitcoinAmountGroup"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SmallHeadingText"
+            android:text="@string/bitcoins_amount_title"/>
 
-            <TextView
-                android:id="@+id/amount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:text="1.3 bitcoins"/>
+        <TextView
+            android:id="@+id/bitcoinsAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:textSize="@dimen/text_size_smallheading"/>
+    </LinearLayout>
 
-        </LinearLayout>
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SubHeadingText"
+            android:text="@string/sequence"/>
+
+        <TextView
+            android:id="@+id/sequence"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:textSize="@dimen/text_size_subheading"/>
     </LinearLayout>
 
 </LinearLayout>

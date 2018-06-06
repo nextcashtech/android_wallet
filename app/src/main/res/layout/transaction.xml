@@ -9,15 +9,19 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"
+        style="@style/SubHeadingText"
         android:text="@string/id"/>
 
-    <TextView
-        android:id="@+id/id"
+    <HorizontalScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="163e5d9c1b2868f31b3a81b5987f0906c50c269404ce61eb426866eec9474efc"/>
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:onClick="copyToClipBoard"/>
+    </HorizontalScrollView>
 
     <LinearLayout
         android:orientation="horizontal"
@@ -27,8 +31,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:textStyle="bold"
+            style="@style/SubHeadingText"
             android:text="@string/amount_title"/>
 
         <TextView
@@ -36,40 +39,93 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="10dp"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:text="1.3 bitcoins"/>
+            android:textSize="@dimen/text_size_subheading"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SmallHeadingText"
+            android:text="@string/bitcoins_amount_title"/>
+
+        <TextView
+            android:id="@+id/bitcoinsAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:textSize="@dimen/text_size_smallheading"/>
     </LinearLayout>
 
     <TextView
+        android:id="@+id/inputsTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"
+        style="@style/HeadingText"
         android:text="@string/inputs"/>
 
     <LinearLayout
         android:id="@+id/inputs"
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp">
+        android:layout_height="wrap_content">
     </LinearLayout>
 
     <TextView
+        android:id="@+id/outputsTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"
+        style="@style/HeadingText"
         android:text="@string/outputs"/>
 
     <LinearLayout
         android:id="@+id/outputs"
         android:orientation="vertical"
         android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp">
+        android:layout_marginTop="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SubHeadingText"
+            android:text="@string/version"/>
+
+        <TextView
+            android:id="@+id/version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:textSize="@dimen/text_size_subheading"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SubHeadingText"
+            android:text="@string/lock_time"/>
+
+        <TextView
+            android:id="@+id/lockTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:textSize="@dimen/text_size_subheading"/>
     </LinearLayout>
 
 </LinearLayout>

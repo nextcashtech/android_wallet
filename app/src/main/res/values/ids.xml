@@ -12,4 +12,7 @@
     <item type="id" name="verifySeedSaved" />
     <item type="id" name="skipCheckSeed" />
     <item type="id" name="sendPayment" />
+    <item type="id" name="openScanner" />
+    <item type="id" name="enterPaymentDetails" />
+    <item type="id" name="importSeed" />
 </resources>

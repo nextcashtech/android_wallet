@@ -44,11 +44,13 @@ add_subdirectory( ${bitcoin_lib_src_dir}
 
 
 # Setup JNI code
-include_directories( ../../../nextcash/src/base
+include_directories( ../../../nextcash
+                     ../../../nextcash/src/base
                      ../../../nextcash/src/io
                      ../../../nextcash/src/crypto
                      ../../../nextcash/src/dev
                      ../../../secp256k1/include
+                     ../../../bitcoin
                      ../../../bitcoin/src
                      src/main/cpp )
 
