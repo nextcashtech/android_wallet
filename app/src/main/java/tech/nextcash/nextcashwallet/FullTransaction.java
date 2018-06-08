@@ -42,15 +42,26 @@ public class FullTransaction
 
     public String lockTimeString(Context pContext)
     {
-        if(version < 2)
-            return String.format(Locale.getDefault(), "0x%08x", lockTime);
+        boolean sequenceFound = false;
 
-        if(lockTime == 0xffffffff)
-            return pContext.getString(R.string.none);
+        for(Input input : inputs)
+            if(input.sequence != 0xffffffff)
+                sequenceFound = true;
 
-        if(lockTime > 500000000)
-            return String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td", lockTime * 1000);
+        if(sequenceFound)
+        {
+            if(version < 2)
+                return String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td", lockTime * 1000);
+
+            if(lockTime == 0xffffffff)
+                return pContext.getString(R.string.none);
+
+            if(lockTime > 500000000)
+                return String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td", lockTime * 1000);
+            else
+                return String.format(Locale.getDefault(), "%s %d", pContext.getString(R.string.block), lockTime);
+        }
         else
-            return String.format(Locale.getDefault(), "%s %d", pContext.getString(R.string.block), lockTime);
+            return pContext.getString(R.string.none);
     }
 }

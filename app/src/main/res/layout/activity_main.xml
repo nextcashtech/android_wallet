@@ -88,6 +88,21 @@
                 android:layout_alignParentEnd="true"/>
 
             <TextView
+                android:id="@+id/merkleBlockHeight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:layout_toStartOf="@id/slash"/>
+
+            <TextView
+                android:id="@+id/slash"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:layout_toStartOf="@id/blockHeight"
+                android:text=" / "/>
+
+            <TextView
                 android:id="@+id/blockHeight"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

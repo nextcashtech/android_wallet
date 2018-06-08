@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -35,7 +36,6 @@ import android.widget.TextView;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
@@ -49,7 +49,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification;
-
     private enum Mode { LOADING, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, VERIFY_SEED, BACKUP_WALLET,
       RECOVER_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, SEND, SETUP, AUTHORIZE }
     private Mode mMode;
@@ -183,6 +182,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         };
 
         mQRScanner = new IntentIntegrator(this);
+        //mQRScanner.addExtra(); // TODO Find extra value that can switch to portrait mode
 
         scheduleJobs();
     }
@@ -367,12 +367,32 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             exchangeRate.setText(String.format(Locale.getDefault(), "1 BCH = $%,d USD", (int)fiatRate));
 
         boolean isLoaded = mBitcoin.isLoaded();
+        int merkleHeight = mBitcoin.merkleHeight();
+        int blockHeight = mBitcoin.blockHeight();
+        TextView merkleBlocks = findViewById(R.id.merkleBlockHeight);
         TextView blocks = findViewById(R.id.blockHeight);
         TextView peerCountField = findViewById(R.id.peerCount);
+        TextView blocksLabel = findViewById(R.id.blocksLabel);
         if(isLoaded)
         {
-            blocks.setText(String.format(Locale.getDefault(), "%,d / %,d", mBitcoin.merkleHeight(),
-              mBitcoin.blockHeight()));
+            merkleBlocks.setText(String.format(Locale.getDefault(), "%,d", merkleHeight));
+
+            blocks.setText(String.format(Locale.getDefault(), "%,d", blockHeight));
+            if(mBitcoin.isInSync())
+            {
+                if(merkleHeight == blockHeight)
+                    merkleBlocks.setTextColor(getResources().getColor(R.color.textPositive));
+                else
+                    merkleBlocks.setTextColor(getResources().getColor(R.color.textWarning));
+                blocks.setTextColor(getResources().getColor(R.color.textPositive));
+                blocksLabel.setTextColor(getResources().getColor(R.color.textPositive));
+            }
+            else
+            {
+                merkleBlocks.setTextColor(getResources().getColor(R.color.textWarning));
+                blocks.setTextColor(getResources().getColor(R.color.textWarning));
+                blocksLabel.setTextColor(getResources().getColor(R.color.textWarning));
+            }
 
             int count = mBitcoin.peerCount();
             peerCountField.setText(String.format(Locale.getDefault(), "%,d %s", count,
@@ -390,9 +410,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         else
         {
-            blocks.setText("- / -");
+            merkleBlocks.setText("-");
+            merkleBlocks.setTextColor(Color.BLACK);
+            blocks.setText("-");
+            blocks.setTextColor(Color.BLACK);
+            blocksLabel.setTextColor(Color.BLACK);
             peerCountField.setText(String.format("- %s", getString(R.string.peers)));
-            exchangeRate.setText("");
+            peerCountField.setTextColor(Color.BLACK);
             if(mMode != Mode.LOADING)
             {
                 ViewGroup content = findViewById(R.id.content);
@@ -1811,7 +1835,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     {
                         mCurrentWalletViewID = walletView.getId();
 
-                        ((ImageView)pView.findViewById(R.id.walletExpand)).setImageResource(R.drawable.ic_expand_less_white_36dp);
+                        ((ImageView)pView.findViewById(R.id.walletExpand))
+                          .setImageResource(R.drawable.ic_expand_less_white_36dp);
                         walletDetails.setVisibility(View.VISIBLE);
 
                         // Make all others gone
@@ -1826,13 +1851,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                                     {
                                         ViewGroup otherWalletView = content.findViewById(wallet.viewID);
                                         otherWalletView.findViewById(R.id.walletDetails).setVisibility(View.GONE);
+                                        ((ImageView)otherWalletView.findViewById(R.id.walletExpand))
+                                          .setImageResource(R.drawable.ic_expand_more_white_36dp);
                                     }
                             }
                         }
                     }
                     else
                     {
-                        ((ImageView)pView.findViewById(R.id.walletExpand)).setImageResource(R.drawable.ic_expand_more_white_36dp);
+                        ((ImageView)pView.findViewById(R.id.walletExpand))
+                          .setImageResource(R.drawable.ic_expand_more_white_36dp);
                         walletDetails.setVisibility(View.GONE);
                     }
                 }
