@@ -38,15 +38,13 @@
                 android:id="@+id/walletBalance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-                android:textStyle="bold"
+                style="@style/SubHeadingText"
                 android:textColor="#fff"/>
 
             <TextView
                 android:id="@+id/walletBitcoinBalance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.AppCompat.Small"
                 android:textColor="#fff"/>
 
         </LinearLayout>
@@ -64,7 +62,7 @@
             android:id="@+id/walletName"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            style="@style/SubHeadingText"
             android:gravity="center_vertical"
             android:padding="5dp"
             android:layout_marginStart="5dp"
@@ -155,7 +153,6 @@
             android:drawableStart="@drawable/ic_lock_black_36dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.AppCompat.Small"
             android:padding="5dp"
             android:layout_marginBottom="5dp"
             android:gravity="center_vertical"
@@ -174,7 +171,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/pending_transactions"
-                android:textAppearance="@style/Base.TextAppearance.AppCompat.Headline"/>
+                style="@style/HeadingText"/>
 
             <LinearLayout
                 android:id="@+id/walletPending"
@@ -190,7 +187,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/recent_transactions"
-                android:textAppearance="@style/Base.TextAppearance.AppCompat.Headline"/>
+                style="@style/HeadingText"/>
 
             <LinearLayout
                 android:id="@+id/walletRecent"
@@ -206,7 +203,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/no_transactions"
-                android:textAppearance="@style/Base.TextAppearance.AppCompat.Headline"/>
+                style="@style/HeadingText"/>
 
         </LinearLayout>
 

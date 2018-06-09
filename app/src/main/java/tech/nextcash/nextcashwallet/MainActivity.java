@@ -1564,12 +1564,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     displayRecoverWallet();
                     break;
                 case R.id.importSeed:
+                {
                     mSeed = ((TextView)findViewById(R.id.seed)).getText().toString();
                     mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION; // TODO Add options to specify this
                     mKeyToLoad = null;
-                    mAuthorizedTask = AuthorizedTask.ADD_KEY;
-                    displayAuthorize();
+
+                    View invalidDescription = findViewById(R.id.invalidDescription);
+                    if(mBitcoin.seedIsValid(mSeed) || invalidDescription.getVisibility() == View.VISIBLE)
+                    {
+                        mAuthorizedTask = AuthorizedTask.ADD_KEY;
+                        displayAuthorize();
+                    }
+                    else
+                        invalidDescription.setVisibility(View.VISIBLE);
                     break;
+                }
                 case R.id.importWallet:
                 {
                     synchronized(this)
@@ -1777,6 +1786,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
             break;
         case R.id.seedWordButton:
+        {
             ViewGroup wordButtons = (ViewGroup)pView.getParent();
 
             // Add word to seed
@@ -1790,6 +1800,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 wordButtons.removeAllViews();
                 ((EditText)findViewById(R.id.seedWordEntry)).setText("");
+                if(mBitcoin.seedIsValid(seed.getText().toString()))
+                {
+                    findViewById(R.id.invalidDescription).setVisibility(View.GONE);
+                    findViewById(R.id.isValid).setVisibility(View.VISIBLE);
+                }
+                else
+                    findViewById(R.id.isValid).setVisibility(View.GONE);
             }
             else
             {
@@ -1822,6 +1839,25 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
             }
             break;
+        }
+        case R.id.removeSeedWord:
+        {
+            // Remove word from seed
+            TextView seed = findViewById(R.id.seed);
+            if(seed != null && seed.getText().length() > 0)
+            {
+                String[] words = seed.getText().toString().split(" ");
+                StringBuffer newSeed = new StringBuffer();
+                for(int index = 0; index < words.length - 1; index++)
+                {
+                    if(index > 0)
+                        newSeed.append(" ");
+                    newSeed.append(words[index]);
+                }
+                seed.setText(newSeed);
+            }
+            break;
+        }
         case R.id.walletHeader: // Expand/Compress wallet
         {
             ViewGroup walletView = (ViewGroup)pView.getParent();

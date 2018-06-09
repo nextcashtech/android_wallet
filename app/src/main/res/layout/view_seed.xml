@@ -13,8 +13,7 @@
         android:layout_marginTop="10dp"
         android:text="@string/wallet_seed"
         android:textAlignment="center"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"/>
+        style="@style/HeadingText"/>
 
     <TextView
         android:layout_width="match_parent"
@@ -37,8 +36,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/mnemonic_seed_entropy"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:textStyle="bold"/>
+            style="@style/HeadingText"/>
 
         <Spinner
             android:id="@+id/seedEntropy"

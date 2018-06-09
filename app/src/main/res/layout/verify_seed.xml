@@ -11,8 +11,7 @@
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
         android:layout_marginTop="10dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"
+        style="@style/HeadingText"
         android:textAlignment="center"
         android:text="@string/select_seed_words"/>
 

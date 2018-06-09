@@ -302,6 +302,7 @@ public class Bitcoin
 
     public native String generateMnemonicSeed(int pEntropy);
     public native String seed(String pPasscode, int pOffset);
+    public native boolean seedIsValid(String pSeed);
 
     public native boolean hasPassCode();
 

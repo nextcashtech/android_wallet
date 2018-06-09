@@ -12,8 +12,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:textAlignment="center"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"/>
+        style="@style/HeadingText"/>
 
 
     <HorizontalScrollView

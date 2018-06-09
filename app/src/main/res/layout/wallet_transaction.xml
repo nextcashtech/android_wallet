@@ -16,8 +16,7 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"
+        style="@style/SubHeadingText"
         android:textAlignment="textEnd"/>
 
     <TextView
@@ -25,7 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"/>
+        style="@style/SubHeadingText"/>
 
     <TextView
         android:id="@+id/count"
@@ -33,7 +32,7 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
+        style="@style/SubHeadingText"
         android:textAlignment="textEnd"/>
 
 </LinearLayout>

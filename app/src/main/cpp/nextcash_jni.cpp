@@ -1007,6 +1007,16 @@ extern "C"
         return pEnvironment->NewStringUTF(result.text());
     }
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_seedIsValid(JNIEnv *pEnvironment,
+                                                                                     jobject pObject,
+                                                                                     jstring pSeed)
+    {
+        const char *seed = pEnvironment->GetStringUTFChars(pSeed, NULL);
+        bool result = BitCoin::Key::validateMnemonicSeed(seed);
+        pEnvironment->ReleaseStringUTFChars(pSeed, seed);
+        return (jboolean)result;
+    }
+
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_hasPassCode(JNIEnv *pEnvironment,
                                                                                      jobject pObject)
     {

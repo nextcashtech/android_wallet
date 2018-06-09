@@ -6,6 +6,15 @@
     android:gravity="center_horizontal"
     android:padding="20dp">
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/HeadingText"
+        android:gravity="center"
+        android:padding="5dp"
+        android:textAlignment="center"
+        android:text="@string/receive_address"/>
+
     <ImageView
         android:id="@+id/addressImage"
         android:layout_width="300dp"

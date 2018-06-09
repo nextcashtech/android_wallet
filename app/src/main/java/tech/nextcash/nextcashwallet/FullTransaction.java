@@ -50,12 +50,6 @@ public class FullTransaction
 
         if(sequenceFound)
         {
-            if(version < 2)
-                return String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td", lockTime * 1000);
-
-            if(lockTime == 0xffffffff)
-                return pContext.getString(R.string.none);
-
             if(lockTime > 500000000)
                 return String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td", lockTime * 1000);
             else

@@ -13,8 +13,7 @@
         android:layout_marginTop="10dp"
         android:text="@string/enter_wallet_seed"
         android:textAlignment="center"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"/>
+        style="@style/HeadingText"/>
 
     <TextView
         android:layout_width="match_parent"
@@ -39,6 +38,32 @@
             android:padding="10dp"/>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/isValid"
+        android:background="@color/colorPositive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:padding="5dp"
+        style="@style/HeadingText"
+        android:textAlignment="center"
+        android:text="@string/valid"
+        android:layout_gravity="center"
+        android:minWidth="200dp"
+        android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/invalidDescription"
+        android:background="@color/colorNegative"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:padding="5dp"
+        android:text="@string/invalid_seed_description"
+        android:textColor="#ffff"
+        android:layout_gravity="center"
+        android:visibility="gone"/>
+
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -55,7 +80,7 @@
             android:animateLayoutChanges="true"/>
     </HorizontalScrollView>
 
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/seedEntropyContainer"
         android:orientation="horizontal"
         android:layout_width="match_parent"
@@ -65,19 +90,32 @@
         android:layout_marginTop="10dp">
 
         <TextView
+            android:id="@+id/nextWordLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/next_word"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             android:textStyle="bold"
-            android:labelFor="@id/seedWordEntry"/>
+            android:labelFor="@id/seedWordEntry"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"/>
 
         <EditText
             android:id="@+id/seedWordEntry"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:inputType="text"/>
+            android:inputType="text"
+            android:layout_toEndOf="@id/nextWordLabel"
+            android:layout_toStartOf="@id/removeSeedWord"/>
 
-    </LinearLayout>
+        <ImageView
+            android:id="@+id/removeSeedWord"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/baseline_backspace_black_36"
+            android:onClick="onClick"
+            android:layout_alignParentEnd="true"/>
+
+    </RelativeLayout>
 
 </LinearLayout>

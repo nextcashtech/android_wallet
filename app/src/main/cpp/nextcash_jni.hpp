@@ -116,6 +116,10 @@ extern "C"
                                                                              jstring pPassCode,
                                                                              jint pOffset);
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_seedIsValid(JNIEnv *pEnvironment,
+                                                                                     jobject pObject,
+                                                                                     jstring pSeed);
+
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_hasPassCode(JNIEnv *pEnvironment,
                                                                                      jobject pObject);
 

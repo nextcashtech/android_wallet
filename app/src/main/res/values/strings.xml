@@ -184,6 +184,14 @@
     <string name="check_seed">Check Seed</string>
     <string name="skip_check_seed">Skip (at your own risk)</string>
     <string name="select_seed_words">Select Seed Words in Order</string>
+    <string name="valid">Valid</string>
+    <string name="remove_last">Remove Last</string>
+    <string name="invalid_seed">Invalid Seed</string>
+    <string name="invalid_seed_description">
+        This seed does not have a valid checksum built into it.
+        Only use it if you are sure it is correct.
+    </string>
+    <string name="receive_address">Receive Address</string>
     <string name="scroll_left_right">Scroll Left and Right</string>
     <string name="seed_doesnt_match">Seed Doesn\'t Match</string>
     <string name="seed_matches">Seed Matches</string>
