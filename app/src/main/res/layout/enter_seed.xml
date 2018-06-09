@@ -114,6 +114,7 @@
             android:layout_height="wrap_content"
             android:src="@drawable/baseline_backspace_black_36"
             android:onClick="onClick"
+            android:contentDescription="@string/remove_last"
             android:layout_alignParentEnd="true"/>
 
     </RelativeLayout>
