@@ -177,7 +177,7 @@
                 android:id="@+id/walletPending"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="10dp"
+                android:paddingBottom="20dp"
                 android:orientation="vertical">
 
             </LinearLayout>
@@ -193,7 +193,7 @@
                 android:id="@+id/walletRecent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="10dp"
+                android:paddingBottom="20dp"
                 android:orientation="vertical">
 
             </LinearLayout>
