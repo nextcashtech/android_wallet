@@ -374,6 +374,27 @@ extern "C"
         daemon->setFinishMode(pMode);
     }
 
+    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setFinishTime(JNIEnv *pEnvironment,
+                                                                                   jobject pObject,
+                                                                                   jint pSecondsFromNow)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject, false);
+        if(daemon == NULL)
+            return;
+
+        daemon->setFinishTime(BitCoin::getTime() + pSecondsFromNow);
+    }
+
+    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_clearFinishTime(JNIEnv *pEnvironment,
+                                                                                     jobject pObject)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject, false);
+        if(daemon == NULL)
+            return;
+
+        daemon->setFinishTime(0);
+    }
+
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setFinishModeNoCreate(JNIEnv *pEnvironment,
                                                                                            jobject pObject,
                                                                                            jint pMode)
@@ -1098,10 +1119,6 @@ extern "C"
                                                                                           jobject pObject,
                                                                                           jstring pPaymentCode)
     {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
-        if(daemon == NULL)
-            return NULL;
-
         // Parse
         const char *paymentCode = pEnvironment->GetStringUTFChars(pPaymentCode, NULL);
         BitCoin::PaymentRequest request = BitCoin::decodePaymentCode(paymentCode);
@@ -1134,6 +1151,8 @@ extern "C"
         // Set protocol
         switch(request.protocol)
         {
+            case BitCoin::PaymentRequest::Protocol::SCRIPT_HASH: // TODO Implement
+            case BitCoin::PaymentRequest::Protocol::PRIVATE_KEY: // TODO Implement
             case BitCoin::PaymentRequest::Protocol::NONE:
                 pEnvironment->SetIntField(result, sPaymentRequestProtocolID, (jint)0);
                 break;

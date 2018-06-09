@@ -124,6 +124,8 @@ public class Bitcoin
     public native int finishMode();
     public native void setFinishMode(int pFinishMode);
     public native void setFinishModeNoCreate(int pFinishMode);
+    public native void setFinishTime(int pSecondsFromNow);
+    public native void clearFinishTime();
 
     // Run the daemon process.
     public native void run(int pFinishMode);

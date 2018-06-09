@@ -46,6 +46,11 @@ extern "C"
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setFinishMode(JNIEnv *pEnvironment,
                                                                                    jobject pObject,
                                                                                    jint pMode);
+    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setFinishTime(JNIEnv *pEnvironment,
+                                                                                   jobject pObject,
+                                                                                   jint pSecondsFromNow);
+    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_clearFinishTime(JNIEnv *pEnvironment,
+                                                                                     jobject pObject);
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_run(JNIEnv *pEnvironment,
                                                                          jobject pObject,
                                                                          jint pMode);

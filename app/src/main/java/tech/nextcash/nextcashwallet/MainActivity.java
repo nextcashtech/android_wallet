@@ -157,6 +157,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             @Override
             public void onFinish()
             {
+
             }
         };
 
@@ -185,6 +186,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         //mQRScanner.addExtra(); // TODO Find extra value that can switch to portrait mode
 
         scheduleJobs();
+
+        startBitcoinService();
     }
 
     private void startBitcoinService()
@@ -274,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onStart()
     {
-        startBitcoinService();
+        mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
         startUpdateRates();
         super.onStart();
     }
@@ -282,6 +285,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onResume()
     {
+        mBitcoin.clearFinishTime();
         updateStatus();
         super.onResume();
     }
@@ -289,6 +293,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onPause()
     {
+        mBitcoin.setFinishTime(180); // 180 seconds in the future
         mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
         mDelayHandler.removeCallbacks(mRateUpdateRunnable);
         super.onPause();
@@ -298,18 +303,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public void onStop()
     {
         mBitcoin.setFinishMode(Bitcoin.FINISH_ON_SYNC);
-        if(mServiceIsBound)
-        {
-            Log.d(logTag, "Unbinding Bitcoin service");
-            unbindService(mServiceConnection);
-            mServiceIsBound = false;
-        }
         super.onStop();
     }
 
     @Override
     protected void onDestroy()
     {
+        if(mServiceIsBound)
+        {
+            Log.d(logTag, "Unbinding Bitcoin service");
+            unbindService(mServiceConnection);
+            mServiceIsBound = false;
+        }
         super.onDestroy();
     }
 
@@ -616,6 +621,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         mPaymentRequest = mBitcoin.decodePaymentCode(pPaymentCode);
 
+        if(pPaymentCode == null)
+        {
+            showMessage(getString(R.string.failed_payment_code), 2000);
+            updateWallets();
+            return;
+        }
+
         mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
 
         if(mPaymentRequest.format == PaymentRequest.FORMAT_INVALID ||
@@ -633,7 +645,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 contentView.removeAllViews();
                 findViewById(R.id.statusBar).setVisibility(View.GONE);
-
                 findViewById(R.id.progress).setVisibility(View.GONE);
 
                 ActionBar actionBar = getSupportActionBar();
