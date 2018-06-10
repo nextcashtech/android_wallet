@@ -222,6 +222,7 @@
         <item>bits</item>
         <item>bitcoins</item>
     </string-array>
+    <string name="bitcoins">bitcoins</string>
     <string name="transaction">Transaction</string>
     <string name="id">ID</string>
     <string name="version">Version</string>

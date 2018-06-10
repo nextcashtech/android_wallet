@@ -41,7 +41,7 @@ import java.util.Collections;
 import java.util.Locale;
 
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener, TextWatcher
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener
 {
     public static final String logTag = "MainActivity";
     public static final int SETTINGS_REQUEST_CODE = 20;
@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private IntentIntegrator mQRScanner;
     private long mPaymentAmount;
     private PaymentRequest mPaymentRequest;
+    private TextWatcher mSeedWordWatcher, mAmountWatcher;
 
 
     public class TransactionRunnable implements Runnable
@@ -692,8 +693,73 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 ((TextView)sendView.findViewById(R.id.title)).setText(title);
 
                 EditText amount = sendView.findViewById(R.id.amount);
+                TextView satoshiAmount = sendView.findViewById(R.id.satoshiAmount);
                 if(mPaymentRequest.amount != 0)
+                {
                     amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mFiatRate));
+                    satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
+                }
+                else
+                    satoshiAmount.setText(Bitcoin.satoshiText(0));
+
+                if(mAmountWatcher == null)
+                {
+                    mAmountWatcher = new TextWatcher()
+                    {
+                        @Override
+                        public void beforeTextChanged(CharSequence pString, int pStart, int pCount, int pAfter)
+                        {
+
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
+                        {
+                            Spinner units = findViewById(R.id.units);
+                            EditText amountField = findViewById(R.id.amount);
+                            TextView satoshiAmount = findViewById(R.id.satoshiAmount);
+                            double amount;
+                            long satoshis;
+
+                            if(units == null || amountField == null || satoshiAmount == null)
+                                return;
+
+                            try
+                            {
+                                amount = Double.parseDouble(amountField.getText().toString());
+                            }
+                            catch(Exception pException)
+                            {
+                                amount = 0.0;
+                            }
+
+                            switch(units.getSelectedItemPosition())
+                            {
+                                case 0: // USD
+                                    satoshis = Bitcoin.satoshisFromBitcoins(amount / mFiatRate);
+                                    break;
+                                case 1: // bits
+                                    satoshis = Bitcoin.satoshisFromBits(amount);
+                                    break;
+                                case 2: // bitcoins
+                                    satoshis = Bitcoin.satoshisFromBitcoins(amount);
+                                    break;
+                                default:
+                                    satoshis = 0;
+                                    break;
+                            }
+
+                            satoshiAmount.setText(Bitcoin.satoshiText(satoshis));
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable pString)
+                        {
+
+                        }
+                    };
+                }
+                amount.addTextChangedListener(mAmountWatcher);
 
                 Spinner units = sendView.findViewById(R.id.units);
                 ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.amount_units,
@@ -710,9 +776,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     amount.setFocusable(false);
                     units.setEnabled(false);
                 }
-
-                // TODO Update amount conversion text
-                TextView amountConverted = sendView.findViewById(R.id.amountConverted);
 
                 ((TextView)sendView.findViewById(R.id.paymentCode)).setText(mPaymentRequest.code.toLowerCase());
 
@@ -1029,7 +1092,40 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         else if(pParent.getId() == R.id.units)
         {
-            // TODO Handle changing units
+            EditText amount = findViewById(R.id.amount);
+            TextView satoshiAmount = findViewById(R.id.satoshiAmount);
+            long satoshis;
+
+            try
+            {
+                satoshis = Long.parseLong(satoshiAmount.getText().toString().replaceAll("\\s", ""));
+            }
+            catch(Exception pException)
+            {
+                satoshis = 0;
+            }
+
+            if(satoshis == 0)
+                amount.setText("");
+            else
+                switch(pPosition)
+                {
+                    case 0: // USD
+                        amount.setText(String.format(Locale.getDefault(), "%.2f",
+                          Bitcoin.bitcoins(satoshis) * mFiatRate));
+                        break;
+                    case 1: // bits
+                        amount.setText(String.format(Locale.getDefault(), "%.6f",
+                          Bitcoin.bitsFromBitcoins(Bitcoin.bitcoins(satoshis))));
+                        break;
+                    case 2: // bitcoins
+                        amount.setText(String.format(Locale.getDefault(), "%.8f",
+                          Bitcoin.bitcoins(satoshis)));
+                        break;
+                    default:
+                        amount.setText("");
+                        break;
+                }
         }
     }
 
@@ -1082,50 +1178,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.VERIFY_SEED;
     }
 
-    @Override
-    public void beforeTextChanged(CharSequence pString, int pStart, int pCount, int pAfter)
-    {
-
-    }
-
-    @Override
-    public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
-    {
-        LinearLayout wordButtons = findViewById(R.id.seedButtons);
-        EditText textField = findViewById(R.id.seedWordEntry);
-
-        if(wordButtons == null || textField == null)
-            return;
-
-        wordButtons.removeAllViews();
-
-        if(pString.length() == 0)
-            return;
-
-        // Find all seed words that start with the text field
-        String[] matchingWords = mBitcoin.getMnemonicWords(pString.toString());
-
-        if(matchingWords.length > 20)
-            return;
-
-        // Put those words into the word buttons group
-        LayoutInflater inflater = getLayoutInflater();
-        TextView wordButton;
-
-        for(String word : matchingWords)
-        {
-            wordButton = (TextView)inflater.inflate(R.layout.seed_word_button, wordButtons, false);
-            wordButton.setText(word);
-            wordButtons.addView(wordButton);
-        }
-    }
-
-    @Override
-    public void afterTextChanged(Editable pString)
-    {
-
-    }
-
     public synchronized void displayRecoverWallet()
     {
         LayoutInflater inflater = getLayoutInflater();
@@ -1144,7 +1196,58 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         ViewGroup enterSeed = (ViewGroup)inflater.inflate(R.layout.enter_seed, contentView, false);
-        ((EditText)enterSeed.findViewById(R.id.seedWordEntry)).addTextChangedListener(this);
+
+        if(mSeedWordWatcher == null)
+        {
+            mSeedWordWatcher = new TextWatcher()
+            {
+                @Override
+                public void beforeTextChanged(CharSequence pString, int pStart, int pCount, int pAfter)
+                {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
+                {
+                    LinearLayout wordButtons = findViewById(R.id.seedButtons);
+                    EditText textField = findViewById(R.id.seedWordEntry);
+
+                    if(wordButtons == null || textField == null)
+                        return;
+
+                    wordButtons.removeAllViews();
+
+                    if(pString.length() == 0)
+                        return;
+
+                    // Find all seed words that start with the text field
+                    String[] matchingWords = mBitcoin.getMnemonicWords(pString.toString());
+
+                    if(matchingWords.length > 20)
+                        return;
+
+                    // Put those words into the word buttons group
+                    LayoutInflater inflater = getLayoutInflater();
+                    TextView wordButton;
+
+                    for(String word : matchingWords)
+                    {
+                        wordButton = (TextView)inflater.inflate(R.layout.seed_word_button, wordButtons, false);
+                        wordButton.setText(word);
+                        wordButtons.addView(wordButton);
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable pString)
+                {
+
+                }
+            };
+        }
+
+        ((EditText)enterSeed.findViewById(R.id.seedWordEntry)).addTextChangedListener(mSeedWordWatcher);
 
         contentView.addView(enterSeed);
 
@@ -1667,10 +1770,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         mPaymentAmount = mPaymentRequest.amount;
                     else
                     {
-                        EditText amount = findViewById(R.id.amount);
+                        TextView amount = findViewById(R.id.satoshiAmount);
                         if(amount == null)
                         {
-                            Log.e(logTag, "Failed to find amount edit text view");
+                            Log.e(logTag, "Failed to find satoshi amount text view");
                             showMessage(getString(R.string.failed_payment_amount), 2000);
                             updateWallets();
                             return;
@@ -1679,25 +1782,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         String paymentAmountString = amount.getText().toString();
                         if(paymentAmountString == null || paymentAmountString.length() == 0)
                         {
-                            Log.e(logTag, "Amount string empty");
+                            Log.e(logTag, "Amount empty");
                             showMessage(getString(R.string.failed_payment_amount), 2000);
                             updateWallets();
                             return;
                         }
 
-                        Spinner units = findViewById(R.id.units);
-                        if(units == null)
-                        {
-                            Log.e(logTag, "Failed to find units spinner");
-                            showMessage(getString(R.string.failed_payment_amount), 2000);
-                            updateWallets();
-                            return;
-                        }
-
-                        double rawAmount;
                         try
                         {
-                            rawAmount = Double.parseDouble(paymentAmountString);
+                            mPaymentAmount = Long.parseLong(paymentAmountString.replaceAll("\\s", ""));
                         }
                         catch(Exception pException)
                         {
@@ -1706,19 +1799,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             showMessage(getString(R.string.failed_payment_amount), 2000);
                             updateWallets();
                             return;
-                        }
-
-                        switch(units.getSelectedItemPosition())
-                        {
-                            case 0: // USD
-                                mPaymentAmount = Bitcoin.satoshisFromBitcoins(rawAmount / mFiatRate);
-                                break;
-                            case 1: // bits
-                                mPaymentAmount = Bitcoin.satoshisFromBits(rawAmount);
-                                break;
-                            case 2: // bitcoins
-                                mPaymentAmount = Bitcoin.satoshisFromBitcoins(rawAmount);
-                                break;
                         }
                     }
 
