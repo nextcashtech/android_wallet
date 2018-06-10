@@ -223,7 +223,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             else
             {
                 if(syncFrequency == 0)
-                    syncFrequency = 60; // Default of 60 minutes
+                    syncFrequency = 360; // Default of 6 hours
 
                 boolean scheduleNeeded = false;
                 if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N)

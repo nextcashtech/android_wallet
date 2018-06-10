@@ -38,7 +38,7 @@ public class SettingsActivity extends AppCompatActivity
         // Configure sync frequency options
         int currentFrequency = settings.intValue("sync_frequency");
         if(currentFrequency == 0)
-            currentFrequency = 60; // Default to 60 minutes
+            currentFrequency = 360; // Default to 6 hours
 
         Spinner syncFrequency = findViewById(R.id.syncFrequencySpinner);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
@@ -58,7 +58,7 @@ public class SettingsActivity extends AppCompatActivity
             }
 
         if(!found)
-            syncFrequency.setSelection(2); // Default to 60 minutes
+            syncFrequency.setSelection(2); // Default to 6 hours
 
         // Configure transaction notifications toggle
         Switch notifyTransactions = findViewById(R.id.notifyTransactionsToggle);
