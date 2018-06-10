@@ -13,9 +13,10 @@ public class CreateKeyTask extends AsyncTask<String, Integer, Integer>
     private String mSeed;
     private int mDerivationMethod;
     private boolean mStartNewPass;
+    private boolean mIsBackedUp;
 
     public CreateKeyTask(MainActivity pActivity, Bitcoin pBitcoin, String pPasscode, String pSeed,
-      int pDerivationMethod, boolean pStartNewPass)
+      int pDerivationMethod, boolean pStartNewPass, boolean pIsBackedUp)
     {
         mActivity = pActivity;
         mBitcoin = pBitcoin;
@@ -23,6 +24,7 @@ public class CreateKeyTask extends AsyncTask<String, Integer, Integer>
         mSeed = pSeed;
         mDerivationMethod = pDerivationMethod;
         mStartNewPass = pStartNewPass;
+        mIsBackedUp = pIsBackedUp;
     }
 
     @Override
@@ -30,7 +32,7 @@ public class CreateKeyTask extends AsyncTask<String, Integer, Integer>
     {
         String name = String.format(Locale.getDefault(), "%s %d", mActivity.getString(R.string.wallet),
           mBitcoin.wallets.length + 1);
-        int result = mBitcoin.addSeed(mPasscode, mSeed, mDerivationMethod, name, mStartNewPass);
+        int result = mBitcoin.addSeed(mPasscode, mSeed, mDerivationMethod, name, mStartNewPass, mIsBackedUp);
 
         if(result == 0)
             mBitcoin.update(true);

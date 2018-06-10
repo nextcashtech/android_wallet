@@ -38,6 +38,8 @@ extern "C"
                                                                               jobject pObject);
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isRunning(JNIEnv *pEnvironment,
                                                                                    jobject pObject);
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_initialBlockDownloadIsComplete(JNIEnv *pEnvironment,
+                                                                                                        jobject pObject);
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isInSync(JNIEnv *pEnvironment,
                                                                                   jobject pObject);
 
@@ -99,13 +101,18 @@ extern "C"
                                                                                  jint pOffset,
                                                                                  jstring pName);
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setIsBackedUp(JNIEnv *pEnvironment,
+                                                                                       jobject pObject,
+                                                                                       jint pOffset);
+
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_addSeed(JNIEnv *pEnvironment,
                                                                              jobject pObject,
                                                                              jstring pPassCode,
                                                                              jstring pSeed,
                                                                              jint pDerivationMethod,
                                                                              jstring pName,
-                                                                             jboolean pStartNewPass);
+                                                                             jboolean pStartNewPass,
+                                                                             jboolean pIsBackedUp);
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_removeKey(JNIEnv *pEnvironment,
                                                                                jobject pObject,

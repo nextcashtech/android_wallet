@@ -116,6 +116,8 @@ public class Bitcoin
 
     public native boolean isRunning();
 
+    public native boolean initialBlockDownloadIsComplete();
+
     public native boolean isInSync();
 
     public static final int FINISH_ON_REQUEST = 0; // Continue running until stop is requested.
@@ -287,6 +289,8 @@ public class Bitcoin
 
     public native boolean setName(int pOffset, String pName);
 
+    public native boolean setIsBackedUp(int pOffset);
+
     public static final int BIP0044_DERIVATION = 0;
     public static final int BIP0032_DERIVATION = 1;
     public static final int SIMPLE_DERIVATION  = 2;
@@ -298,7 +302,7 @@ public class Bitcoin
 
     // Add a key from a mnemonic seed.
     public native int addSeed(String pPassCode, String pMnemonicSeed, int pDerivationPath, String pName,
-      boolean pStartNewPass);
+      boolean pStartNewPass, boolean pIsBackedUp);
 
     public native int removeKey(String pPassCode, int pOffset);
 

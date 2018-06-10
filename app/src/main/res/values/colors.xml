@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="colorPrimary">#f3b5</color>
-    <color name="colorPrimaryDark">#f173</color>
+    <color name="colorPrimaryDark">#f082</color>
     <color name="colorButton">#f13b</color>
     <color name="colorButtonNegative">#fc32</color>
     <color name="colorButtonLight">#f59c</color>
-    <color name="colorNotification">#fe72</color>
+    <color name="colorNotification">#ff93</color>
     <color name="colorProgress">#53b5</color>
     <color name="colorPositive">#f4b4</color>
     <color name="colorNegative">#fc66</color>
@@ -14,6 +14,7 @@
     <color name="warningText">#fc66</color>
     <color name="highlight">#fffa</color>
     <color name="textNegative">#fa21</color>
+    <color name="textNegativeLight">#f810</color>
     <color name="textWarning">#fa90</color>
     <color name="textPositive">#f180</color>
 </resources>

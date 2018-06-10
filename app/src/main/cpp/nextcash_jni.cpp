@@ -30,6 +30,8 @@ extern "C"
     jfieldID sWalletUpdatedTransactionsID = NULL;
     jfieldID sWalletIsPrivateID = NULL;
     jfieldID sWalletNameID = NULL;
+    jfieldID sWalletIsSynchronizedID = NULL;
+    jfieldID sWalletIsBackedUpID = NULL;
     jfieldID sWalletBalanceID = NULL;
     jfieldID sWalletBlockHeightID = NULL;
 
@@ -224,6 +226,8 @@ extern "C"
           "[Ltech/nextcash/nextcashwallet/Transaction;");
         sWalletIsPrivateID = pEnvironment->GetFieldID(sWalletClass, "isPrivate", "Z");
         sWalletNameID = pEnvironment->GetFieldID(sWalletClass, "name", "Ljava/lang/String;");
+        sWalletIsSynchronizedID = pEnvironment->GetFieldID(sWalletClass, "isSynchronized", "Z");
+        sWalletIsBackedUpID = pEnvironment->GetFieldID(sWalletClass, "isBackedUp", "Z");
         sWalletBalanceID = pEnvironment->GetFieldID(sWalletClass, "balance", "J");
         sWalletBlockHeightID = pEnvironment->GetFieldID(sWalletClass, "blockHeight", "I");
     }
@@ -341,6 +345,16 @@ extern "C"
             return JNI_FALSE;
 
         return (jboolean)daemon->isRunning();
+    }
+
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_initialBlockDownloadIsComplete(JNIEnv *pEnvironment,
+                                                                                                        jobject pObject)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return JNI_FALSE;
+
+        return (jboolean)BitCoin::Info::instance().initialBlockDownloadIsComplete();
     }
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isInSync(JNIEnv *pEnvironment,
@@ -652,9 +666,12 @@ extern "C"
 
         if(result == 0)
         {
+            unsigned int offset = daemon->keyStore()->size() - 1;
             const char *name = pEnvironment->GetStringUTFChars(pName, NULL);
-            daemon->keyStore()->setName(daemon->keyStore()->size() - 1, name);
+            daemon->keyStore()->setName(offset, name);
             pEnvironment->ReleaseStringUTFChars(pName, name);
+
+            daemon->keyStore()->setBackedUp(offset);
 
             if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
             {
@@ -871,6 +888,10 @@ extern "C"
           (jboolean)daemon->keyStore()->hasPrivate((unsigned int)pOffset));
         pEnvironment->SetObjectField(pWallet, sWalletNameID,
           pEnvironment->NewStringUTF(daemon->keyStore()->name((unsigned int)pOffset).text()));
+        pEnvironment->SetBooleanField(pWallet, sWalletIsSynchronizedID,
+          (jboolean)daemon->keyStore()->isSynchronized((unsigned int)pOffset));
+        pEnvironment->SetBooleanField(pWallet, sWalletIsBackedUpID,
+          (jboolean)daemon->keyStore()->isBackedUp((unsigned int)pOffset));
         pEnvironment->SetLongField(pWallet, sWalletBalanceID, (jlong)balance);
         pEnvironment->SetIntField(pWallet, sWalletBlockHeightID, blockHeight);
         pEnvironment->SetLongField(pWallet, sWalletLastUpdatedID, (jlong)BitCoin::getTime());
@@ -903,6 +924,19 @@ extern "C"
         return result;
     }
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setIsBackedUp(JNIEnv *pEnvironment,
+                                                                                       jobject pObject,
+                                                                                       jint pOffset)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL || daemon->keyStore()->size() <= pOffset)
+            return JNI_FALSE;
+
+        daemon->keyStore()->setBackedUp((unsigned int)pOffset);
+
+        return (jboolean)savePublicKeys(daemon);
+    }
+
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_generateMnemonicSeed(JNIEnv *pEnvironment,
                                                                                              jobject pObject,
                                                                                              jint pEntropy)
@@ -916,7 +950,8 @@ extern "C"
                                                                              jstring pSeed,
                                                                              jint pDerivationMethod,
                                                                              jstring pName,
-                                                                             jboolean pStartNewPass)
+                                                                             jboolean pStartNewPass,
+                                                                             jboolean pIsBackedUp)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL)
@@ -951,8 +986,13 @@ extern "C"
             return (jint)result;
         }
 
+        unsigned int offset = daemon->keyStore()->size() - 1;
         const char *name = pEnvironment->GetStringUTFChars(pName, NULL);
-        daemon->keyStore()->setName(daemon->keyStore()->size() - 1, name);
+        daemon->keyStore()->setName(offset, name);
+        if(pIsBackedUp)
+            daemon->keyStore()->setBackedUp(offset);
+        if(!pStartNewPass)
+            daemon->keyStore()->setSynchronized(offset);
         pEnvironment->ReleaseStringUTFChars(pName, name);
 
         if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))

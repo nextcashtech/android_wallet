@@ -5,6 +5,15 @@
 
     <string name="main_channel_name">Main</string>
 
+    <string name="initial_block_download_message">
+        The initial block download is not yet complete.
+        It might take an hour or more.
+        You will not be able to send or confirm transactions until it is complete.
+        You can request payments, you just won't be able to validate confirms.
+    </string>
+    <string name="synchronizing">Synchronizing</string>
+    <string name="needs_backed_up">Needs Backed Up</string>
+
     <string name="inactive">Inactive</string>
     <string name="loading">Loading</string>
     <string name="synchronized_text">Synchronized</string>
@@ -161,6 +170,7 @@
     <string name="passcode">Pass Code</string>
     <string name="authorize">Authorize</string>
     <string name="create_wallet">Create Wallet</string>
+    <string name="verify_seed">Verify Seed</string>
     <string name="wallet_seed">Wallet Seed</string>
     <string name="enter_wallet_seed">Enter Wallet Seed</string>
     <string name="wallet_seed_description">

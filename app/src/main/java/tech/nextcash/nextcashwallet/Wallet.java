@@ -5,6 +5,8 @@ public class Wallet
 {
     public boolean isPrivate;
     public String name;
+    public boolean isSynchronized;
+    public boolean isBackedUp;
     public long balance;
     public Transaction[] transactions, updatedTransactions;
     public long lastUpdated;
@@ -14,6 +16,8 @@ public class Wallet
     public Wallet()
     {
         isPrivate = false;
+        isSynchronized = false;
+        isBackedUp = false;
         balance = 0;
         lastUpdated = 0;
         blockHeight = 0;

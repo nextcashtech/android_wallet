@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private AuthorizedTask mAuthorizedTask;
     private String mKeyToLoad, mSeed;
-    private boolean mSeedIsRecovered;
+    private boolean mSeedIsRecovered, mSeedIsBackedUp;
     private int mCurrentWalletViewID;
     private boolean mSeedBackupOnly;
     private int mDerivationPathMethodToLoad;
@@ -195,7 +195,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         Intent intent = new Intent(this, BitcoinService.class);
         intent.putExtra("FinishMode", Bitcoin.FINISH_ON_REQUEST);
-        startService(intent);
+
+        if(!mBitcoin.isRunning())
+            startService(intent);
 
         if(!mServiceIsBound)
         {
@@ -287,6 +289,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public void onResume()
     {
         mBitcoin.clearFinishTime();
+        if(!mBitcoin.isRunning())
+            startBitcoinService();
         updateStatus();
         super.onResume();
     }
@@ -432,6 +436,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
         }
 
+        if(mBitcoin.initialBlockDownloadIsComplete())
+        {
+            View ibdMessage = findViewById(R.id.initialBlockDownloadMessage);
+            if(ibdMessage != null)
+                ibdMessage.setVisibility(View.GONE);
+        }
+
         if(exchangeRateUpdated && mMode == Mode.WALLETS)
             updateWallets();
 
@@ -481,6 +492,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     actionBar.setTitle(getResources().getString(R.string.app_name));
                     actionBar.setDisplayHomeAsUpEnabled(false); // Show the Up button in the action bar.
                 }
+
+                if(!mBitcoin.initialBlockDownloadIsComplete())
+                    inflater.inflate(R.layout.initial_block_download_message, content, true);
             }
 
             if(mBitcoin.wallets != null)
@@ -529,6 +543,31 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         view.findViewById(R.id.walletScan).setVisibility(View.GONE);
                         view.findViewById(R.id.walletSend).setVisibility(View.GONE);
                         view.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
+                    }
+
+                    if(!mBitcoin.initialBlockDownloadIsComplete())
+                    {
+                        view.findViewById(R.id.walletScan).setVisibility(View.GONE);
+                        view.findViewById(R.id.walletSend).setVisibility(View.GONE);
+                    }
+
+                    if(!wallet.isSynchronized)
+                    {
+                        TextView walletWarning = view.findViewById(R.id.walletWarning);
+                        if(walletWarning != null)
+                        {
+                            walletWarning.setVisibility(View.VISIBLE);
+                            walletWarning.setText(R.string.synchronizing);
+                        }
+                    }
+                    else if(!wallet.isBackedUp)
+                    {
+                        TextView walletWarning = view.findViewById(R.id.walletWarning);
+                        if(walletWarning != null)
+                        {
+                            walletWarning.setVisibility(View.VISIBLE);
+                            walletWarning.setText(R.string.needs_backed_up);
+                        }
                     }
 
                     transactions = view.findViewById(R.id.walletTransactions);
@@ -1050,6 +1089,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.view_seed, contentView, false);
         mSeed = mBitcoin.generateMnemonicSeed(28);
+        mSeedIsBackedUp = false;
         mSeedIsRecovered = false;
         mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION;
         mSeedBackupOnly = false;
@@ -1087,6 +1127,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 mSeed = mBitcoin.generateMnemonicSeed(values[pPosition]);
                 mSeedIsRecovered = false;
+                mSeedIsBackedUp = false;
                 ((TextView)findViewById(R.id.seed)).setText(mSeed);
             }
         }
@@ -1148,7 +1189,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.create_wallet));
+            actionBar.setTitle(" " + getResources().getString(R.string.verify_seed));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -1289,6 +1330,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             return;
         }
         mSeedIsRecovered = false;
+        mSeedIsBackedUp = false;
         mSeedBackupOnly = true;
         ((TextView)createWallet.findViewById(R.id.seed)).setText(mSeed);
 
@@ -1682,6 +1724,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     mSeed = ((TextView)findViewById(R.id.seed)).getText().toString();
                     mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION; // TODO Add options to specify this
                     mKeyToLoad = null;
+                    mSeedIsBackedUp = true;
 
                     View invalidDescription = findViewById(R.id.invalidDescription);
                     if(mBitcoin.seedIsValid(mSeed) || invalidDescription.getVisibility() == View.VISIBLE)
@@ -1821,7 +1864,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             else
                             {
                                 CreateKeyTask task = new CreateKeyTask(this, mBitcoin, passcode, mSeed,
-                                  mDerivationPathMethodToLoad, mSeedIsRecovered);
+                                  mDerivationPathMethodToLoad, mSeedIsRecovered, mSeedIsBackedUp);
                                 task.execute();
                                 mSeed = null;
                             }
@@ -1912,6 +1955,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         if(mSeedBackupOnly)
                         {
                             mSeed = null;
+                            mBitcoin.setIsBackedUp(mBitcoin.walletOffsetForViewID(mCurrentWalletViewID));
                             showMessage(getString(R.string.seed_matches), 2000);
                             updateWallets();
                         }
@@ -1919,6 +1963,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         {
                             mAuthorizedTask = AuthorizedTask.ADD_KEY;
                             mKeyToLoad = null;
+                            mSeedIsBackedUp = true;
                             displayAuthorize();
                         }
                     }
