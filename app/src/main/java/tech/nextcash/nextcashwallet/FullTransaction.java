@@ -31,11 +31,32 @@ public class FullTransaction
         long result = 0;
 
         for(Input input : inputs)
-            result -= input.amount;
+            if(input.amount != -1)
+                result -= input.amount;
 
         for(Output output : outputs)
             if(output.related)
                 result += output.amount;
+
+        return result;
+    }
+
+    long fee()
+    {
+        if(inputs == null || outputs == null)
+            return -1;
+
+        long result = 0;
+
+        for(Input input : inputs)
+        {
+            if(input.amount == -1)
+                return -1;
+            result += input.amount;
+        }
+
+        for(Output output : outputs)
+            result -= output.amount;
 
         return result;
     }

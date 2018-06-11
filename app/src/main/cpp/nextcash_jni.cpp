@@ -91,6 +91,13 @@ extern "C"
     jfieldID sFullTransactionOutputsID = NULL;
     jfieldID sFullTransactionLockTimeID = NULL;
 
+    // Outpoint
+    jclass sOutpointClass = NULL;
+    jmethodID sOutpointConstructor = NULL;
+    jfieldID sOutpointTransactionID = NULL;
+    jfieldID sOutpointIndexID = NULL;
+    jfieldID sOutpointOutputID = NULL;
+
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_NextCash_test(JNIEnv *pEnvironment,
                                                                                jobject pObject)
@@ -202,6 +209,27 @@ extern "C"
           "[Ltech/nextcash/nextcashwallet/Output;");
         sFullTransactionLockTimeID = pEnvironment->GetFieldID(sFullTransactionClass, "lockTime",
           "I");
+    }
+
+    void setupOutputClass(JNIEnv *pEnvironment)
+    {
+        sOutputClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Output");
+        sOutputConstructor = pEnvironment->GetMethodID(sOutputClass, "<init>", "()V");
+        sOutputAmountID = pEnvironment->GetFieldID(sOutputClass, "amount", "J");
+        sOutputScriptID = pEnvironment->GetFieldID(sOutputClass, "script", "Ljava/lang/String;");
+        sOutputAddressID = pEnvironment->GetFieldID(sOutputClass, "address", "Ljava/lang/String;");
+        sOutputRelatedID = pEnvironment->GetFieldID(sOutputClass, "related", "Z");
+    }
+
+    void setupOutpointClass(JNIEnv *pEnvironment)
+    {
+        sOutpointClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Outpoint");
+        sOutpointConstructor = pEnvironment->GetMethodID(sOutpointClass, "<init>", "()V");
+        sOutpointTransactionID = pEnvironment->GetFieldID(sOutpointClass, "transactionID",
+          "Ljava/lang/String;");
+        sOutpointIndexID = pEnvironment->GetFieldID(sOutpointClass, "index", "I");
+        sOutpointOutputID = pEnvironment->GetFieldID(sOutpointClass, "output",
+          "Ltech/nextcash/nextcashwallet/Output;");
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setupJNI(JNIEnv *pEnvironment,
@@ -1363,7 +1391,8 @@ extern "C"
                                                                                  jint pWalletOffset,
                                                                                  jstring pPassCode,
                                                                                  jstring pPublicKeyHash,
-                                                                                 jlong pAmount)
+                                                                                 jlong pAmount,
+                                                                                 jdouble pFeeRate)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL || daemon->keyStore()->size() <= pWalletOffset)
@@ -1382,7 +1411,8 @@ extern "C"
             return (jint)3; // Invalid Hash
         }
 
-        int result = daemon->sendPayment((unsigned int)pWalletOffset, hash, (uint64_t)pAmount);
+        int result = daemon->sendPayment((unsigned int)pWalletOffset, hash, (uint64_t)pAmount,
+          pFeeRate);
 
         if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
             daemon->saveMonitor();
@@ -1438,5 +1468,90 @@ extern "C"
                                                                               jobject pObject)
     {
         return (jboolean)BitCoin::test();
+    }
+
+    jobject createOutput(JNIEnv *pEnvironment, BitCoin::Daemon *pDaemon, BitCoin::Output &pOutput,
+      bool pIsRelated)
+    {
+        jobject result = pEnvironment->NewObject(sOutputClass, sOutputConstructor);
+
+        // Set amount
+        pEnvironment->SetLongField(result, sOutputAmountID, pOutput.amount);
+
+        // Set script
+        pOutput.script.setReadOffset(0);
+        pEnvironment->SetObjectField(result, sOutputScriptID,
+          pEnvironment->NewStringUTF(BitCoin::ScriptInterpreter::scriptText(pOutput.script,
+            pDaemon->chain()->forks())));
+
+        // Set address
+        NextCash::HashList payAddresses;
+        pOutput.script.setReadOffset(0);
+        BitCoin::ScriptInterpreter::ScriptType scriptType =
+          BitCoin::ScriptInterpreter::parseOutputScript(pOutput.script, payAddresses);
+        if(scriptType == BitCoin::ScriptInterpreter::P2PKH && payAddresses.size() == 1)
+        {
+            pEnvironment->SetObjectField(result, sOutputAddressID,
+              pEnvironment->NewStringUTF(payAddresses.front().hex()));
+        }
+
+        // Set related
+        pEnvironment->SetBooleanField(result, sOutputRelatedID, (jboolean)pIsRelated);
+
+        return result;
+    }
+
+    jobject createOutpoint(JNIEnv *pEnvironment, BitCoin::Daemon *pDaemon, BitCoin::Outpoint &pOutpoint)
+    {
+        jobject result = pEnvironment->NewObject(sOutpointClass, sOutpointConstructor);
+
+        // Set transactionID
+        pEnvironment->SetObjectField(result, sOutpointTransactionID,
+          pEnvironment->NewStringUTF(pOutpoint.transactionID.hex()));
+
+        // Set index
+        pEnvironment->SetIntField(result, sOutpointIndexID, pOutpoint.index);
+
+        // Set output
+        pEnvironment->SetObjectField(result, sOutpointOutputID,
+          createOutput(pEnvironment, pDaemon, *pOutpoint.output, true));
+
+        return result;
+    }
+
+    JNIEXPORT jobjectArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getUnspentOutputs(JNIEnv *pEnvironment,
+                                                                                               jobject pObject,
+                                                                                               jint pWalletOffset)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL || daemon->keyStore()->size() <= pWalletOffset)
+            return NULL;
+
+        std::vector<BitCoin::Key *> *chainKeys =
+          daemon->keyStore()->chainKeys((unsigned int)pWalletOffset);
+        if(chainKeys == NULL)
+            return NULL;
+
+        setupOutputClass(pEnvironment);
+        setupOutpointClass(pEnvironment);
+
+        // Get UTXOs from monitor
+        std::vector<BitCoin::Outpoint> unspentOutputs;
+        if(!daemon->monitor()->getUnspentOutputs(chainKeys->begin(), chainKeys->end(),
+          unspentOutputs, true))
+            return NULL;
+
+        jobjectArray result = pEnvironment->NewObjectArray((jsize)unspentOutputs.size(),
+          sOutpointClass, NULL);
+
+        unsigned int index = 0;
+        for(std::vector<BitCoin::Outpoint>::iterator output = unspentOutputs.begin();
+          output != unspentOutputs.end(); ++output, ++index)
+        {
+            pEnvironment->SetObjectArrayElement(result, index,
+              createOutpoint(pEnvironment, daemon, *output));
+        }
+
+        return result;
     }
 }

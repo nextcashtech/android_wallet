@@ -4,7 +4,8 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="10dp">
+    android:layout_margin="10dp"
+    android:animateLayoutChanges="true">
 
     <TextView
         android:id="@+id/title"
@@ -43,6 +44,17 @@
             android:text="@string/legacy_warning"/>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/insufficientFunds"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/insufficient_funds"
+        android:background="@color/warningBackground"
+        android:textColor="@color/warningText"
+        android:padding="10dp"
+        android:layout_gravity="center"
+        android:visibility="gone"/>
+
     <RelativeLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
@@ -80,7 +92,8 @@
 
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp">
         <TextView
             android:id="@+id/satoshiAmountLabel"
             android:layout_width="wrap_content"
@@ -90,6 +103,59 @@
             android:textStyle="bold"/>
         <TextView
             android:id="@+id/satoshiAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 00 000 000"/>
+    </LinearLayout>
+
+    <RelativeLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/feeLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/estimated_fee"
+            android:labelFor="@id/sendFee"
+            android:textStyle="bold"
+            android:layout_centerVertical="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginEnd="10dp"/>
+
+        <TextView
+            android:id="@+id/sendFee"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toEndOf="@id/feeLabel"
+            android:layout_alignParentEnd="true"/>
+
+        <Spinner
+            android:id="@+id/feeRates"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"/>
+
+    </RelativeLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp">
+        <TextView
+            android:id="@+id/satoshiFeeLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:text="@string/bitcoins"
+            android:textStyle="bold"/>
+        <TextView
+            android:id="@+id/satoshiFee"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="0 00 000 000"/>

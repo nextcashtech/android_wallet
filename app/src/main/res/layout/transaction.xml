@@ -98,6 +98,45 @@
             android:textSize="@dimen/text_size_smallheading"/>
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/feeGroup"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SubHeadingText"
+            android:text="@string/fee"/>
+
+        <TextView
+            android:id="@+id/transactionFee"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:textSize="@dimen/text_size_subheading"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/feeBitcoinsGroup"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SmallHeadingText"
+            android:text="@string/bitcoins_amount_title"/>
+
+        <TextView
+            android:id="@+id/bitcoinsFee"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:textSize="@dimen/text_size_smallheading"/>
+    </LinearLayout>
+
     <TextView
         android:id="@+id/inputsTitle"
         android:layout_width="match_parent"

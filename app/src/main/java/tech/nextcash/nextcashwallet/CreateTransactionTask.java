@@ -10,9 +10,10 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
     private int mWalletOffset;
     private String mPublicKeyHash, mPassCode;
     private long mAmount;
+    private double mFeeRate;
 
     public CreateTransactionTask(MainActivity pActivity, Bitcoin pBitcoin, String pPassCode, int pWalletOffset,
-      String pPublicKeyHash, long pAmount)
+      String pPublicKeyHash, long pAmount, double pFeeRate)
     {
         mActivity = pActivity;
         mBitcoin = pBitcoin;
@@ -20,12 +21,13 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
         mWalletOffset = pWalletOffset;
         mPublicKeyHash = pPublicKeyHash;
         mAmount = pAmount;
+        mFeeRate = pFeeRate;
     }
 
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        return mBitcoin.sendPayment(mWalletOffset, mPassCode, mPublicKeyHash, mAmount);
+        return mBitcoin.sendPayment(mWalletOffset, mPassCode, mPublicKeyHash, mAmount, mFeeRate);
     }
 
     @Override

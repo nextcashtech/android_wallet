@@ -238,6 +238,33 @@ public class Bitcoin
         return result;
     }
 
+    public native Outpoint[] getUnspentOutputs(int pOffset);
+
+    // Estimated P2PKH transaction size based on input count
+    static public int estimatedSize(int pInputCount)
+    {
+        // P2PKH input size
+        //   Previous Transaction ID = 32 bytes
+        //   Previous Transction Output Index = 4 bytes
+        //   Signature push to stack = 75
+        //       push size = 1 byte
+        //       signature up to = 73 bytes
+        //       signature hash type = 1 byte
+        //   Public key push to stack = 34
+        //       push size = 1 byte
+        //       public key size = 33 bytes
+        int inputSize = 32 + 4 + 75 + 34;
+
+        // P2PKH output size
+        //   amount = 8 bytes
+        //   push size = 1 byte
+        //   Script (24 bytes) OP_DUP OP_HASH160 <PUB KEY HASH (20 bytes)> OP_EQUALVERIFY OP_CHECKSIG
+        int outputSize = 8 + 25;
+
+        // Assume 2 outputs
+        return (inputSize * pInputCount) + (2 * outputSize);
+    }
+
     private native int getChangeID();
 
     // Return the number of keys in the key store
@@ -272,7 +299,10 @@ public class Bitcoin
 
     public native boolean hasPassCode();
 
-    public native int sendPayment(int pWalletOffset, String pPassCode, String pPublicKeyHash, long pAmount);
+    // Amount in satoshis
+    // Fee rate in satoshis per byte of transaction size
+    public native int sendPayment(int pWalletOffset, String pPassCode, String pPublicKeyHash, long pAmount,
+      double pFeeRate);
 
     //TODO Generate a mnemonic sentence that can be used to create an HD key.
     //public native String generateMnemonic();

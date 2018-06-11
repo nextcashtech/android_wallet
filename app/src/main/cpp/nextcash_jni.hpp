@@ -160,11 +160,16 @@ extern "C"
                                                                                  jint pWalletOffset,
                                                                                  jstring pPassCode,
                                                                                  jstring pPublicKeyHash,
-                                                                                 jlong pAmount);
+                                                                                 jlong pAmount,
+                                                                                 jdouble pFeeRate);
 
     JNIEXPORT jobjectArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getMnemonicWords(JNIEnv *pEnvironment,
                                                                                               jobject pObject,
                                                                                               jstring pStartingWith);
+
+    JNIEXPORT jobjectArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getUnspentOutputs(JNIEnv *pEnvironment,
+                                                                                               jobject pObject,
+                                                                                               jint pWalletOffset);
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_test(JNIEnv *pEnvironment,
                                                                               jobject pObject);

@@ -93,6 +93,7 @@
     <string name="sent_payment">Sent Payment</string>
     <string name="failed_send_payment">Failed to send payment</string>
     <string name="failed_insufficient_funds">Insufficient Funds</string>
+    <string name="insufficient_funds">Insufficient Funds</string>
     <string name="failed_invalid_address">Invalid Address</string>
     <string name="failed_change_address">Change Address Not Found</string>
     <string name="failed_signing">Failed to Sign Transaction</string>
@@ -116,6 +117,8 @@
     <string name="confirmed_transactions">Confirmed Transactions</string>
     <string name="no_transactions">No Transactions</string>
     <string name="amount_title">Amount</string>
+    <string name="fee">Fee</string>
+    <string name="estimated_fee">Estimated Fee</string>
     <string name="bitcoins_amount_title">bitcoins</string>
     <string name="time_title">Time</string>
     <string name="confirms_title">Confirms</string>
@@ -231,6 +234,11 @@
         <item>USD</item>
         <item>bits</item>
         <item>bitcoins</item>
+    </string-array>
+    <string-array name="fee_rates">
+        <item>Priority</item>
+        <item>Normal</item>
+        <item>Low</item>
     </string-array>
     <string name="bitcoins">bitcoins</string>
     <string name="transaction">Transaction</string>

@@ -8,7 +8,7 @@ public class Input
     public int sequence;
 
     public String address;
-    public long amount; // Only set if related to key (spend)
+    public long amount; // Only set if related to key (spend), otherwise -1
 
     Input()
     {
