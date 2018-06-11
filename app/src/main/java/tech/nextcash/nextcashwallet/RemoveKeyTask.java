@@ -64,11 +64,7 @@ public class RemoveKeyTask extends AsyncTask<String, Integer, Integer>
             }
 
             if(mBitcoin.isLoaded())
-            {
-                Log.i(logTag, "Clearing after removing wallet");
-                mActivity.clear();
                 mActivity.updateWallets();
-            }
         }
 
         super.onPostExecute(pResult);

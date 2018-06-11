@@ -27,8 +27,11 @@ public class Bitcoin
     private boolean mNeedsUpdate;
     private int mChangeID;
 
+    public boolean walletsModified;
+
     Bitcoin()
     {
+        walletsModified = false;
         mHandle = 0;
         mLoaded = false;
         mNeedsUpdate = false;
@@ -58,22 +61,8 @@ public class Bitcoin
     public static String amountText(long pAmount, double pFiatRate)
     {
         if(pFiatRate != 0.0)
-        {
             return String.format(Locale.getDefault(), "$%,.2f",
               Bitcoin.bitcoins(Math.abs(pAmount)) * pFiatRate);
-//            if(pAmount > 0)
-//            {
-//                if(pAddSign)
-//                    return String.format(Locale.getDefault(), "+$%,.2f",
-//                      Bitcoin.bitcoins(pAmount) * pFiatRate);
-//                else
-//                    return String.format(Locale.getDefault(), "$%,.2f",
-//                      Bitcoin.bitcoins(pAmount) * pFiatRate);
-//            }
-//            else
-//                return String.format(Locale.getDefault(), "-$%,.2f",
-//                  Bitcoin.bitcoins(pAmount) * -pFiatRate);
-        }
         else
             return String.format(Locale.getDefault(), "%,.5f",
               Bitcoin.bitcoins(Math.abs(pAmount)));
@@ -213,6 +202,7 @@ public class Bitcoin
         // Check for initial creation of wallets
         if(wallets == null || (wallets.length == 0 && count > 0))
         {
+            walletsModified = true;
             wallets = new Wallet[count];
             for(int i=0;i<wallets.length;i++)
                 wallets[i] = new Wallet();
@@ -223,21 +213,11 @@ public class Bitcoin
         {
             Log.i(logTag, String.format("Allocating %d wallets", count));
 
-            Wallet[] newWallets = new Wallet[count];
-
-            if(wallets.length < count) // don't copy if one was removed
-            {
-                // Copy pre-existing wallets
-                for(int i = 0; i < wallets.length && i < newWallets.length; i++)
-                    newWallets[i] = wallets[i];
-            }
-
-            wallets = newWallets;
-
             // Initialize new wallets
+            walletsModified = true;
+            wallets = new Wallet[count];
             for(int i=0;i<wallets.length;i++)
-                if(wallets[i] == null)
-                    wallets[i] = new Wallet();
+                wallets[i] = new Wallet();
         }
 
         // Update wallets
@@ -256,26 +236,6 @@ public class Bitcoin
         }
 
         return result;
-    }
-
-    public Wallet walletForViewID(int pViewID)
-    {
-        for(Wallet wallet : wallets)
-            if(wallet.viewID == pViewID)
-                return wallet;
-        return null;
-    }
-
-    public int walletOffsetForViewID(int pViewID)
-    {
-        int offset = 0;
-        for(Wallet wallet : wallets)
-        {
-            if(wallet.viewID == pViewID)
-                return offset;
-            offset++;
-        }
-        return -1;
     }
 
     private native int getChangeID();

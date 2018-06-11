@@ -884,10 +884,10 @@ extern "C"
               updatedTransactions);
         }
 
-        pEnvironment->SetBooleanField(pWallet, sWalletIsPrivateID,
-          (jboolean)daemon->keyStore()->hasPrivate((unsigned int)pOffset));
         pEnvironment->SetObjectField(pWallet, sWalletNameID,
           pEnvironment->NewStringUTF(daemon->keyStore()->name((unsigned int)pOffset).text()));
+        pEnvironment->SetBooleanField(pWallet, sWalletIsPrivateID,
+          (jboolean)daemon->keyStore()->hasPrivate((unsigned int)pOffset));
         pEnvironment->SetBooleanField(pWallet, sWalletIsSynchronizedID,
           (jboolean)daemon->keyStore()->isSynchronized((unsigned int)pOffset));
         pEnvironment->SetBooleanField(pWallet, sWalletIsBackedUpID,

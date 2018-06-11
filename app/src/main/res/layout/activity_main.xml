@@ -30,11 +30,19 @@
         android:layout_above="@id/statusBar"
         android:layout_marginTop="10dp">
         <LinearLayout
-            android:id="@+id/content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
+            <LinearLayout
+                android:id="@+id/wallets"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"/>
+            <LinearLayout
+                android:id="@+id/dialog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"/>
         </LinearLayout>
     </ScrollView>
 
