@@ -9,7 +9,7 @@
         The initial block download is not yet complete.
         It might take an hour or more.
         You will not be able to send or confirm transactions until it is complete.
-        You can request payments, you just won&apos;t be able to validate confirms.
+        You can request payments, you just won\'t be able to validate confirms.
     </string>
     <string name="synchronizing">Synchronizing</string>
     <string name="needs_backed_up">Needs Backed Up</string>
@@ -100,7 +100,7 @@
     <string name="invalid_payment_code">Invalid Payment Code</string>
     <string name="locked">View Only</string>
     <string name="locked_message">
-        View Only. Wallet has a &quot;public only&quot; key and can not spend.
+        View Only. Wallet has a \"public only\" key and can not spend.
     </string>
     <string-array name="derivation_methods">
         <item>BIP-0044</item>
@@ -177,19 +177,19 @@
     <string name="wallet_seed">Wallet Seed</string>
     <string name="enter_wallet_seed">Enter Wallet Seed</string>
     <string name="wallet_seed_description">
-        These words are the &quot;mnemonic seed&quot; for your new wallet.
+        These words are the \"mnemonic seed\" for your new wallet.
         You need to write this down and store this in a safe place so you can recover your wallet if
         you lose access to this device or forget your passcode.
         No one else can recover your bitcoins for you.
         Anyone who has access to this seed can spend all of your bitcoins.
     </string>
     <string name="wallet_seed_recover_description">
-        Enter the words in your wallet&apos;s seed in order.
+        Enter the words in your wallet\'s seed in order.
         Type the beginning of each word and click on the correct word when you see it.
     </string>
     <string name="next_word">Next Word</string>
     <string name="wallet_seed_written">
-        Press continue when you have written down your &quot;mnemonic seed&quot;.
+        Press continue when you have written down your \"mnemonic seed\".
     </string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="okay">Okay</string>
@@ -227,7 +227,7 @@
     <string name="description">Description</string>
     <string name="not_supported">Not Supported Yet</string>
     <string name="legacy_warning">
-        This is a &quot;Legacy&quot; address! Do not send Bitcoin Cash to it unless you are sure
+        This is a \"Legacy\" address! Do not send Bitcoin Cash to it unless you are sure
         that is what they want Bitcoin Cash (BCH) and not Bitcoin Core (BTC).
     </string>
     <string-array name="amount_units">
