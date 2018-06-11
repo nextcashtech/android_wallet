@@ -569,6 +569,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             walletWarning.setText(R.string.needs_backed_up);
                         }
                     }
+                    else
+                    {
+                        TextView walletWarning = view.findViewById(R.id.walletWarning);
+                        if(walletWarning != null)
+                            walletWarning.setVisibility(View.GONE);
+                    }
+
 
                     transactions = view.findViewById(R.id.walletTransactions);
                     populateTransactions(transactions, wallet.transactions, 3);
