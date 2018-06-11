@@ -24,8 +24,6 @@ public class BitcoinJob extends JobService
     private ServiceConnection mServiceConnection;
     private boolean mFinished;
     private JobParameters mJobParameters;
-    private Receiver mReceiver;
-    private Receiver.CallBacks mReceiverCallBacks;
 
     private void startBitcoinService()
     {
@@ -101,18 +99,6 @@ public class BitcoinJob extends JobService
                 }
             }
         };
-
-        mReceiverCallBacks = new Receiver.CallBacks()
-        {
-            @Override
-            public void onStop()
-            {
-                Log.i(logTag, "Stopping job from stop action");
-                mBitcoin.stop();
-            }
-        };
-
-        mReceiver = new Receiver(this, mReceiverCallBacks);
 
         super.onCreate();
     }

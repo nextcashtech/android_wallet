@@ -5,8 +5,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -14,9 +16,11 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.PatternMatcher;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -34,6 +38,7 @@ public class BitcoinService extends Service
     private static final String logTag = "BitcoinService";
 
     private static final int sProgressNotificationID = 1;
+    private static final String sStopAction = "STOP";
 
     private Bitcoin mBitcoin;
     private int mFinishMode;
@@ -46,6 +51,7 @@ public class BitcoinService extends Service
     private boolean mIsStopped;
     private HashMap<String, Integer> mTransactionNotificationIDs;
 
+
     public class LocalBinder extends Binder
     {
         BitcoinService getService()
@@ -54,6 +60,8 @@ public class BitcoinService extends Service
         }
     }
     private final IBinder mBinder = new LocalBinder();
+
+    private BroadcastReceiver mReceiver;
 
     @Override
     public void onCreate()
@@ -110,6 +118,23 @@ public class BitcoinService extends Service
                 monitor();
             }
         };
+
+        mReceiver = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context pContext, Intent pIntent)
+            {
+                if(pIntent.getAction() != null && pIntent.getAction().equals(sStopAction))
+                {
+                    Log.i(logTag, "Stop action received");
+                    mBitcoin.stop();
+                }
+            }
+        };
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(sStopAction);
+        LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, filter);
     }
 
     @Override
@@ -299,22 +324,25 @@ public class BitcoinService extends Service
             return;
         }
 
-        Intent intent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-        Intent stopIntent = new Intent();
-        stopIntent.setAction(getString(R.string.stop));
-        PendingIntent stopPendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0);
-        Bitmap iconBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.icon);
+        // Setup intent to open activity
+        Intent openIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingOpenIntent = PendingIntent.getActivity(this, 0, openIntent, 0);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, sProgressNotificationChannel)
           .setSmallIcon(R.drawable.icon_notification)
-          .setLargeIcon(iconBitmap)
+          .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.icon))
           .setContentTitle(getString(R.string.progress_title))
-          .setContentIntent(pendingIntent)
+          .setContentIntent(pendingOpenIntent)
           .setPriority(NotificationCompat.PRIORITY_LOW);
 
-        if(mBitcoin.finishMode() != mBitcoin.FINISH_ON_REQUEST)
-            builder.addAction(R.drawable.ic_stop_black_24dp, getString(R.string.stop), stopPendingIntent);
+        if(mBitcoin.finishMode() != Bitcoin.FINISH_ON_REQUEST)
+        {
+            // Setup an intent to stop synchronization
+            Intent stopIntent = new Intent();
+            stopIntent.setAction(sStopAction);
+            PendingIntent pendingStopIntent = PendingIntent.getBroadcast(this, 0, stopIntent, 0);
+            builder.addAction(R.drawable.ic_stop_black_24dp, getString(R.string.stop), pendingStopIntent);
+        }
 
         int max = 0;
         int progress = 0;

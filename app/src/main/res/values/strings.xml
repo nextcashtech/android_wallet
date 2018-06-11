@@ -9,7 +9,7 @@
         The initial block download is not yet complete.
         It might take an hour or more.
         You will not be able to send or confirm transactions until it is complete.
-        You can request payments, you just won't be able to validate confirms.
+        You can request payments, you just won&apos;t be able to validate confirms.
     </string>
     <string name="synchronizing">Synchronizing</string>
     <string name="needs_backed_up">Needs Backed Up</string>
