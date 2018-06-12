@@ -339,7 +339,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mDelayHandler.postDelayed(mRateUpdateRunnable, 60000);
     }
 
-    private void updateStatus()
+    private synchronized void updateStatus()
     {
         TextView status = findViewById(R.id.status);
 
@@ -939,7 +939,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             feeRateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             feeRates.setAdapter(feeRateAdapter);
             feeRates.setOnItemSelectedListener(this);
-            feeRates.setSelection(1); // Default to Normal
+            feeRates.setSelection(2); // Default to Low
 
             if(mPaymentRequest.protocol == PaymentRequest.PROTOCOL_REQUEST_AMOUNT)
             {
