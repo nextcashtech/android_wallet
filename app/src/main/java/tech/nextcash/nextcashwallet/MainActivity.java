@@ -2145,7 +2145,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.removeSeedWord:
         {
-            // Remove word from seed
             TextView seed = findViewById(R.id.seed);
             if(seed != null && seed.getText().length() > 0)
             {
@@ -2158,6 +2157,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     newSeed.append(words[index]);
                 }
                 seed.setText(newSeed);
+
+                if(mMode == Mode.VERIFY_SEED)
+                {
+                    // Add button
+                    LayoutInflater inflater = getLayoutInflater();
+                    LinearLayout wordButtons = findViewById(R.id.seedButtons);
+                    TextView wordButton;
+
+                    wordButton = (TextView)inflater.inflate(R.layout.seed_word_button, wordButtons, false);
+                    wordButton.setText(words[words.length - 1]);
+                    wordButtons.addView(wordButton);
+                }
             }
             break;
         }

@@ -53,4 +53,13 @@
             android:animateLayoutChanges="true"/>
     </HorizontalScrollView>
 
+    <ImageView
+        android:id="@+id/removeSeedWord"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:src="@drawable/baseline_backspace_black_36"
+        android:contentDescription="@string/remove_last"
+        android:onClick="onClick"/>
+
 </LinearLayout>
