@@ -55,6 +55,18 @@
         android:layout_gravity="center"
         android:visibility="gone"/>
 
+    <TextView
+        android:id="@+id/sendMax"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right"
+        android:layout_marginRight="10dp"
+        android:text="@string/send_max"
+        android:padding="8dp"
+        android:textColor="#ffff"
+        android:background="@drawable/button_background"
+        android:onClick="onClick"/>
+
     <RelativeLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"

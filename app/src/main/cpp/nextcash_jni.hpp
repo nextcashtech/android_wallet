@@ -161,7 +161,8 @@ extern "C"
                                                                                  jstring pPassCode,
                                                                                  jstring pPublicKeyHash,
                                                                                  jlong pAmount,
-                                                                                 jdouble pFeeRate);
+                                                                                 jdouble pFeeRate,
+                                                                                 jboolean pSendAll);
 
     JNIEXPORT jobjectArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getMnemonicWords(JNIEnv *pEnvironment,
                                                                                               jobject pObject,

@@ -11,9 +11,10 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
     private String mPublicKeyHash, mPassCode;
     private long mAmount;
     private double mFeeRate;
+    private boolean mSendAll;
 
     public CreateTransactionTask(MainActivity pActivity, Bitcoin pBitcoin, String pPassCode, int pWalletOffset,
-      String pPublicKeyHash, long pAmount, double pFeeRate)
+      String pPublicKeyHash, long pAmount, double pFeeRate, boolean pSendAll)
     {
         mActivity = pActivity;
         mBitcoin = pBitcoin;
@@ -22,12 +23,13 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
         mPublicKeyHash = pPublicKeyHash;
         mAmount = pAmount;
         mFeeRate = pFeeRate;
+        mSendAll = pSendAll;
     }
 
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        return mBitcoin.sendPayment(mWalletOffset, mPassCode, mPublicKeyHash, mAmount, mFeeRate);
+        return mBitcoin.sendPayment(mWalletOffset, mPassCode, mPublicKeyHash, mAmount, mFeeRate, mSendAll);
     }
 
     @Override
@@ -56,6 +58,9 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
                     break;
                 case 5: // Signing Failed
                     mActivity.showMessage(mActivity.getString(R.string.failed_signing), 2000);
+                    break;
+                case 6: // Below dust
+                    mActivity.showMessage(mActivity.getString(R.string.failed_dust), 2000);
                     break;
             }
 

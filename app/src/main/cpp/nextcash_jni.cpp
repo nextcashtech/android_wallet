@@ -1392,7 +1392,8 @@ extern "C"
                                                                                  jstring pPassCode,
                                                                                  jstring pPublicKeyHash,
                                                                                  jlong pAmount,
-                                                                                 jdouble pFeeRate)
+                                                                                 jdouble pFeeRate,
+                                                                                 jboolean pSendAll)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL || daemon->keyStore()->size() <= pWalletOffset)
@@ -1411,8 +1412,8 @@ extern "C"
             return (jint)3; // Invalid Hash
         }
 
-        int result = daemon->sendPayment((unsigned int)pWalletOffset, hash, (uint64_t)pAmount,
-          pFeeRate);
+        int result = daemon->sendP2PKHPayment((unsigned int)pWalletOffset, hash, (uint64_t)pAmount,
+          pFeeRate, pSendAll);
 
         if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
             daemon->saveMonitor();
