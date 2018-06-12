@@ -15,7 +15,7 @@
         android:background="@drawable/button_background"
         android:onClick="onClick"
         android:gravity="center"
-        android:minWidth="150dp">
+        android:minWidth="200dp">
 
         <ImageView
             android:id="@+id/image"

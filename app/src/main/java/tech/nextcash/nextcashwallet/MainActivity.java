@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -51,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification;
     private enum Mode { LOADING, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, VERIFY_SEED, BACKUP_WALLET,
-      RECOVER_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, SEND, SETUP, AUTHORIZE }
+      RECOVER_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, SEND, SETUP, AUTHORIZE, INFO }
     private Mode mMode;
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private AuthorizedTask mAuthorizedTask;
@@ -580,6 +581,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 walletView.setTag(R.id.addWallet);
                 ((TextView)walletView.findViewById(R.id.text)).setText(R.string.add_wallet);
                 wallets.addView(walletView);
+
+                walletView = inflater.inflate(R.layout.button, wallets, false);
+                walletView.setTag(R.id.buyFromCoinbase);
+                ((TextView)walletView.findViewById(R.id.text)).setText(R.string.buy_bitcoin_cash);
+                wallets.addView(walletView);
             }
 
             mBitcoin.walletsModified = false;
@@ -628,6 +634,35 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 startActivityForResult(intent, SETTINGS_REQUEST_CODE);
                 return true;
             }
+            case R.id.action_info:
+                synchronized(this)
+                {
+                    LayoutInflater inflater = getLayoutInflater();
+                    ViewGroup dialogView = findViewById(R.id.dialog);
+
+                    dialogView.removeAllViews();
+                    findViewById(R.id.wallets).setVisibility(View.GONE);
+                    findViewById(R.id.progress).setVisibility(View.GONE);
+                    findViewById(R.id.statusBar).setVisibility(View.GONE);
+
+                    // Title
+                    ActionBar actionBar = getSupportActionBar();
+                    if(actionBar != null)
+                    {
+                        actionBar.setIcon(R.drawable.ic_info_outline_black_36dp);
+                        actionBar.setTitle(" " + getResources().getString(R.string.information));
+                        actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+                    }
+
+                    inflater.inflate(R.layout.info, dialogView, true);
+
+                    ((TextView)findViewById(R.id.nodeUserAgentValue)).setText(Bitcoin.userAgent());
+                    ((TextView)findViewById(R.id.networkValue)).setText(Bitcoin.networkName());
+
+                    dialogView.setVisibility(View.VISIBLE);
+                    ((ScrollView)findViewById(R.id.mainScroll)).setScrollY(0);
+                    mMode = Mode.INFO;
+                }
         }
 
         return super.onOptionsItemSelected(item);
@@ -1887,6 +1922,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         ((ScrollView)findViewById(R.id.mainScroll)).setScrollY(0);
                         mMode = Mode.ADD_WALLET;
                     }
+                    break;
+                }
+                case R.id.buyFromCoinbase:
+                {
+                    String coinbaseReferallUrl = "https://www.coinbase.com/join/597a904283ff1a00a71aae6c";
+                    Intent coinbaseIntent = new Intent(Intent.ACTION_VIEW);
+                    coinbaseIntent.setData(Uri.parse(coinbaseReferallUrl));
+                    startActivity(coinbaseIntent);
                     break;
                 }
                 case R.id.createWallet:

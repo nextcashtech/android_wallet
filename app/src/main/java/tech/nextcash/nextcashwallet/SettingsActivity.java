@@ -30,9 +30,6 @@ public class SettingsActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
         setupActionBar();
 
-        ((TextView)findViewById(R.id.nodeUserAgentValue)).setText(Bitcoin.userAgent());
-        ((TextView)findViewById(R.id.networkValue)).setText(Bitcoin.networkName());
-
         Settings settings = Settings.getInstance(getFilesDir());
 
         // Configure sync frequency options

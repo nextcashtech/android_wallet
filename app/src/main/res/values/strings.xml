@@ -55,23 +55,12 @@
         <item>-1</item>
     </integer-array>
 
-    <string name="title_information">Information</string>
-    <string name="title_node_user_agent">Node User Agent</string>
-    <string name="nextcash_link">https://nextcash.tech</string>
-    <string name="title_network_name">Network Name</string>
-    <string name="title_open_source">Open Source Licenses</string>
-    <string name="secp256k1_library">
-        Cryptographic Library - secp256k1 Copyright &#169; 2013 Pieter Wuille
-    </string>
-    <string name="zxing_library">
-            QR Library - Copyright &#169; Zebra Crossing (zxing) https://github.com/zxing/zxing
-    </string>
-
     <string name="wallet">Wallet</string>
     <string name="title_add_wallet">Add Wallet</string>
     <string name="title_edit_wallet">Edit Wallet</string>
     <string name="title_wallet_history">Wallet History</string>
     <string name="add_wallet">Add Wallet</string>
+    <string name="buy_bitcoin_cash">Buy Bitcoin Cash</string>
     <string name="create_new_key">Create New Wallet</string>
     <string name="recover_wallet">Recover Wallet</string>
     <string name="update_name">Update Name</string>
@@ -270,6 +259,233 @@
         <item>28</item>
         <item>32</item>
     </integer-array>
+
+
+    <string name="action_info">Info</string>
+    <string name="information">Information</string>
+    <string name="title_node_user_agent">Node User Agent</string>
+    <string name="nextcash_link">https://nextcash.tech</string>
+    <string name="title_network_name">Network Name</string>
+    <string name="title_open_source">Open Source Licenses</string>
+    <string name="secp256k1_library">
+        Cryptographic Library - secp256k1 Copyright &#169; 2013 Pieter Wuille
+    </string>
+    <string name="zxing_library">
+            QR Library - Copyright &#169; Zebra Crossing (zxing) https://github.com/zxing/zxing
+    </string>
+
+    <string name="primer">Primer</string>
+    <string name="primer_description">
+        Bitcoin Cash is peer to peer money.
+        Anyone with a smart phone or computer can install a wallet and send and receive it.
+        Creating a wallet doesn\'t require anything except for a wallet app to generate a large
+        random number.
+        To receive Bitcoin Cash just create a wallet and give someone an \"address\"
+        (hash of one of your wallet\'s public keys).
+        To send Bitcoin Cash just enter someone else\'s \"address\" into your wallet and create a
+        transaction to pay them.
+    </string>
+
+    <string name="questions">Questions</string>
+
+    <string name="what_is_bitcoin">What is Bitcoin?</string>
+    <string name="what_is_bitcoin_answer">
+        Bitcoin is an open source software project that is attempting to build a worldwide
+        decentralized currency. Its goal is to allow people to pay each other without dependence on
+        any company/government and with requiring permission from any company or government.
+    </string>
+
+    <string name="what_is_bitcoin_cash">What is Bitcoin Cash?</string>
+    <string name="what_is_bitcoin_cash_answer">
+        Bitcoin Cash is a branch of the Bitcoin project that is focused on increasing capacity and
+        increasing usability and adoption. This wallet exclusively uses Bitcoin Cash. If you held
+        Bitcoin on August 1st, 2017 then you hold that amount of Bitcoin Cash because the ledger
+        up until that point is the same for both Bitcoin (BTC) and Bitcoin Cash (BCH).
+    </string>
+
+    <string name="how_do_i_get_bitcoin_cash">How do I get Bitcoin Cash?</string>
+    <string name="how_do_i_get_bitcoin_cash_answer">
+        You can get Bitcoin Cash from anyone who has some and is willing to part with it to show you
+        how it works. Just ask them to send you a little. Most people will be happy to.
+        If you can\'t find anyone to give you some for free, or you want more than that, you can buy
+        Bitcoin Cash and other major cryptocurrencies from Coinbase.com. They are a large exchange
+        based in the United States.
+        They will charge you a small fee to convert your money into cryptocurrency.
+        If you use this link or the button on the main screen to sign up, then you will get $10 free
+        when you buy $100 or more.
+        https://www.coinbase.com/join/597a904283ff1a00a71aae6c
+    </string>
+
+    <string name="why_use_bitcoin_cash">
+        Why should I use Bitcoin Cash as opposed to other payment options?
+    </string>
+
+    <string name="why_use_bitcoin_cash_answer">
+        Bitcoin Cash allows you to send money digitally to anyone in the world nearly
+        instantaneously. It requires no third party like a bank or PayPal. Your transaction is
+        transmitted to a peer to peer network and if accepted will be included and secured in the
+        block chain that becomes more immutable (unchangeable) as blocks are added to it.
+    </string>
+
+    <string name="what_is_ibd">
+        What is the initial block download?
+    </string>
+
+    <string name="what_is_ibd_answer">
+        Initial Block Download (IBD) is required every time a new \"node\" starts.
+        It will only have to be done once after you install this app.
+        It is the process of querying the network for blocks to find the block chain with the most
+        \"proof of work\".
+        After finding the block chain with the most \"proof of work\", downloading, and verifying
+        each block header, your \"node\" (App) can then verify if transactions have been included in
+        that block chain.
+        This normally takes around an hour depending on the latency of your internet.
+        It requires several hundred megabytes of data usage, so should be done on WiFi if possible.
+        You may have to open the app occasionally to keep the download running as your phone may
+        stop it after a while.
+    </string>
+
+    <string name="why_does_my_wallet_say_synchronizing">
+        Why does my wallet say \"synchronizing\"?
+    </string>
+
+    <string name="why_does_my_wallet_say_synchronizing_answer">
+        When your wallet says \"synchronizing\" under the name, that means the app is still querying
+        the network to find transactions in the block chain that relate to your wallet.
+        Either pay to or send from.
+        This should only happen when you \"recover\" a wallet and the app is unsure of previous
+        activity with that wallet.
+        Creating a new wallet will not do this because there is no possibility of previous
+        transactions.
+    </string>
+
+    <string name="why_does_my_wallet_say_needs_backup">
+        Why does my wallet say \"synchronizing\"?
+    </string>
+
+    <string name="why_does_my_wallet_say_needs_backup_answer">
+        When your wallet says \"Needs Backed Up\" under the name, that means you have not yet
+        verified that you have written down the \"mnemonic seed\".
+        You need to write down the mnemonic seed (list of words) to be able to recover your bitcoins
+        if anything happens to your device.
+        If you lose your mobile device or it breaks, and you do not have the seed, then no one can
+        give your money back to you.
+        This is because Bitcoin Cash is decentralized and no one has access to modify anyone else's
+        bitcoins without knowing the private keys.
+        If you do have your seed written down you can install most Bitcoin Cash wallet apps and
+        enter your seed in the recover option to regain access to your bitcoins.
+    </string>
+
+    <string name="what_is_a_mnemonic_seed">
+        What is a \"mnemonic seed\"?
+    </string>
+
+    <string name="what_is_a_mnemonic_seed_answer">
+        A mnemonic seed is a randomly generated list of words that represent numbers.
+        Combined they represent a very large number, often with a checksum, that is used to derive
+        the private keys for a wallet.
+        Private keys are large numbers that give you access to send bitcoins.
+        Anyone with your seed or private keys can send your bitcoins to anyone they want so be
+        careful when storing your seed and who you give access to it.
+        It is a good idea to write it on paper and put it in a safe or somewhere that you would
+        store money.
+    </string>
+
+    <string name="what_are_confirms">
+        What are confirms?
+    </string>
+
+    <string name="what_are_confirms_answer">
+        Confirms, or confirmations, is the count of the number of blocks built on top of the block
+        that a transaction is in.
+        Each block built on top of the block a transaction is in greatly reduces the chances of
+        the transaction every being removed from the block chain.
+    </string>
+
+    <string name="what_is_a_double_spend">
+        What is a double spend?
+    </string>
+
+    <string name="what_is_a_double_spend_answer">
+        A double spend is a fraudulent action involving sending a payment to someone, then making a
+        new transaction paying someone else or themselves with the same bitcoins.
+        This can invalidate a transaction previously sent as bitcoins, like all good money, can only
+        be spent once.
+        When a transaction is pending (not in a block yet) it is possible that there is another
+        transaction out there that conflicts with it and can invalidate it if included in a block.
+        The more nodes that have accepted your transaction while pending, the more likely it is that
+        it is valid and will be included in a block.
+    </string>
+
+    <string name="what_are_the_units">
+        What are the units of Bitcoin?
+    </string>
+
+    <string name="what_are_the_units_answer">
+        There are many units of measure in Bitcoin.
+        The smallest unit is called a \"satoshi\".
+        The common unit is called a \"bitcoin\". A bitcoin is equal to 100,000,000 satoshis.
+        Another common unit is \"bits\". A bitcoin is equal to 100 bits.
+        \"Bitcoin\" with a upper case \"B\" is the system and/or project.
+        \"bitcoin\" with a lower case \"b\" is a unit of Bitcoin.
+        This app uses a space delimited format for representing quantities that looks like this
+        \"1 23 456 678\". Where the entire number is the satashis.
+        The number before the first space is bitcoins.
+        The numbers combined before the second space is the bits.
+    </string>
+
+    <string name="what_is_a_bitcoin_address">
+        What is a Bitcoin address?
+    </string>
+
+    <string name="what_is_a_bitcoin_address_answer">
+        A Bitcoin address is a hash of a public key.
+        It allows anyone to create a Bitcoin transaction sending bitcoins to the owner of the public
+        key.
+        There are many types of Bitcoin transactions in Bitcoin, but the standard transaction allows
+        the coins to be spent by providing the full public key associated with a specified hash and
+        proving access to the private key of that public key with a signature.
+    </string>
+
+    <string name="what_is_a_hash">
+        What is a hash?
+    </string>
+
+    <string name="what_is_a_hash_answer">
+        A hash is a method of turning a set of data into a specific value that can be repeated, but
+        not reversed.
+        For example anyone could take the data set and create the same hash data from it, but no one
+        could take the hash and figure out the data set that created it.
+        They can only verify that the data set corresponds to the hash when given both.
+    </string>
+
+    <string name="what_is_a_bitcoin_key">
+        What is a Bitcoin key?
+    </string>
+
+    <string name="what_is_a_bitcoin_key_answer">
+        A Bitcoin key is a generated value that can be used for cryptographic functions.
+        A private key can sign and decrypt data.
+        A public key can verify signatures and encrypt data.
+        In Bitcoin public keys can be used to verify signatures to cryptographically prove that the
+        creator of a transaction has the private key associated with the public key.
+        Check out Wikipedia for more information. https://en.wikipedia.org/wiki/Public-key_cryptography
+    </string>
+
+    <string name="what_is_proof_of_work">
+        What is proof of work?
+    </string>
+
+    <string name="what_is_proof_of_work_answer">
+        Proof of work involves using bulk cryptographic operations to solve a problem to prove that
+        a miner spent actual effort to produce something.
+        Proof of work is one of the backbones of Bitcoin, along with cryptographic signatures.
+        Signatures allow nodes to prove ownership of public keys.
+        Proof of work allows nodes to verify the ledger that is agreed upon by the most miners.
+        Proof of work provides immutability (inability to change) the ledger, since any good money
+        requires an immutable ledger.
+        Check out Wikipedia for more information. https://en.wikipedia.org/wiki/Proof-of-work_system
+    </string>
 
 
 </resources>

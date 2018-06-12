@@ -32,4 +32,18 @@
         <item name="android:textStyle">bold</item>
     </style>
 
+    <style name="Question">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">@dimen/text_size_smallheading</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingTop">20dp</item>
+    </style>
+
+    <style name="Answer">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">@dimen/text_size_small</item>
+    </style>
+
 </resources>
