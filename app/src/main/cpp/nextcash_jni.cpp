@@ -1163,24 +1163,25 @@ extern "C"
         if(pProtocol != 1)
             return NULL; // Not supported
 
-        BitCoin::PaymentRequest::Format format = BitCoin::PaymentRequest::Format::INVALID;
+        BitCoin::PaymentRequest::Format format;
 
         switch(pFormat)
         {
-            case 0: // INVALILD
-                return NULL;
-            case 1: // Legacy
-                format = BitCoin::PaymentRequest::Format::LEGACY;
-                break;
-            case 2: // Cash
-                format = BitCoin::PaymentRequest::Format::CASH;
-                break;
+        default:
+        case 0: // INVALILD
+            return NULL;
+        case 1: // Legacy
+            format = BitCoin::PaymentRequest::Format::LEGACY;
+            break;
+        case 2: // Cash
+            format = BitCoin::PaymentRequest::Format::CASH;
+            break;
         }
 
         // Parse
         const char *addressHashHex = pEnvironment->GetStringUTFChars(pAddress, NULL);
-        NextCash::String result = BitCoin::encodeHashPaymentCode(addressHashHex, format,
-          BitCoin::MAINNET);
+        NextCash::String result = BitCoin::encodePaymentCode(addressHashHex, format,
+          BitCoin::AddressType::MAIN_PUB_KEY_HASH);
         pEnvironment->ReleaseStringUTFChars(pAddress, addressHashHex);
 
         return pEnvironment->NewStringUTF(result.text());
@@ -1213,29 +1214,45 @@ extern "C"
                 break;
             case BitCoin::PaymentRequest::Format::LEGACY:
                 pEnvironment->SetIntField(result, sPaymentRequestFormatID, (jint)1);
+
+                // Set address
+                if(!request.pubKeyHash.isEmpty())
+                    pEnvironment->SetObjectField(result, sPaymentRequestAddressID,
+                      pEnvironment->NewStringUTF(BitCoin::encodeLegacyAddress(request.pubKeyHash,
+                        request.type)));
+
                 break;
             case BitCoin::PaymentRequest::Format::CASH:
                 pEnvironment->SetIntField(result, sPaymentRequestFormatID, (jint)2);
+
+                // Set address
+                if(!request.pubKeyHash.isEmpty())
+                    pEnvironment->SetObjectField(result, sPaymentRequestAddressID,
+                      pEnvironment->NewStringUTF(BitCoin::encodeCashAddress(request.pubKeyHash,
+                        request.type)));
+
                 break;
         }
 
         // Set protocol
-        switch(request.protocol)
+        switch(request.type)
         {
-            case BitCoin::PaymentRequest::Protocol::SCRIPT_HASH: // TODO Implement
-            case BitCoin::PaymentRequest::Protocol::PRIVATE_KEY: // TODO Implement
-            case BitCoin::PaymentRequest::Protocol::NONE:
+            case BitCoin::AddressType::UNKNOWN:
                 pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)0);
                 break;
-            case BitCoin::PaymentRequest::Protocol::PUB_KEY_HASH:
+            case BitCoin::AddressType::MAIN_PUB_KEY_HASH:
+            case BitCoin::AddressType::TEST_PUB_KEY_HASH:
                 pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)1);
                 break;
+            case BitCoin::AddressType::MAIN_SCRIPT_HASH:
+            case BitCoin::AddressType::TEST_SCRIPT_HASH:
+                pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)2);
+                break;
+            case BitCoin::AddressType::MAIN_PRIVATE_KEY:
+            case BitCoin::AddressType::TEST_PRIVATE_KEY:
+                pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)3);
+                break;
         }
-
-        // Set address
-        if(!request.address.isEmpty())
-            pEnvironment->SetObjectField(result, sPaymentRequestAddressID,
-              pEnvironment->NewStringUTF(request.address.hex()));
 
         // Set amount
         pEnvironment->SetLongField(result, sPaymentRequestAmountID, (jlong)request.amount);
@@ -1341,7 +1358,7 @@ extern "C"
             // Address
             if(!transaction.inputAddresses[offset].isEmpty())
                 pEnvironment->SetObjectField(inputObject, sInputAddressID,
-                  pEnvironment->NewStringUTF(BitCoin::encodeHashPaymentCode(transaction.inputAddresses[offset])));
+                  pEnvironment->NewStringUTF(BitCoin::encodeCashAddress(transaction.inputAddresses[offset])));
 
             // Amount
             pEnvironment->SetLongField(inputObject, sInputAmountID,
@@ -1375,7 +1392,7 @@ extern "C"
             // Address
             if(!transaction.outputAddresses[offset].isEmpty())
                 pEnvironment->SetObjectField(outputObject, sOutputAddressID,
-                  pEnvironment->NewStringUTF(BitCoin::encodeHashPaymentCode(transaction.outputAddresses[offset])));
+                  pEnvironment->NewStringUTF(BitCoin::encodeCashAddress(transaction.outputAddresses[offset])));
 
             // Related
             pEnvironment->SetBooleanField(outputObject, sOutputRelatedID,
@@ -1395,7 +1412,7 @@ extern "C"
                                                                                  jobject pObject,
                                                                                  jint pWalletOffset,
                                                                                  jstring pPassCode,
-                                                                                 jstring pPublicKeyHash,
+                                                                                 jstring pAddress,
                                                                                  jlong pAmount,
                                                                                  jdouble pFeeRate,
                                                                                  jboolean pSendAll)
@@ -1407,11 +1424,14 @@ extern "C"
         if(!loadPrivateKeys(pEnvironment, daemon, pPassCode))
             return (jint)1;
 
-        const char *publicKeyHash = pEnvironment->GetStringUTFChars(pPublicKeyHash, NULL);
-        NextCash::Hash hash(publicKeyHash);
-        pEnvironment->ReleaseStringUTFChars(pPublicKeyHash, publicKeyHash);
+        NextCash::Hash hash;
+        BitCoin::AddressType type;
+        const char *address = pEnvironment->GetStringUTFChars(pAddress, NULL);
+        if(!BitCoin::decodeCashAddress(address, hash, type))
+            BitCoin::decodeLegacyAddress(address, hash, type);
+        pEnvironment->ReleaseStringUTFChars(pAddress, address);
 
-        if(hash.size() != 20)
+        if(hash.size() != 20 || type != BitCoin::AddressType::MAIN_PUB_KEY_HASH)
         {
             daemon->keyStore()->unloadPrivate();
             return (jint)3; // Invalid Hash
@@ -1498,7 +1518,7 @@ extern "C"
         if(scriptType == BitCoin::ScriptInterpreter::P2PKH && payAddresses.size() == 1)
         {
             pEnvironment->SetObjectField(result, sOutputAddressID,
-              pEnvironment->NewStringUTF(payAddresses.front().hex()));
+              pEnvironment->NewStringUTF(BitCoin::encodeCashAddress(payAddresses.front())));
         }
 
         // Set related

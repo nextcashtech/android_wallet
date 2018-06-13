@@ -4,6 +4,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Locale;
 
+
 public class PaymentRequest
 {
     // Format
@@ -14,6 +15,8 @@ public class PaymentRequest
     // Protocol
     public static final int TYPE_NONE         = 0;
     public static final int TYPE_PUB_KEY_HASH = 1;
+    public static final int TYPE_SCRIPT_HASH  = 2;
+    public static final int TYPE_PRIVATE_KEY  = 3;
 
     public int format;
     public int type;
@@ -63,6 +66,7 @@ public class PaymentRequest
     public boolean setAddress(String pAddress)
     {
         address = pAddress;
+        type = TYPE_PUB_KEY_HASH;
         return encode();
     }
 
@@ -88,7 +92,30 @@ public class PaymentRequest
     {
         clear();
 
-        String segments[] = pPaymentCode.split("\\?");
+        String remaining;
+        String pair[];
+        String segments[] = pPaymentCode.split(":");
+
+        if(segments.length > 2)
+        {
+            clear();
+            return false;
+        }
+
+        if(segments.length == 1)
+            remaining = segments[0]; // Allow URIs without prefix
+        else // segments.length == 2
+        {
+            if(!segments[0].equalsIgnoreCase("bitcoincash"))
+            {
+                clear();
+                return false;
+            }
+
+            remaining = segments[1];
+        }
+
+        segments = remaining.split("\\?");
         if(segments.length > 2)
         {
             clear();
@@ -96,11 +123,12 @@ public class PaymentRequest
         }
 
         address = segments[0];
-        String parameters[] = segments[1].split("&");
+        remaining = segments[1];
+        segments = remaining.split("&");
 
-        for(String parameter : parameters)
+        for(String parameter : segments)
         {
-            String pair[] = parameter.split("=");
+            pair = parameter.split("=");
             if(pair.length != 2)
             {
                 clear();
@@ -159,8 +187,7 @@ public class PaymentRequest
     {
         boolean isFirstParameter = true;
 
-        code = address;
-        type = TYPE_PUB_KEY_HASH;
+        code = "bitcoincash:" + address;
 
         if(label != null && label.length() > 0)
         {

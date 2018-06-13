@@ -822,7 +822,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mPaymentFunds += outpoint.output.amount;
 
         if(mPaymentRequest.format == PaymentRequest.FORMAT_INVALID ||
-          mPaymentRequest.type == PaymentRequest.TYPE_NONE)
+          mPaymentRequest.type != PaymentRequest.TYPE_PUB_KEY_HASH)
         {
             showMessage(getString(R.string.invalid_payment_code), 2000);
             updateWallets();
@@ -951,7 +951,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     }
                 };
             }
-            amount.addTextChangedListener(mAmountWatcher);
+            if(mPaymentRequest.amount == 0)
+                amount.addTextChangedListener(mAmountWatcher);
 
             Spinner units = sendView.findViewById(R.id.units);
             ArrayAdapter<CharSequence> unitAdapter = ArrayAdapter.createFromResource(this, R.array.amount_units,
@@ -976,7 +977,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 amount.setFocusable(false);
             }
 
-            ((TextView)sendView.findViewById(R.id.paymentCode)).setText(mPaymentRequest.code.toLowerCase());
+            ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.address.toLowerCase());
 
             // Description
             String description = mPaymentRequest.description();
@@ -1418,6 +1419,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 amountField = findViewById(R.id.requestAmount);
                 amount = mPaymentRequest.amount;
             }
+            else if(mPaymentRequest.amount != 0)
+                amount = mPaymentRequest.amount;
 
             if(amount == 0)
                 amountField.setText("");

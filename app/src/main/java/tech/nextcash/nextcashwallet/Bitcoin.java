@@ -305,7 +305,7 @@ public class Bitcoin
 
     // Amount in satoshis
     // Fee rate in satoshis per byte of transaction size
-    public native int sendPayment(int pWalletOffset, String pPassCode, String pPublicKeyHash, long pAmount,
+    public native int sendPayment(int pWalletOffset, String pPassCode, String pAddress, long pAmount,
       double pFeeRate, boolean pSendAll);
 
     //TODO Generate a mnemonic sentence that can be used to create an HD key.

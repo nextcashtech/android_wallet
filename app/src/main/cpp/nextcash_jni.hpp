@@ -159,7 +159,7 @@ extern "C"
                                                                                  jobject pObject,
                                                                                  jint pWalletOffset,
                                                                                  jstring pPassCode,
-                                                                                 jstring pPublicKeyHash,
+                                                                                 jstring pAddress,
                                                                                  jlong pAmount,
                                                                                  jdouble pFeeRate,
                                                                                  jboolean pSendAll);

@@ -3,8 +3,6 @@ package tech.nextcash.nextcashwallet;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 
-import java.util.Locale;
-
 
 public class CreateAddressTask extends AsyncTask<String, Integer, Integer>
 {
