@@ -179,7 +179,7 @@ public class Bitcoin
         try
         {
             BitMatrix bitMatrix = multiFormatWriter.encode(pText, BarcodeFormat.QR_CODE,
-              sQRWidth,sQRWidth);
+              sQRWidth, sQRWidth);
             Bitmap bitmap = Bitmap.createBitmap(sQRWidth, sQRWidth, Bitmap.Config.ALPHA_8);
             BitArray rowBits = new BitArray(sQRWidth);
             int row[] = new int[sQRWidth];

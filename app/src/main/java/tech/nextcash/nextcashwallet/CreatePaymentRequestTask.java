@@ -3,33 +3,29 @@ package tech.nextcash.nextcashwallet;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 
-import java.util.Locale;
 
-
-public class CreateAddressTask extends AsyncTask<String, Integer, Integer>
+public class CreatePaymentRequestTask extends AsyncTask<String, Integer, Integer>
 {
     private MainActivity mActivity;
     private Bitcoin mBitcoin;
-    private int mWalletOffset, mChainIndex;
-    private String mAddress;
+    private PaymentRequest mPaymentRequest;
+    private String mText;
     private Bitmap mQRCode;
 
-    public CreateAddressTask(MainActivity pActivity, Bitcoin pBitcoin, int pWalletOffset, int pChainIndex)
+    public CreatePaymentRequestTask(MainActivity pActivity, Bitcoin pBitcoin, PaymentRequest pPaymentRequest)
     {
         mActivity = pActivity;
         mBitcoin = pBitcoin;
-        mWalletOffset = pWalletOffset;
-        mChainIndex = pChainIndex;
+        mPaymentRequest = pPaymentRequest;
     }
 
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        mAddress = mBitcoin.getNextReceiveAddress(mWalletOffset, mChainIndex);
-        if(mAddress == null)
+        if(!mPaymentRequest.encode())
             return 1;
 
-        mQRCode = mBitcoin.qrCode(mAddress);
+        mQRCode = mBitcoin.qrCode(mPaymentRequest.code);
         if(mQRCode == null)
             return 1;
 
@@ -45,12 +41,10 @@ public class CreateAddressTask extends AsyncTask<String, Integer, Integer>
             switch(pResult)
             {
                 case 0: // Success
-                    PaymentRequest paymentRequest = new PaymentRequest();
-                    paymentRequest.setAddress(mAddress);
-                    mActivity.displayPaymentCode(paymentRequest, mQRCode);
+                    mActivity.displayPaymentCode(mPaymentRequest, mQRCode);
                     break;
                 case 1: // Unknown error
-                    mActivity.showMessage(mActivity.getString(R.string.failed_generate_address), 2000);
+                    mActivity.showMessage(mActivity.getString(R.string.failed_generate_payment_code), 2000);
                     break;
             }
         }

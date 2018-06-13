@@ -79,6 +79,7 @@
     <string name="success_remove_wallet">Successfully removed wallet</string>
     <string name="failed_remove_wallet">Failed to remove wallet</string>
     <string name="failed_generate_address">Failed to generate address</string>
+    <string name="failed_generate_payment_code">Failed to generate payment code</string>
     <string name="sent_payment">Sent Payment</string>
     <string name="failed_send_payment">Failed to send payment</string>
     <string name="failed_insufficient_funds">Insufficient Funds</string>
@@ -101,6 +102,7 @@
     <string name="expand_compress">Expand/Compress</string>
     <string name="send">Send</string>
     <string name="receive">Receive</string>
+    <string name="add_amount">Add Amount</string>
     <string name="history">History</string>
     <string name="edit">Edit</string>
     <string name="pending_transactions">Pending Transactions</string>
@@ -151,9 +153,11 @@
     <string name="nodes">Nodes</string>
     <string name="system_settings">System Settings</string>
 
-    <string name="address_clipboard">Address copied to clipboard</string>
+    <string name="payment_code_clipboard">Payment code copied to clipboard</string>
     <string name="tap_to_copy">Tap to copy</string>
-    <string name="address_qr_code">Address QR Code</string>
+    <string name="optional">Optional</string>
+    <string name="payment_code_qr">Payment Code QR</string>
+    <string name="request_amount">Request Amount</string>
     <string name="failed_receive_address">Failed to generate receive address.</string>
     <string name="failed_receive_address_qr">Failed to generate QR Code.</string>
 
@@ -195,7 +199,7 @@
         This seed does not have a valid checksum built into it.
         Only use it if you are sure it is correct.
     </string>
-    <string name="receive_address">Receive Address</string>
+    <string name="receive_payment_code">Receive Payment Code</string>
     <string name="scroll_left_right">Scroll Left and Right</string>
     <string name="seed_doesnt_match">Seed Doesn\'t Match</string>
     <string name="seed_matches">Seed Matches</string>

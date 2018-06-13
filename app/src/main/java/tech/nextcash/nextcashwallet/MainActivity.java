@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private enum Mode { LOADING, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, VERIFY_SEED, BACKUP_WALLET,
       RECOVER_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, SEND, SETUP, AUTHORIZE, INFO }
     private Mode mMode;
+    private boolean mWalletsLoaded;
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private AuthorizedTask mAuthorizedTask;
     private String mKeyToLoad, mSeed;
@@ -76,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private double mPaymentFeeRate;
     private boolean mPaymentSendMax;
     private boolean mDontUpdatePaymentAmount;
-    private TextWatcher mSeedWordWatcher, mAmountWatcher;
+    private TextWatcher mSeedWordWatcher, mAmountWatcher, mRequestAmountWatcher;
 
 
     public class TransactionRunnable implements Runnable
@@ -124,6 +125,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mFiatRate = 0.0;
         mCurrentWalletIndex = -1;
         mDontUpdatePaymentAmount = false;
+        mWalletsLoaded = false;
 
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
@@ -486,7 +488,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         synchronized(mBitcoin)
         {
-            if(mBitcoin.walletsModified)
+            if(mBitcoin.walletsModified || !mWalletsLoaded)
             {
                 Log.i(logTag, String.format("Rebuilding %d wallets", mBitcoin.wallets.length));
 
@@ -589,6 +591,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             mBitcoin.walletsModified = false;
+            mWalletsLoaded = true;
             wallets.setVisibility(View.VISIBLE);
         }
 
@@ -819,14 +822,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mPaymentFunds += outpoint.output.amount;
 
         if(mPaymentRequest.format == PaymentRequest.FORMAT_INVALID ||
-          mPaymentRequest.protocol == PaymentRequest.PROTOCOL_NONE)
+          mPaymentRequest.type == PaymentRequest.TYPE_NONE)
         {
             showMessage(getString(R.string.invalid_payment_code), 2000);
             updateWallets();
             return;
         }
 
-        if(mPaymentRequest.protocol == PaymentRequest.PROTOCOL_REQUEST_AMOUNT)
+        if(mPaymentRequest.amount != 0)
             mPaymentAmount = mPaymentRequest.amount;
         else
             mPaymentAmount = 0;
@@ -866,23 +869,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             }
 
-            String protocolText;
-            switch(mPaymentRequest.protocol)
-            {
-            default:
-            case PaymentRequest.PROTOCOL_ADDRESS:
-                protocolText = getString(R.string.address);
-                break;
-            case PaymentRequest.PROTOCOL_REQUEST_AMOUNT:
-                protocolText = getString(R.string.amount_request);
-                break;
-            }
-
             String title;
             if(mPaymentRequest.secure)
-                title = String.format("%s %s %s", getString(R.string.secure), formatText, protocolText);
+                title = String.format("%s %s %s", getString(R.string.secure), formatText, getString(R.string.address));
             else
-                title = String.format("%s %s", formatText, protocolText);
+                title = String.format("%s %s", formatText, getString(R.string.address));
 
             ((TextView)sendView.findViewById(R.id.title)).setText(title);
 
@@ -892,6 +883,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mFiatRate));
                 satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
+                sendView.findViewById(R.id.sendMax).setVisibility(View.GONE);
             }
             else
                 satoshiAmount.setText(Bitcoin.satoshiText(0));
@@ -976,23 +968,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             feeRates.setOnItemSelectedListener(this);
             feeRates.setSelection(2); // Default to Low
 
-            if(mPaymentRequest.protocol == PaymentRequest.PROTOCOL_REQUEST_AMOUNT)
+            if(mPaymentRequest.amount != 0)
             {
                 // Make amount not modifiable
                 amount.setInputType(InputType.TYPE_NULL);
                 amount.setEnabled(false);
                 amount.setFocusable(false);
-                units.setEnabled(false);
             }
 
             ((TextView)sendView.findViewById(R.id.paymentCode)).setText(mPaymentRequest.code.toLowerCase());
 
             // Description
-            if(mPaymentRequest.description != null && mPaymentRequest.description.length() > 0)
-            {
-
-
-            }
+            String description = mPaymentRequest.description();
+            if(description != null)
+                ((TextView)sendView.findViewById(R.id.description)).setText(description);
             else
             {
                 sendView.findViewById(R.id.descriptionTitle).setVisibility(View.GONE);
@@ -1010,7 +999,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             dialogView.setVisibility(View.VISIBLE);
             ((ScrollView)findViewById(R.id.mainScroll)).setScrollY(0);
 
-            if(mPaymentRequest.protocol != PaymentRequest.PROTOCOL_REQUEST_AMOUNT)
+            if(mPaymentRequest.amount == 0)
             {
                 focusOnText(amount);
                 amount.selectAll();
@@ -1224,9 +1213,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
-    public void displayAddress(String pText, Bitmap pQRCode)
+    public void displayPaymentCode(PaymentRequest pPaymentCode, Bitmap pQRCode)
     {
-        if(pText == null || pQRCode == null)
+        if(pPaymentCode == null || pPaymentCode.code == null || pQRCode == null)
             updateWallets();
         else
         {
@@ -1240,11 +1229,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 findViewById(R.id.progress).setVisibility(View.GONE);
                 findViewById(R.id.statusBar).setVisibility(View.GONE);
 
-                ViewGroup receiveView = (ViewGroup)inflater.inflate(R.layout.receive, dialogView, false);
-                ((ImageView)receiveView.findViewById(R.id.addressImage)).setImageBitmap(pQRCode);
-                ((TextView)receiveView.findViewById(R.id.addressText)).setText(pText);
-                dialogView.addView(receiveView);
-
                 ActionBar actionBar = getSupportActionBar();
                 if(actionBar != null)
                 {
@@ -1253,8 +1237,106 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
                 }
 
+                mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
+                mPaymentRequest = pPaymentCode;
+
+                ViewGroup receiveView = (ViewGroup)inflater.inflate(R.layout.receive, dialogView, false);
+
+                // Set image and text
+                ((ImageView)receiveView.findViewById(R.id.image)).setImageBitmap(pQRCode);
+                ((TextView)receiveView.findViewById(R.id.paymentCode)).setText(mPaymentRequest.code);
+                dialogView.addView(receiveView);
+
+                // Set amount
+                EditText amount = receiveView.findViewById(R.id.requestAmount);
+                TextView satoshiAmount = receiveView.findViewById(R.id.satoshiAmount);
+                if(mPaymentRequest.amount != 0)
+                {
+                    amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mFiatRate));
+                    satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
+                }
+                else
+                {
+                    amount.setText("");
+                    satoshiAmount.setText(Bitcoin.satoshiText(0));
+                }
+
+                if(mRequestAmountWatcher == null)
+                {
+                    mRequestAmountWatcher = new TextWatcher()
+                    {
+                        @Override
+                        public void beforeTextChanged(CharSequence pString, int pStart, int pCount, int pAfter)
+                        {
+
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
+                        {
+                            Spinner units = findViewById(R.id.units);
+                            EditText amountField = findViewById(R.id.requestAmount);
+                            TextView satoshiAmount = findViewById(R.id.satoshiAmount);
+                            double amount;
+
+                            if(units == null || amountField == null || satoshiAmount == null)
+                                return;
+
+                            try
+                            {
+                                amount = Double.parseDouble(amountField.getText().toString());
+                            }
+                            catch(Exception pException)
+                            {
+                                amount = 0.0;
+                            }
+
+                            switch(units.getSelectedItemPosition())
+                            {
+                                case 0: // USD
+                                    mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount / mFiatRate);
+                                    break;
+                                case 1: // bits
+                                    mPaymentRequest.amount = Bitcoin.satoshisFromBits(amount);
+                                    break;
+                                case 2: // bitcoins
+                                    mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount);
+                                    break;
+                                default:
+                                    mPaymentRequest.amount = 0;
+                                    break;
+                            }
+
+                            satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable pString)
+                        {
+
+                        }
+                    };
+                }
+                amount.addTextChangedListener(mRequestAmountWatcher);
+
+                Spinner units = receiveView.findViewById(R.id.units);
+                ArrayAdapter<CharSequence> unitAdapter = ArrayAdapter.createFromResource(this, R.array.amount_units,
+                  android.R.layout.simple_spinner_item);
+                unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                units.setAdapter(unitAdapter);
+                units.setOnItemSelectedListener(this);
+
+                // Add amount button
+                View button = inflater.inflate(R.layout.button, dialogView, false);
+                button.setTag(R.id.addRequestAmount);
+                ((TextView)button.findViewById(R.id.text)).setText(R.string.add_amount);
+                dialogView.addView(button);
+
                 dialogView.setVisibility(View.VISIBLE);
                 ((ScrollView)findViewById(R.id.mainScroll)).setScrollY(0);
+
+                amount.selectAll();
+
                 mMode = Mode.RECEIVE;
             }
         }
@@ -1327,31 +1409,40 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         else if(pParent.getId() == R.id.units)
         {
-            EditText amount = findViewById(R.id.sendAmount);
+            EditText amountField = findViewById(R.id.sendAmount);
+            boolean isRequest = false;
+            long amount = mPaymentAmount;
+            if(amountField == null)
+            {
+                isRequest = true;
+                amountField = findViewById(R.id.requestAmount);
+                amount = mPaymentRequest.amount;
+            }
 
-            if(mPaymentAmount == 0)
-                amount.setText("");
+            if(amount == 0)
+                amountField.setText("");
             else
                 switch(pPosition)
                 {
                     case 0: // USD
-                        amount.setText(String.format(Locale.getDefault(), "%.2f",
-                          Bitcoin.bitcoinsFromSatoshis(mPaymentAmount) * mFiatRate));
+                        amountField.setText(String.format(Locale.getDefault(), "%.2f",
+                          Bitcoin.bitcoinsFromSatoshis(amount) * mFiatRate));
                         break;
                     case 1: // bits
-                        amount.setText(String.format(Locale.getDefault(), "%.6f",
-                          Bitcoin.bitsFromBitcoins(Bitcoin.bitcoinsFromSatoshis(mPaymentAmount))));
+                        amountField.setText(String.format(Locale.getDefault(), "%.6f",
+                          Bitcoin.bitsFromBitcoins(Bitcoin.bitcoinsFromSatoshis(amount))));
                         break;
                     case 2: // bitcoins
-                        amount.setText(String.format(Locale.getDefault(), "%.8f",
-                          Bitcoin.bitcoinsFromSatoshis(mPaymentAmount)));
+                        amountField.setText(String.format(Locale.getDefault(), "%.8f",
+                          Bitcoin.bitcoinsFromSatoshis(amount)));
                         break;
                     default:
-                        amount.setText("");
+                        amountField.setText("");
                         break;
                 }
 
-            updateFee();
+            if(!isRequest)
+                updateFee();
         }
         else if(pParent.getId() == R.id.feeRates)
         {
@@ -2043,6 +2134,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     }
                     break;
                 }
+                case R.id.addRequestAmount:
+                {
+                    CreatePaymentRequestTask task = new CreatePaymentRequestTask(this, mBitcoin,
+                      mPaymentRequest);
+                    task.execute();
+
+                    synchronized(this)
+                    {
+                        ViewGroup walletsView = findViewById(R.id.wallets);
+                        walletsView.setVisibility(View.GONE);
+
+                        findViewById(R.id.dialog).setVisibility(View.GONE);
+                        findViewById(R.id.progress).setVisibility(View.VISIBLE);
+                        mMode = Mode.IN_PROGRESS;
+                    }
+                    break;
+                }
                 case R.id.openScanner:
                     mQRScanner.initiateScan(IntentIntegrator.QR_CODE_TYPES);
                     break;
@@ -2314,15 +2422,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             openTransaction(mCurrentWalletIndex, (String)pView.getTag());
             break;
         }
-        case R.id.addressText:
+        case R.id.paymentCode:
         {
             ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
             if(manager != null)
             {
-                ClipData clip = ClipData.newPlainText("Bitcoin Cash Address",
+                ClipData clip = ClipData.newPlainText("Bitcoin Cash Payment Code",
                   ((TextView)pView).getText().toString());
                 manager.setPrimaryClip(clip);
-                showMessage(getString(R.string.address_clipboard), 2000);
+                showMessage(getString(R.string.payment_code_clipboard), 2000);
             }
             break;
         }
@@ -2330,6 +2438,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             mPaymentSendMax = true;
             findViewById(R.id.sendAmount).setEnabled(false);
+            findViewById(R.id.sendAmount).setFocusable(false);
 
             mPaymentAmount = 0;
             for(Outpoint outpoint : mPaymentOutpoints)

@@ -16,4 +16,5 @@
     <item type="id" name="openScanner" />
     <item type="id" name="enterPaymentDetails" />
     <item type="id" name="importSeed" />
+    <item type="id" name="addRequestAmount" />
 </resources>

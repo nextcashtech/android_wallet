@@ -56,10 +56,11 @@ extern "C"
     jmethodID sPaymentRequestConstructor = NULL;
     jfieldID sPaymentRequestCodeID = NULL;
     jfieldID sPaymentRequestFormatID = NULL;
-    jfieldID sPaymentRequestProtocolID = NULL;
+    jfieldID sPaymentRequestTypeID = NULL;
     jfieldID sPaymentRequestAddressID = NULL;
     jfieldID sPaymentRequestAmountID = NULL;
-    jfieldID sPaymentRequestDescriptionID = NULL;
+    jfieldID sPaymentRequestLabelID = NULL;
+    jfieldID sPaymentRequestMessageID = NULL;
     jfieldID sPaymentRequestSecureID = NULL;
 
     // Input
@@ -162,11 +163,13 @@ extern "C"
         sPaymentRequestCodeID = pEnvironment->GetFieldID(sPaymentRequestClass, "code",
           "Ljava/lang/String;");
         sPaymentRequestFormatID = pEnvironment->GetFieldID(sPaymentRequestClass, "format", "I");
-        sPaymentRequestProtocolID = pEnvironment->GetFieldID(sPaymentRequestClass, "protocol", "I");
+        sPaymentRequestTypeID = pEnvironment->GetFieldID(sPaymentRequestClass, "type", "I");
         sPaymentRequestAddressID = pEnvironment->GetFieldID(sPaymentRequestClass, "address",
           "Ljava/lang/String;");
         sPaymentRequestAmountID = pEnvironment->GetFieldID(sPaymentRequestClass, "amount", "J");
-        sPaymentRequestDescriptionID = pEnvironment->GetFieldID(sPaymentRequestClass, "description",
+        sPaymentRequestLabelID = pEnvironment->GetFieldID(sPaymentRequestClass, "label",
+          "Ljava/lang/String;");
+        sPaymentRequestMessageID = pEnvironment->GetFieldID(sPaymentRequestClass, "message",
           "Ljava/lang/String;");
         sPaymentRequestSecureID = pEnvironment->GetFieldID(sPaymentRequestClass, "secure", "Z");
     }
@@ -1222,13 +1225,10 @@ extern "C"
             case BitCoin::PaymentRequest::Protocol::SCRIPT_HASH: // TODO Implement
             case BitCoin::PaymentRequest::Protocol::PRIVATE_KEY: // TODO Implement
             case BitCoin::PaymentRequest::Protocol::NONE:
-                pEnvironment->SetIntField(result, sPaymentRequestProtocolID, (jint)0);
+                pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)0);
                 break;
             case BitCoin::PaymentRequest::Protocol::PUB_KEY_HASH:
-                pEnvironment->SetIntField(result, sPaymentRequestProtocolID, (jint)1);
-                break;
-            case BitCoin::PaymentRequest::Protocol::PUB_KEY_HASH_AMOUNT:
-                pEnvironment->SetIntField(result, sPaymentRequestProtocolID, (jint)2);
+                pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)1);
                 break;
         }
 
@@ -1240,10 +1240,15 @@ extern "C"
         // Set amount
         pEnvironment->SetLongField(result, sPaymentRequestAmountID, (jlong)request.amount);
 
+        // Set label
+        if(request.label)
+            pEnvironment->SetObjectField(result, sPaymentRequestLabelID,
+              pEnvironment->NewStringUTF(request.label));
+
         // Set description
-        if(request.description)
-            pEnvironment->SetObjectField(result, sPaymentRequestDescriptionID,
-              pEnvironment->NewStringUTF(request.description));
+        if(request.message)
+            pEnvironment->SetObjectField(result, sPaymentRequestMessageID,
+              pEnvironment->NewStringUTF(request.message));
 
         // Set secure
         pEnvironment->SetBooleanField(result, sPaymentRequestSecureID, (jboolean)request.secure);
