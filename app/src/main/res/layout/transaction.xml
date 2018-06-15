@@ -7,9 +7,81 @@
     android:padding="10dp">
 
     <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/HeadingText"
+        android:textAlignment="center"
+        android:text="@string/receive"/>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SubHeadingText"
+            android:text="@string/amount_title"/>
+
+        <TextView
+            android:id="@+id/transactionAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:textSize="@dimen/text_size_subheading"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SmallHeadingText"
+            android:text="@string/bitcoins_amount_title"/>
+
+        <TextView
+            android:id="@+id/bitcoinsAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:textSize="@dimen/text_size_smallheading"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/statusHeading"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         style="@style/SubHeadingText"
+        android:layout_marginTop="10dp"
+        android:text="@string/confirmed_in_block"/>
+
+    <HorizontalScrollView
+        android:id="@+id/blockIDScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/blockID"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:onClick="copyToClipBoard"/>
+    </HorizontalScrollView>
+
+    <TextView
+        android:id="@+id/transactionStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/SubHeadingText"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/SubHeadingText"
+        android:layout_marginTop="10dp"
         android:text="@string/id"/>
 
     <HorizontalScrollView
@@ -59,43 +131,6 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="10dp"
             android:textSize="@dimen/text_size_subheading"/>
-    </LinearLayout>
-
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/SubHeadingText"
-            android:text="@string/amount_title"/>
-
-        <TextView
-            android:id="@+id/transactionAmount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:textSize="@dimen/text_size_subheading"/>
-    </LinearLayout>
-
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/SmallHeadingText"
-            android:text="@string/bitcoins_amount_title"/>
-
-        <TextView
-            android:id="@+id/bitcoinsAmount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:textSize="@dimen/text_size_smallheading"/>
     </LinearLayout>
 
     <LinearLayout

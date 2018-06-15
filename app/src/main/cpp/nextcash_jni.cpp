@@ -91,6 +91,7 @@ extern "C"
     jfieldID sFullTransactionInputsID = NULL;
     jfieldID sFullTransactionOutputsID = NULL;
     jfieldID sFullTransactionLockTimeID = NULL;
+    jfieldID sFullTransactionDateID = NULL;
 
     // Outpoint
     jclass sOutpointClass = NULL;
@@ -212,6 +213,8 @@ extern "C"
           "[Ltech/nextcash/nextcashwallet/Output;");
         sFullTransactionLockTimeID = pEnvironment->GetFieldID(sFullTransactionClass, "lockTime",
           "I");
+        sFullTransactionDateID = pEnvironment->GetFieldID(sFullTransactionClass, "date",
+          "J");
     }
 
     void setupOutputClass(JNIEnv *pEnvironment)
@@ -1316,12 +1319,25 @@ extern "C"
 
         // Count
         if(transaction.blockHash.isEmpty())
+        {
             pEnvironment->SetIntField(result, sFullTransactionCountID,
               (jint)transaction.nodesVerified);
+
+            // Set date
+            pEnvironment->SetLongField(result, sFullTransactionDateID,
+              (jlong)transaction.transaction.time());
+        }
         else
+        {
             pEnvironment->SetIntField(result, sFullTransactionCountID,
               (jint)(daemon->chain()->height() + 1 -
               daemon->chain()->blockHeight(transaction.blockHash)));
+
+            // Set date
+            pEnvironment->SetLongField(result, sFullTransactionDateID,
+              (jlong)daemon->chain()->blockStats()
+                .time((unsigned int)daemon->chain()->blockHeight(transaction.blockHash)));
+        }
 
         // Version
         pEnvironment->SetIntField(result, sFullTransactionVersionID,

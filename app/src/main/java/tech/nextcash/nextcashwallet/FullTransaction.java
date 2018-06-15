@@ -8,6 +8,7 @@ public class FullTransaction
 {
     public String hash; // Transaction ID
     public String block; // Block Hash in which transaction was confirmed
+    public long date; // Date/Time in seconds since epoch of transaction
     public int count; // Pending = Number of validating nodes. Confirmed = Number of confirmations.
 
     public int version;

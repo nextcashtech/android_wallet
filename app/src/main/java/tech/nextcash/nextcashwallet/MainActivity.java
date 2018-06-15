@@ -1042,6 +1042,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             ViewGroup transactionView = (ViewGroup)inflater.inflate(R.layout.transaction, dialogView, false);
 
+            if(pTransaction.block != null)
+            {
+                ((TextView)transactionView.findViewById(R.id.statusHeading)).setText(R.string.confirmed_in_block);
+                ((TextView)transactionView.findViewById(R.id.blockID)).setText(pTransaction.block);
+                ((TextView)transactionView.findViewById(R.id.transactionStatus))
+                  .setText(String.format(Locale.getDefault(), "%,d %s (%3$tY-%3$tm-%3$td %3$tH:%3$tM)",
+                    pTransaction.count, getString(R.string.confirmations), pTransaction.date * 1000));
+            }
+            else
+            {
+                ((TextView)transactionView.findViewById(R.id.statusHeading)).setText(R.string.unconfirmed);
+                transactionView.findViewById(R.id.blockIDScroll).setVisibility(View.GONE);
+                ((TextView)transactionView.findViewById(R.id.transactionStatus))
+                  .setText(String.format(Locale.getDefault(), "%s %,d %s", getString(R.string.validated_by),
+                    pTransaction.count, getString(R.string.peers_period)));
+            }
+
             ((TextView)transactionView.findViewById(R.id.id)).setText(pTransaction.hash);
             ((TextView)transactionView.findViewById(R.id.lockTime)).setText(pTransaction.lockTimeString(this));
             ((TextView)transactionView.findViewById(R.id.version)).setText(String.format(Locale.getDefault(), "%d",
@@ -1054,11 +1071,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             bitcoinsAmountText.setText(Bitcoin.satoshiText(amount));
             if(amount > 0)
             {
+                ((TextView)transactionView.findViewById(R.id.title)).setText(R.string.receive);
                 amountText.setTextColor(getResources().getColor(R.color.colorPositive));
                 bitcoinsAmountText.setTextColor(getResources().getColor(R.color.colorPositive));
             }
             else
             {
+                ((TextView)transactionView.findViewById(R.id.title)).setText(R.string.send);
                 amountText.setTextColor(getResources().getColor(R.color.colorNegative));
                 bitcoinsAmountText.setTextColor(getResources().getColor(R.color.colorNegative));
             }

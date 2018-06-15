@@ -105,7 +105,7 @@
     <string name="add_amount">Add Amount</string>
     <string name="history">History</string>
     <string name="edit">Edit</string>
-    <string name="pending_transactions">Pending Transactions</string>
+    <string name="pending_transactions">Unconfirmed Transactions</string>
     <string name="recent_transactions">Recent Transactions</string>
     <string name="confirmed_transactions">Confirmed Transactions</string>
     <string name="no_transactions">No Transactions</string>
@@ -113,8 +113,13 @@
     <string name="fee">Fee</string>
     <string name="estimated_fee">Estimated Fee</string>
     <string name="bitcoins_amount_title">bitcoins</string>
+    <string name="confirmed_in_block">Confirmed in Block</string>
+    <string name="unconfirmed">Unconfirmed</string>
+    <string name="validated_by">Validated by</string>
+    <string name="peers_period"> peers.</string>
     <string name="time_title">Time</string>
     <string name="confirms_title">Confirms</string>
+    <string name="confirmations">Confirmations</string>
     <string name="peers_title">Peers</string>
     <string name="nine_plus">9+</string>
     <string name="hash_title">Hash</string>
@@ -160,6 +165,10 @@
     <string name="request_amount">Request Amount</string>
     <string name="failed_receive_address">Failed to generate receive address.</string>
     <string name="failed_receive_address_qr">Failed to generate QR Code.</string>
+    <string name="failed_url">Invalid URL</string>
+    <string name="failed_connection">Connection Failed</string>
+    <string name="failed_ssl_verify">Certificate Invalid</string>
+    <string name="failed_invalid_message">Invalid Message</string>
 
     <string name="create_passcode_description">
         Create a pass code to protect your private keys. You will be required to enter it when
@@ -296,7 +305,7 @@
     <string name="what_is_bitcoin_answer">
         Bitcoin is an open source software project that is attempting to build a worldwide
         decentralized currency. Its goal is to allow people to pay each other without dependence on
-        any company/government and with requiring permission from any company or government.
+        any company or government and without requiring permission from any company or government.
     </string>
 
     <string name="what_is_bitcoin_cash">What is Bitcoin Cash?</string>
