@@ -6,8 +6,8 @@ android {
         applicationId "tech.nextcash.nextcashwallet"
         minSdkVersion 21
         targetSdkVersion 26
-        versionCode 3
-        versionName "0.5.2"
+        versionCode 4
+        versionName "0.5.3"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
@@ -40,4 +40,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
     implementation 'com.google.zxing:core:3.3.2'
     implementation 'com.google.zxing:android-integration:3.3.0'
+    implementation 'com.google.protobuf:protobuf-java:3.5.1'
 }
