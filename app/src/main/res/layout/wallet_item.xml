@@ -104,20 +104,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
-                android:layout_toStartOf="@+id/walletScan"
-                android:src="@drawable/ic_send_black_36dp"
-                android:padding="5dp"
-                android:layout_marginEnd="5dp"
-                android:contentDescription="@string/send"
-                android:onClick="onClick"/>
-
-            <ImageView
-                android:id="@+id/walletScan"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentTop="true"
                 android:layout_toStartOf="@+id/walletReceive"
-                android:src="@drawable/ic_scan_black_36dp"
+                android:src="@drawable/ic_send_black_36dp"
                 android:padding="5dp"
                 android:layout_marginEnd="5dp"
                 android:contentDescription="@string/send"
@@ -145,18 +133,6 @@
                 android:padding="5dp"
                 android:layout_marginEnd="5dp"
                 android:contentDescription="@string/history"
-                android:onClick="onClick"/>
-
-            <ImageView
-                android:id="@+id/walletEdit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentTop="true"
-                android:layout_alignParentEnd="true"
-                android:src="@drawable/ic_edit_black_36dp"
-                android:padding="5dp"
-                android:layout_marginEnd="5dp"
-                android:contentDescription="@string/edit"
                 android:onClick="onClick"/>
 
         </RelativeLayout>

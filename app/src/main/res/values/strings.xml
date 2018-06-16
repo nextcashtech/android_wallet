@@ -25,6 +25,7 @@
     <string name="blocks">Blocks</string>
 
     <string name="title_settings">Settings</string>
+    <string name="edit_wallets">Edit Wallets</string>
 
     <string name="title_notifications">Notifications</string>
     <string name="title_transactions">Transactions</string>
@@ -209,6 +210,10 @@
         Only use it if you are sure it is correct.
     </string>
     <string name="receive_payment_code">Receive Payment Code</string>
+    <string name="receive_description">
+        Send the code below to someone or have them scan this QR code for them to send you a
+        payment.
+    </string>
     <string name="scroll_left_right">Scroll Left and Right</string>
     <string name="seed_doesnt_match">Seed Doesn\'t Match</string>
     <string name="seed_matches">Seed Matches</string>

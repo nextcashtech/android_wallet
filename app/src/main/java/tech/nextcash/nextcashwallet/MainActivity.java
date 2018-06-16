@@ -11,6 +11,7 @@ import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -29,11 +30,13 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -43,16 +46,16 @@ import java.util.Collections;
 import java.util.Locale;
 
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener,
+  CompoundButton.OnCheckedChangeListener
 {
     public static final String logTag = "MainActivity";
-    public static final int SETTINGS_REQUEST_CODE = 20;
     public static final int SCAN_REQUEST_CODE = 30;
 
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification;
     private enum Mode { LOADING, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, VERIFY_SEED, BACKUP_WALLET,
-      RECOVER_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, SEND, SETUP, AUTHORIZE, INFO }
+      RECOVER_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, SEND, SETUP, AUTHORIZE, INFO, SETTINGS }
     private Mode mMode;
     private boolean mWalletsLoaded;
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
@@ -532,16 +535,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     if(!wallet.isPrivate)
                     {
                         walletView.findViewById(R.id.walletLocked).setVisibility(View.VISIBLE);
-                        walletView.findViewById(R.id.walletScan).setVisibility(View.GONE);
                         walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
                         walletView.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
                     }
 
                     if(!mBitcoin.initialBlockDownloadIsComplete())
-                    {
-                        walletView.findViewById(R.id.walletScan).setVisibility(View.GONE);
                         walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
-                    }
 
                     if(!wallet.isSynchronized)
                     {
@@ -624,6 +623,133 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     @Override
+    public void onCheckedChanged(CompoundButton pButtonView, boolean pIsChecked)
+    {
+        if(pButtonView.getId() == R.id.notifyTransactionsToggle)
+        {
+            Settings.getInstance(getFilesDir()).setBoolValue("notify_transactions", pIsChecked);
+            if(pIsChecked)
+                Log.i(logTag, "Transaction notifications turned on");
+            else
+                Log.i(logTag, "Transaction notifications turned off");
+        }
+    }
+
+    public synchronized void displaySettings()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.wallets).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_settings_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.title_settings));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        View settingsView = inflater.inflate(R.layout.settings, dialogView, false);
+
+        Settings settings = Settings.getInstance(getFilesDir());
+
+        // Configure sync frequency options
+        int currentFrequency = settings.intValue("sync_frequency");
+        if(currentFrequency == 0)
+            currentFrequency = 360; // Default to 6 hours
+
+        Spinner syncFrequency = settingsView.findViewById(R.id.syncFrequencySpinner);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+          R.array.sync_frequency_titles, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        syncFrequency.setAdapter(adapter);
+        syncFrequency.setOnItemSelectedListener(this);
+
+        boolean found = false;
+        int[] frequencyValues = getResources().getIntArray(R.array.sync_frequency_values);
+        for(int i=0;i<frequencyValues.length;i++)
+            if(frequencyValues[i] == currentFrequency)
+            {
+                found = true;
+                syncFrequency.setSelection(i);
+                break;
+            }
+
+        if(!found)
+            syncFrequency.setSelection(2); // Default to 6 hours
+
+        // Configure transaction notifications toggle
+        Switch notifyTransactions = settingsView.findViewById(R.id.notifyTransactionsToggle);
+        notifyTransactions.setOnCheckedChangeListener(this);
+        if(settings.containsValue("notify_transactions"))
+            notifyTransactions.setChecked(settings.boolValue("notify_transactions"));
+        else
+            notifyTransactions.setChecked(true);
+
+        // Hide system notification settings for versions before 26
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
+            settingsView.findViewById(R.id.systemNotificationSettings).setVisibility(View.GONE);
+
+        synchronized(mBitcoin)
+        {
+            // Add Wallet buttons
+            ViewGroup walletsView = settingsView.findViewById(R.id.walletsSettings);
+            View button;
+            int offset = 0;
+
+            for(Wallet wallet : mBitcoin.wallets)
+            {
+                // Edit button
+                button = inflater.inflate(R.layout.button, walletsView, false);
+                button.findViewById(R.id.button).setId(R.id.editWallet);
+                button.setTag(offset);
+                ((TextView)button.findViewById(R.id.text)).setText(wallet.name);
+                walletsView.addView(button);
+                offset++;
+            }
+        }
+
+        dialogView.addView(settingsView);
+        dialogView.setVisibility(View.VISIBLE);
+        ((ScrollView)findViewById(R.id.mainScroll)).setScrollY(0);
+        mMode = Mode.SETTINGS;
+    }
+
+    public synchronized void displayInfo()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.wallets).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_info_outline_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.information));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        inflater.inflate(R.layout.info, dialogView, true);
+
+        ((TextView)findViewById(R.id.nodeUserAgentValue)).setText(Bitcoin.userAgent());
+        ((TextView)findViewById(R.id.networkValue)).setText(Bitcoin.networkName());
+
+        dialogView.setVisibility(View.VISIBLE);
+        ((ScrollView)findViewById(R.id.mainScroll)).setScrollY(0);
+        mMode = Mode.INFO;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
         switch(item.getItemId())
@@ -632,40 +758,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 updateWallets();
                 return true;
             case R.id.action_settings:
-            {
-                Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
-                startActivityForResult(intent, SETTINGS_REQUEST_CODE);
+                displaySettings();
                 return true;
-            }
             case R.id.action_info:
-                synchronized(this)
-                {
-                    LayoutInflater inflater = getLayoutInflater();
-                    ViewGroup dialogView = findViewById(R.id.dialog);
-
-                    dialogView.removeAllViews();
-                    findViewById(R.id.wallets).setVisibility(View.GONE);
-                    findViewById(R.id.progress).setVisibility(View.GONE);
-                    findViewById(R.id.statusBar).setVisibility(View.GONE);
-
-                    // Title
-                    ActionBar actionBar = getSupportActionBar();
-                    if(actionBar != null)
-                    {
-                        actionBar.setIcon(R.drawable.ic_info_outline_black_36dp);
-                        actionBar.setTitle(" " + getResources().getString(R.string.information));
-                        actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
-                    }
-
-                    inflater.inflate(R.layout.info, dialogView, true);
-
-                    ((TextView)findViewById(R.id.nodeUserAgentValue)).setText(Bitcoin.userAgent());
-                    ((TextView)findViewById(R.id.networkValue)).setText(Bitcoin.networkName());
-
-                    dialogView.setVisibility(View.VISIBLE);
-                    ((ScrollView)findViewById(R.id.mainScroll)).setScrollY(0);
-                    mMode = Mode.INFO;
-                }
+                displayInfo();
+                return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -676,10 +773,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         switch(pRequestCode)
         {
-            case SETTINGS_REQUEST_CODE:
-                if(pResultCode > 0) // Sync frequency updated
-                    scheduleJobs();
-                break;
             case SCAN_REQUEST_CODE:
             case IntentIntegrator.REQUEST_CODE:
                 if(pResultCode == RESULT_OK && pData != null)
@@ -1483,6 +1576,25 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             updateFee();
+        }
+        else if(pParent.getId() == R.id.syncFrequencySpinner)
+        {
+            int[] frequencyValues = getResources().getIntArray(R.array.sync_frequency_values);
+
+            if(pPosition >= frequencyValues.length)
+                Log.e(logTag, String.format("Invalid sync frequency position selected : %d", pPosition));
+            else
+            {
+                Settings.getInstance(getFilesDir()).setIntValue("sync_frequency", frequencyValues[pPosition]);
+                setResult(1);
+                if(frequencyValues[pPosition] == -1)
+                    Log.i(logTag, "Sync frequency set to never.");
+                else if(frequencyValues[pPosition] >= 60)
+                    Log.i(logTag, String.format("Sync frequency set to %d hours.", frequencyValues[pPosition] / 60));
+                else
+                    Log.i(logTag, String.format("Sync frequency set to %d minutes.", frequencyValues[pPosition]));
+                scheduleJobs();
+            }
         }
     }
 
@@ -2401,13 +2513,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayEnterPaymentCode();
             break;
         }
-        case R.id.walletScan:
-        {
-            ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
-            mCurrentWalletIndex = (int)walletView.getTag();
-            mQRScanner.initiateScan(IntentIntegrator.QR_CODE_TYPES);
-            break;
-        }
         case R.id.walletReceive:
         {
             ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
@@ -2432,10 +2537,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayWalletHistory();
             break;
         }
-        case R.id.walletEdit:
+        case R.id.editWallet:
         {
-            ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
-            mCurrentWalletIndex = (int)walletView.getTag();
+            mCurrentWalletIndex = (int)((View)pView.getParent()).getTag();
             displayEditWallet();
             break;
         }
@@ -2467,6 +2571,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 mPaymentAmount += outpoint.output.amount;
             mPaymentAmount -= Bitcoin.estimatedP2PKHSize(mPaymentOutpoints.length, 1) * mPaymentFeeRate;
             updateFee();
+        }
+        case R.id.systemNotificationSettings:
+        {
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            {
+                Intent settingsIntent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                  .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                  .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName());
+                //.putExtra(Settings.EXTRA_CHANNEL_ID, MY_CHANNEL_ID);
+                startActivity(settingsIntent);
+            }
         }
         }
     }

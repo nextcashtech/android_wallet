@@ -32,17 +32,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".SettingsActivity"
-            android:label="@string/title_settings"
-            android:theme="@style/AppTheme.NoActionBar"
-            android:parentActivityName=".MainActivity"
-            android:screenOrientation="portrait">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="tech.nextcash.nextcashwallet.MainActivity"/>
-        </activity>
-
     </application>
 
 </manifest>
