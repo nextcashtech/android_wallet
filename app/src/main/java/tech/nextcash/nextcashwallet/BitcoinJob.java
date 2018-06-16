@@ -29,7 +29,9 @@ public class BitcoinJob extends JobService
     {
         Intent intent = new Intent(this, BitcoinService.class);
         intent.putExtra("FinishMode", Bitcoin.FINISH_ON_SYNC);
-        startService(intent);
+
+        if(!mBitcoin.isRunning())
+            startService(intent);
 
         if(!mServiceIsBound)
         {
