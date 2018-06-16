@@ -955,7 +955,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             default:
             case PaymentRequest.FORMAT_LEGACY:
                 formatText = getString(R.string.legacy);
-                findViewById(R.id.legacyWarning).setVisibility(View.VISIBLE);
+                sendView.findViewById(R.id.legacyWarning).setVisibility(View.VISIBLE);
                 break;
             case PaymentRequest.FORMAT_CASH:
                 formatText = getString(R.string.cash);
@@ -1326,9 +1326,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
-    public void displayPaymentCode(PaymentRequest pPaymentCode, Bitmap pQRCode)
+    public void displayRequestPaymentCode(PaymentRequest pPaymentCode, Bitmap pQRCode)
     {
-        if(pPaymentCode == null || pPaymentCode.code == null || pQRCode == null)
+        if(pPaymentCode == null || pPaymentCode.uri == null || pQRCode == null)
             updateWallets();
         else
         {
@@ -1357,7 +1357,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 // Set image and text
                 ((ImageView)receiveView.findViewById(R.id.image)).setImageBitmap(pQRCode);
-                ((TextView)receiveView.findViewById(R.id.paymentCode)).setText(mPaymentRequest.code);
+                ((TextView)receiveView.findViewById(R.id.paymentCode)).setText(mPaymentRequest.uri);
                 dialogView.addView(receiveView);
 
                 // Set amount
@@ -1439,10 +1439,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 units.setAdapter(unitAdapter);
                 units.setOnItemSelectedListener(this);
 
+                // Label
+                if(mPaymentRequest.label != null && mPaymentRequest.label.length() > 0)
+                    ((EditText)receiveView.findViewById(R.id.label)).setText(mPaymentRequest.label);
+
+                // Message
+                if(mPaymentRequest.message != null && mPaymentRequest.message.length() > 0)
+                    ((EditText)receiveView.findViewById(R.id.message)).setText(mPaymentRequest.message);
+
                 // Add amount button
                 View button = inflater.inflate(R.layout.button, dialogView, false);
-                button.setTag(R.id.addRequestAmount);
-                ((TextView)button.findViewById(R.id.text)).setText(R.string.add_amount);
+                button.setTag(R.id.updateRequestPaymentCode);
+                ((TextView)button.findViewById(R.id.text)).setText(R.string.update);
                 dialogView.addView(button);
 
                 dialogView.setVisibility(View.VISIBLE);
@@ -2268,8 +2276,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     }
                     break;
                 }
-                case R.id.addRequestAmount:
+                case R.id.updateRequestPaymentCode:
                 {
+                    String label = ((EditText)findViewById(R.id.label)).getText().toString();
+                    String message = ((EditText)findViewById(R.id.message)).getText().toString();
+                    mPaymentRequest.setLabel(label);
+                    mPaymentRequest.setMessage(message);
                     CreatePaymentRequestTask task = new CreatePaymentRequestTask(this, mBitcoin,
                       mPaymentRequest);
                     task.execute();

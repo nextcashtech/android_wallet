@@ -214,6 +214,9 @@
         Send the code below to someone or have them scan this QR code for them to send you a
         payment.
     </string>
+    <string name="label">Label (Name)</string>
+    <string name="message">Message</string>
+    <string name="update">Update</string>
     <string name="scroll_left_right">Scroll Left and Right</string>
     <string name="seed_doesnt_match">Seed Doesn\'t Match</string>
     <string name="seed_matches">Seed Matches</string>
@@ -237,7 +240,7 @@
     <string name="not_supported">Not Supported Yet</string>
     <string name="legacy_warning">
         This is a \"Legacy\" address! Do not send Bitcoin Cash to it unless you are sure
-        that is what they want Bitcoin Cash (BCH) and not Bitcoin Core (BTC).
+        that they want Bitcoin Cash (BCH) and not Bitcoin (BTC).
     </string>
     <string-array name="amount_units">
         <item>USD</item>

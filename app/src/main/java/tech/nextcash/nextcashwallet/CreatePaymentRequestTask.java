@@ -25,7 +25,7 @@ public class CreatePaymentRequestTask extends AsyncTask<String, Integer, Integer
         if(!mPaymentRequest.encode())
             return 1;
 
-        mQRCode = mBitcoin.qrCode(mPaymentRequest.code);
+        mQRCode = mBitcoin.qrCode(mPaymentRequest.uri);
         if(mQRCode == null)
             return 1;
 
@@ -41,7 +41,7 @@ public class CreatePaymentRequestTask extends AsyncTask<String, Integer, Integer
             switch(pResult)
             {
                 case 0: // Success
-                    mActivity.displayPaymentCode(mPaymentRequest, mQRCode);
+                    mActivity.displayRequestPaymentCode(mPaymentRequest, mQRCode);
                     break;
                 case 1: // Unknown error
                     mActivity.showMessage(mActivity.getString(R.string.failed_generate_payment_code), 2000);

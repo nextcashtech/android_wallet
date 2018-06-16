@@ -1,8 +1,11 @@
 package tech.nextcash.nextcashwallet;
 
-import java.net.URLDecoder;
-import java.net.URLEncoder;
+import android.net.Uri;
+
+import java.io.ByteArrayInputStream;
 import java.util.Locale;
+
+import com.google.protobuf.compiler.PluginProtos;
 
 
 public class PaymentRequest
@@ -20,12 +23,13 @@ public class PaymentRequest
 
     public int format;
     public int type;
-    public String code;
+    public String uri;
     public String address;
     public long amount;
     public String label;
     public String message;
     public boolean secure;
+    public String url;
 
     PaymentRequest()
     {
@@ -45,6 +49,13 @@ public class PaymentRequest
             if(result.length() > 0)
                 result += "\n";
             result += message;
+        }
+        if(url != null && url.length() > 0)
+        {
+            if(result.length() > 0)
+                result += "\n";
+            result += "URL : ";
+            result += url;
         }
 
         if(result.length() > 0)
@@ -92,160 +103,59 @@ public class PaymentRequest
     {
         clear();
 
-        String remaining;
-        String pair[];
-        String segments[] = pPaymentCode.split(":");
-
-        if(segments.length > 2)
+        Uri theURI = Uri.parse(pPaymentCode);
+        try
+        {
+            String amountString = theURI.getQueryParameter("amount");
+            amount = Bitcoin.satoshisFromBitcoins(Double.parseDouble(amountString));
+        }
+        catch(Exception pException)
         {
             clear();
             return false;
         }
+        label = theURI.getQueryParameter("label");
+        message = theURI.getQueryParameter("message");
+        uri = pPaymentCode;
 
-        if(segments.length == 1)
-            remaining = segments[0]; // Allow URIs without prefix
-        else // segments.length == 2
-        {
-            if(!segments[0].equalsIgnoreCase("bitcoincash"))
+        for(String key : theURI.getQueryParameterNames())
+            if(key.startsWith("req-"))
             {
+                // Unknown required parameter
                 clear();
                 return false;
             }
-
-            remaining = segments[1];
-        }
-
-        segments = remaining.split("\\?");
-        if(segments.length > 2)
-        {
-            clear();
-            return false;
-        }
-
-        address = segments[0];
-        remaining = segments[1];
-        segments = remaining.split("&");
-
-        for(String parameter : segments)
-        {
-            pair = parameter.split("=");
-            if(pair.length != 2)
-            {
-                clear();
-                return false;
-            }
-
-            switch(pair[0])
-            {
-            case "amount":
-                try
-                {
-                    amount = Bitcoin.satoshisFromBitcoins(Double.parseDouble(pair[1]));
-                }
-                catch(Exception pException)
-                {
-                    clear();
-                    return false;
-                }
-                break;
-            case "label":
-                try
-                {
-                    label = URLDecoder.decode(pair[1], "UTF-8");
-                }
-                catch(Exception pException)
-                {
-                    clear();
-                    return false;
-                }
-                break;
-            case "message":
-                try
-                {
-                    message = URLDecoder.decode(pair[1], "UTF-8");
-                }
-                catch(Exception pException)
-                {
-                    clear();
-                    return false;
-                }
-                break;
-            default:
-                if(pair[0].startsWith("req-"))
-                {
-                    clear();
-                    return false;
-                }
-                break;
-            }
-        }
 
         return true;
     }
 
     public boolean encode()
     {
-        boolean isFirstParameter = true;
+        Uri.Builder uriBuilder = new Uri.Builder();
 
-        code = "bitcoincash:" + address;
+        uriBuilder.encodedPath("bitcoincash:" + address);
 
         if(label != null && label.length() > 0)
-        {
-            if(isFirstParameter)
-            {
-                isFirstParameter = false;
-                code += "?";
-            }
-            else
-                code += "&";
-
-            code += "label=";
-            try
-            {
-                code += URLEncoder.encode(label, "UTF-8");
-            }
-            catch(Exception pException)
-            {
-                return false;
-            }
-        }
+            uriBuilder.appendQueryParameter("label", label);
 
         if(message != null && message.length() > 0)
-        {
-            if(isFirstParameter)
-            {
-                isFirstParameter = false;
-                code += "?";
-            }
-            else
-                code += "&";
-
-            code += "message=";
-            try
-            {
-                code += URLEncoder.encode(message, "UTF-8");
-            }
-            catch(Exception pException)
-            {
-                return false;
-            }
-        }
+            uriBuilder.appendQueryParameter("message", message);
 
         if(amount != 0)
-        {
-            if(isFirstParameter)
-            {
-                isFirstParameter = false;
-                code += "?";
-            }
-            else
-                code += "&";
+            uriBuilder.appendQueryParameter("amount",
+              String.format(Locale.getDefault(), "%.8f", Bitcoin.bitcoinsFromSatoshis(amount)));
 
-            code += String.format(Locale.getDefault(), "amount=%.8f", Bitcoin.bitcoinsFromSatoshis(amount));
-        }
+        uri = uriBuilder.toString();
 
         if(format == FORMAT_INVALID)
             format = FORMAT_CASH;
         return true;
+    }
+
+    // Parse a BIP-0070 message
+    public boolean parseDetailsMessage(ByteArrayInputStream pData)
+    {
+        //PluginProtos.CodeGeneratorRequest.
+        return false;
     }
 }

@@ -54,7 +54,7 @@ extern "C"
     // PaymentRequest
     jclass sPaymentRequestClass = NULL;
     jmethodID sPaymentRequestConstructor = NULL;
-    jfieldID sPaymentRequestCodeID = NULL;
+    jfieldID sPaymentRequestURIID = NULL;
     jfieldID sPaymentRequestFormatID = NULL;
     jfieldID sPaymentRequestTypeID = NULL;
     jfieldID sPaymentRequestAddressID = NULL;
@@ -161,7 +161,7 @@ extern "C"
           pEnvironment->FindClass("tech/nextcash/nextcashwallet/PaymentRequest");
         sPaymentRequestConstructor = pEnvironment->GetMethodID(sPaymentRequestClass, "<init>",
           "()V");
-        sPaymentRequestCodeID = pEnvironment->GetFieldID(sPaymentRequestClass, "code",
+        sPaymentRequestURIID = pEnvironment->GetFieldID(sPaymentRequestClass, "uri",
           "Ljava/lang/String;");
         sPaymentRequestFormatID = pEnvironment->GetFieldID(sPaymentRequestClass, "format", "I");
         sPaymentRequestTypeID = pEnvironment->GetFieldID(sPaymentRequestClass, "type", "I");
@@ -1207,7 +1207,7 @@ extern "C"
         jobject result = pEnvironment->NewObject(sPaymentRequestClass, sPaymentRequestConstructor);
 
         // Set code
-        pEnvironment->SetObjectField(result, sPaymentRequestCodeID, pPaymentCode);
+        pEnvironment->SetObjectField(result, sPaymentRequestURIID, pPaymentCode);
 
         // Set format
         switch(request.format)
