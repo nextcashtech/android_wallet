@@ -8,19 +8,20 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
     private MainActivity mActivity;
     private Bitcoin mBitcoin;
     private int mWalletOffset;
-    private String mAddress, mPassCode;
+    public PaymentRequest mRequest;
+    private String mPassCode;
     private long mAmount;
     private double mFeeRate;
     private boolean mSendAll;
 
     public CreateTransactionTask(MainActivity pActivity, Bitcoin pBitcoin, String pPassCode, int pWalletOffset,
-      String pAddress, long pAmount, double pFeeRate, boolean pSendAll)
+      PaymentRequest pRequest, long pAmount, double pFeeRate, boolean pSendAll)
     {
         mActivity = pActivity;
         mBitcoin = pBitcoin;
         mPassCode = pPassCode;
         mWalletOffset = pWalletOffset;
-        mAddress = pAddress;
+        mRequest = pRequest;
         mAmount = pAmount;
         mFeeRate = pFeeRate;
         mSendAll = pSendAll;
@@ -29,7 +30,16 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        return mBitcoin.sendPayment(mWalletOffset, mPassCode, mAddress, mAmount, mFeeRate, mSendAll);
+        int result = 1;
+        if(mRequest.paymentScript != null)
+            result = mBitcoin.sendOutputPayment(mWalletOffset, mPassCode, mRequest.paymentScript, mAmount, mFeeRate);
+        else
+            result = mBitcoin.sendP2PKHPayment(mWalletOffset, mPassCode, mRequest.address, mAmount, mFeeRate, mSendAll);
+
+        if(result == 0)
+            mActivity.acknowledgePaymentSent();
+
+        return result;
     }
 
     @Override

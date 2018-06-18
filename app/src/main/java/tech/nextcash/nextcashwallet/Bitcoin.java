@@ -171,6 +171,7 @@ public class Bitcoin
     public native int merkleHeight();
 
     public native String getNextReceiveAddress(int pWalletOffset, int pChainIndex);
+    public native byte[] getNextReceiveOutput(int pWalletOffset, int pChainIndex);
 
     public Bitmap qrCode(String pText)
     {
@@ -303,10 +304,20 @@ public class Bitcoin
 
     public native boolean hasPassCode();
 
+    // Send a P2PKH (Pay to Public Key Hash) payment
     // Amount in satoshis
     // Fee rate in satoshis per byte of transaction size
-    public native int sendPayment(int pWalletOffset, String pPassCode, String pAddress, long pAmount,
+    public native int sendP2PKHPayment(int pWalletOffset, String pPassCode, String pAddress, long pAmount,
       double pFeeRate, boolean pSendAll);
+
+    // Send a payment given a specific output script to pay
+    //    // Amount in satoshis
+    //    // Fee rate in satoshis per byte of transaction size
+    public native int sendOutputPayment(int pWalletOffset, String pPassCode, byte[] pOutputScript, long pAmount,
+      double pFeeRate);
+
+    // Get the raw data for the transaction paying the specified output script
+    public native byte[] getRawTransaction(byte[] pPayingOutputScript, long pAmount);
 
     //TODO Generate a mnemonic sentence that can be used to create an HD key.
     //public native String generateMnemonic();

@@ -62,6 +62,7 @@ extern "C"
     jfieldID sPaymentRequestLabelID = NULL;
     jfieldID sPaymentRequestMessageID = NULL;
     jfieldID sPaymentRequestSecureID = NULL;
+    jfieldID sPaymentRequestSecureURLID = NULL;
 
     // Input
     jclass sInputClass = NULL;
@@ -173,6 +174,8 @@ extern "C"
         sPaymentRequestMessageID = pEnvironment->GetFieldID(sPaymentRequestClass, "message",
           "Ljava/lang/String;");
         sPaymentRequestSecureID = pEnvironment->GetFieldID(sPaymentRequestClass, "secure", "Z");
+        sPaymentRequestSecureURLID = pEnvironment->GetFieldID(sPaymentRequestClass, "secureURL",
+          "Ljava/lang/String;");
     }
 
     void setupFullTransactionClass(JNIEnv *pEnvironment)
@@ -1153,6 +1156,38 @@ extern "C"
         return NULL;
     }
 
+    JNIEXPORT jbyteArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getNextReceiveOutput(JNIEnv *pEnvironment,
+                                                                                                jobject pObject,
+                                                                                                jint pKeyOffset,
+                                                                                                jint pIndex)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL || daemon->keyStore()->size() <= pKeyOffset)
+            return NULL;
+
+        std::vector<BitCoin::Key *> *chainKeys = daemon->keyStore()->chainKeys((unsigned int)pKeyOffset);
+
+        if(chainKeys != NULL && chainKeys->size() != 0)
+            for(std::vector<BitCoin::Key *>::iterator chainKey = chainKeys->begin();
+                chainKey != chainKeys->end(); ++chainKey)
+                if((*chainKey)->index() == pIndex)
+                {
+                    BitCoin::Key *unused = (*chainKey)->getNextUnused();
+
+                    if(unused == NULL)
+                        return NULL;
+
+                    NextCash::Buffer outputScript;
+                    BitCoin::ScriptInterpreter::writeP2PKHOutputScript(outputScript, unused->hash());
+                    jbyteArray result = pEnvironment->NewByteArray((jsize)outputScript.length());
+                    pEnvironment->SetByteArrayRegion(result, 0, (jsize)outputScript.length(),
+                      (const jbyte *)outputScript.startPointer());
+                    return result;
+                }
+
+        return NULL;
+    }
+
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_encodePaymentCode(JNIEnv *pEnvironment,
                                                                                           jobject pObject,
                                                                                           jstring pAddress,
@@ -1255,6 +1290,9 @@ extern "C"
             case BitCoin::AddressType::TEST_PRIVATE_KEY:
                 pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)3);
                 break;
+            case BitCoin::AddressType::BIP0070:
+                pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)4);
+                break;
         }
 
         // Set amount
@@ -1272,6 +1310,10 @@ extern "C"
 
         // Set secure
         pEnvironment->SetBooleanField(result, sPaymentRequestSecureID, (jboolean)request.secure);
+
+        // Set secure URL
+        pEnvironment->SetObjectField(result, sPaymentRequestSecureURLID,
+          pEnvironment->NewStringUTF(request.secureURL));
 
         return result;
     }
@@ -1424,14 +1466,14 @@ extern "C"
         return result;
     }
 
-    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendPayment(JNIEnv *pEnvironment,
-                                                                                 jobject pObject,
-                                                                                 jint pWalletOffset,
-                                                                                 jstring pPassCode,
-                                                                                 jstring pAddress,
-                                                                                 jlong pAmount,
-                                                                                 jdouble pFeeRate,
-                                                                                 jboolean pSendAll)
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendP2PKHPayment(JNIEnv *pEnvironment,
+                                                                                      jobject pObject,
+                                                                                      jint pWalletOffset,
+                                                                                      jstring pPassCode,
+                                                                                      jstring pAddress,
+                                                                                      jlong pAmount,
+                                                                                      jdouble pFeeRate,
+                                                                                      jboolean pSendAll)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL || daemon->keyStore()->size() <= pWalletOffset)
@@ -1462,6 +1504,77 @@ extern "C"
             result = 1; // Failed to save
 
         return (jint)result;
+    }
+
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendOutputPayment(JNIEnv *pEnvironment,
+                                                                                       jobject pObject,
+                                                                                       jint pWalletOffset,
+                                                                                       jstring pPassCode,
+                                                                                       jbyteArray pOutputScript,
+                                                                                       jlong pAmount,
+                                                                                       jdouble pFeeRate)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL || daemon->keyStore()->size() <= pWalletOffset)
+            return (jint)1;
+
+        if(!loadPrivateKeys(pEnvironment, daemon, pPassCode))
+            return (jint)1;
+
+        NextCash::Buffer outputScript;
+        jbyte *outputScriptBytes = pEnvironment->GetByteArrayElements(pOutputScript, NULL);
+        outputScript.write(outputScriptBytes,
+          (NextCash::stream_size)pEnvironment->GetArrayLength(pOutputScript));
+        pEnvironment->ReleaseByteArrayElements(pOutputScript, outputScriptBytes, 0);
+
+        if(outputScript.length() == 0)
+        {
+            daemon->keyStore()->unloadPrivate();
+            return (jint)3; // Invalid Hash
+        }
+
+        int result = daemon->sendSpecifiedOutputPayment((unsigned int)pWalletOffset, outputScript,
+          (uint64_t)pAmount, pFeeRate);
+
+        if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
+            daemon->saveMonitor();
+        else
+            result = 1; // Failed to save
+
+        return (jint)result;
+    }
+
+    JNIEXPORT jbyteArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getRawTransaction(JNIEnv *pEnvironment,
+                                                                                             jobject pObject,
+                                                                                             jbyteArray pPayingOutputScript,
+                                                                                             jlong pAmount)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return NULL;
+
+        NextCash::Buffer outputScript;
+        jbyte *outputScriptBytes = pEnvironment->GetByteArrayElements(pPayingOutputScript, NULL);
+        outputScript.write(outputScriptBytes,
+          (NextCash::stream_size)pEnvironment->GetArrayLength(pPayingOutputScript));
+        pEnvironment->ReleaseByteArrayElements(pPayingOutputScript, outputScriptBytes, 0);
+        if(outputScript.length() == 0)
+            return NULL;
+
+        BitCoin::Transaction *transaction = daemon->monitor()->findTransactionPaying(outputScript,
+          (uint64_t)pAmount);
+        if(transaction == NULL)
+            return NULL;
+
+        NextCash::Log::addFormatted(NextCash::Log::INFO, NEXTCASH_JNI_LOG_NAME,
+          "Found raw transaction : %s", transaction->hash.hex().text());
+
+        NextCash::Buffer data;
+        transaction->write(&data);
+        jbyteArray result = pEnvironment->NewByteArray((jsize)data.length());
+        pEnvironment->SetByteArrayRegion(result, 0, (jsize)data.length(),
+          (const jbyte *)data.startPointer());
+        return result;
     }
 
     JNIEXPORT jobjectArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getMnemonicWords(JNIEnv *pEnvironment,

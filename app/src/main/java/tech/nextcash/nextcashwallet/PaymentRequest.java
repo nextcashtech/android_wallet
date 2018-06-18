@@ -5,6 +5,7 @@ import android.net.Uri;
 import java.io.ByteArrayInputStream;
 import java.util.Locale;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.compiler.PluginProtos;
 
 
@@ -20,6 +21,7 @@ public class PaymentRequest
     public static final int TYPE_PUB_KEY_HASH = 1;
     public static final int TYPE_SCRIPT_HASH  = 2;
     public static final int TYPE_PRIVATE_KEY  = 3;
+    public static final int TYPE_BIP0700 = 4;
 
     public int format;
     public int type;
@@ -28,8 +30,16 @@ public class PaymentRequest
     public long amount;
     public String label;
     public String message;
+
+    // BIP-0070
     public boolean secure;
-    public String url;
+    public String secureURL;
+    public String site;
+    public byte[] paymentScript;
+    public String transactionID;
+    public long expires;
+
+    public PaymentRequestBufferProtocols.PaymentDetails protocolDetails;
 
     PaymentRequest()
     {
@@ -37,25 +47,21 @@ public class PaymentRequest
         type = TYPE_NONE;
         amount = 0;
         secure = false;
+        expires = 0;
     }
 
     public String description()
     {
         String result = "";
-        if(label != null && label.length() > 0)
+
+        if(type != TYPE_BIP0700 && label != null && label.length() > 0)
             result += label;
+
         if(message != null && message.length() > 0)
         {
             if(result.length() > 0)
                 result += "\n";
             result += message;
-        }
-        if(url != null && url.length() > 0)
-        {
-            if(result.length() > 0)
-                result += "\n";
-            result += "URL : ";
-            result += url;
         }
 
         if(result.length() > 0)
@@ -72,6 +78,11 @@ public class PaymentRequest
         secure = false;
         label = null;
         message = null;
+        secureURL = null;
+        site = null;
+        paymentScript = null;
+        expires = 0;
+        transactionID = null;
     }
 
     public boolean setAddress(String pAddress)
@@ -116,6 +127,7 @@ public class PaymentRequest
         }
         label = theURI.getQueryParameter("label");
         message = theURI.getQueryParameter("message");
+        secureURL = theURI.getQueryParameter("r");
         uri = pPaymentCode;
 
         for(String key : theURI.getQueryParameterNames())

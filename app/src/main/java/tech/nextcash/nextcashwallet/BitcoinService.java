@@ -578,7 +578,6 @@ public class BitcoinService extends Service
                     // Check for new transactions and notify
                     if(wallet.updatedTransactions != null && wallet.updatedTransactions.length > 0)
                     {
-                        //TODO Don't notify for wallets not yet fully "recovered"
                         // Notify of new transaction
                         for(Transaction transaction : wallet.updatedTransactions)
                         {
@@ -613,7 +612,8 @@ public class BitcoinService extends Service
                             for(CallBacks callBacks : mCallBacks)
                                 callBacks.onTransactionUpdate(offset, transaction);
 
-                            notify(title, transaction.description(this), offset, transaction.hash);
+                            if(wallet.isSynchronized)
+                                notify(title, transaction.description(this), offset, transaction.hash);
                         }
                     }
 

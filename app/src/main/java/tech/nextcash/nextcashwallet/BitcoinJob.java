@@ -25,20 +25,22 @@ public class BitcoinJob extends JobService
     private boolean mFinished;
     private JobParameters mJobParameters;
 
-    private void startBitcoinService()
+    private boolean startBitcoinService()
     {
+        if(mBitcoin.isRunning())
+            return false;
+
         Intent intent = new Intent(this, BitcoinService.class);
         intent.putExtra("FinishMode", Bitcoin.FINISH_ON_SYNC);
-
-        if(!mBitcoin.isRunning())
-            startService(intent);
+        startService(intent);
 
         if(!mServiceIsBound)
         {
             Log.d(logTag, "Binding Bitcoin service");
             bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-            mServiceIsBound = true;
         }
+
+        return true;
     }
 
     @Override
@@ -84,6 +86,7 @@ public class BitcoinJob extends JobService
             public void onServiceConnected(ComponentName pComponentName, IBinder pBinder)
             {
                 Log.d(logTag, "Bitcoin service connected");
+                mServiceIsBound = true;
                 mService = ((BitcoinService.LocalBinder)pBinder).getService();
                 mService.setCallBacks(mServiceCallBacks);
             }
@@ -92,6 +95,7 @@ public class BitcoinJob extends JobService
             public void onServiceDisconnected(ComponentName pComponentName)
             {
                 Log.d(logTag, "Bitcoin service disconnected");
+                mServiceIsBound = true;
                 mService.removeCallBacks(mServiceCallBacks);
                 mService = null;
                 if(!mFinished)
@@ -112,7 +116,6 @@ public class BitcoinJob extends JobService
         {
             Log.d(logTag, "Unbinding Bitcoin service");
             unbindService(mServiceConnection);
-            mServiceIsBound = false;
         }
         super.onDestroy();
     }
@@ -124,7 +127,9 @@ public class BitcoinJob extends JobService
         mJobParameters = pParams;
         mFinished = false;
 
-        startBitcoinService();
+        if(!startBitcoinService())
+            return false;
+
         new FiatRateRequestTask(getFilesDir()).execute();
 
         return true;

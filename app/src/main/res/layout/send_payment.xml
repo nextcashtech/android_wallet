@@ -55,6 +55,12 @@
         android:visibility="gone"/>
 
     <TextView
+        android:id="@+id/expires"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"/>
+
+    <TextView
         android:id="@+id/sendMax"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

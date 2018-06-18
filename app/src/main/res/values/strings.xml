@@ -169,7 +169,15 @@
     <string name="failed_url">Invalid URL</string>
     <string name="failed_connection">Connection Failed</string>
     <string name="failed_ssl_verify">Certificate Invalid</string>
-    <string name="failed_invalid_message">Invalid Message</string>
+    <string name="failed_invalid_message">Invalid Request Message</string>
+    <string name="failed_request_expired">Payment Request Expired</string>
+    <string name="failed_not_main_network">Payment Request Not For Main Network</string>
+    <string name="failed_invalid_request">Invalid Payment Request</string>
+    <string name="failed_transaction">Transaction Failed</string>
+    <string name="failed_invalid_acknowledge">Invalid Payment Acknowledge</string>
+    <string name="request_expired">Request Expired</string>
+    <string name="expires_in">Expires in</string>
+    <string name="seconds_abbreviation">s</string>
 
     <string name="create_passcode_description">
         Create a pass code to protect your private keys. You will be required to enter it when

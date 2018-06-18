@@ -42,8 +42,10 @@ import android.widget.TextView;
 import com.google.zxing.integration.android.IntentIntegrator;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.TimeZone;
 
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener,
@@ -53,7 +55,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static final int SCAN_REQUEST_CODE = 30;
 
     private Handler mDelayHandler;
-    private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification;
+    private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification,
+      mRequestExpiresUpdater;
     private enum Mode { LOADING, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, VERIFY_SEED, BACKUP_WALLET,
       RECOVER_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, SEND, SETUP, AUTHORIZE, INFO, SETTINGS }
     private Mode mMode;
@@ -81,6 +84,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private boolean mPaymentSendMax;
     private boolean mDontUpdatePaymentAmount;
     private TextWatcher mSeedWordWatcher, mAmountWatcher, mRequestAmountWatcher;
+    private int mTransactionToShowWalletIndex;
+    private String mTransactionToShow;
 
 
     public class TransactionRunnable implements Runnable
@@ -122,6 +127,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 findViewById(R.id.notification).setVisibility(View.GONE);
             }
         };
+        mRequestExpiresUpdater = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                updateRequestExpires();
+            }
+        };
         mMode = Mode.LOADING;
         mAuthorizedTask = AuthorizedTask.NONE;
         mFinishOnBack = false;
@@ -142,6 +155,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     {
                         if(mMode == Mode.LOADING)
                             updateWallets();
+                        if(mTransactionToShow != null)
+                            openTransaction(mTransactionToShowWalletIndex, mTransactionToShow);
                     }
                 });
             }
@@ -184,6 +199,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             public void onServiceConnected(ComponentName pComponentName, IBinder pBinder)
             {
                 Log.d(logTag, "Bitcoin service connected");
+                mServiceIsBound = true;
                 mService = ((BitcoinService.LocalBinder)pBinder).getService();
                 mService.setCallBacks(mServiceCallBacks);
             }
@@ -192,6 +208,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             public void onServiceDisconnected(ComponentName pComponentName)
             {
                 Log.d(logTag, "Bitcoin service disconnected");
+                mServiceIsBound = false;
                 mService.removeCallBacks(mServiceCallBacks);
                 mService = null;
             }
@@ -217,7 +234,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             Log.d(logTag, "Binding Bitcoin service");
             bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-            mServiceIsBound = true;
         }
     }
 
@@ -282,7 +298,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         if(action != null && action.equals("Transaction") &&
           extras != null && extras.containsKey("Wallet") && extras.containsKey("Transaction"))
-            openTransaction(extras.getInt("Wallet"), extras.getString("Transaction"));
+        {
+            if(mBitcoin.isLoaded())
+                openTransaction(extras.getInt("Wallet"), extras.getString("Transaction"));
+            else
+            {
+                mTransactionToShowWalletIndex = extras.getInt("Wallet");
+                mTransactionToShow = extras.getString("Transaction");
+            }
+        }
 
         if(action != null && action.equals("Message") &&
           extras != null && extras.containsKey("Message"))
@@ -315,6 +339,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mBitcoin.setFinishTime(180); // 180 seconds in the future
         mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
         mDelayHandler.removeCallbacks(mRateUpdateRunnable);
+        mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
         super.onPause();
     }
 
@@ -332,7 +357,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             Log.d(logTag, "Unbinding Bitcoin service");
             unbindService(mServiceConnection);
-            mServiceIsBound = false;
         }
         super.onDestroy();
     }
@@ -343,6 +367,38 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         // Run again in 60 seconds
         mDelayHandler.postDelayed(mRateUpdateRunnable, 60000);
+    }
+
+    private synchronized void updateRequestExpires()
+    {
+        TextView expires = findViewById(R.id.expires);
+        if(expires == null)
+            return;
+
+        if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
+        {
+            expires.setVisibility(View.VISIBLE);
+
+            Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+            if(mPaymentRequest.protocolDetails.getExpires() <=
+              (calendar.getTimeInMillis() / 1000L) + 5)
+            {
+                expires.setText(getString(R.string.request_expired));
+                expires.setTextColor(getResources().getColor(R.color.textNegative));
+            }
+            else
+            {
+                expires.setText(String.format(Locale.getDefault(), "%s %d %s", getString(R.string.expires_in),
+                  mPaymentRequest.protocolDetails.getExpires() - (calendar.getTimeInMillis() / 1000L),
+                  getString(R.string.seconds_abbreviation)));
+                expires.setTextColor(getResources().getColor(R.color.textWarning));
+
+                // Run again in 1 second
+                mDelayHandler.postDelayed(mRequestExpiresUpdater, 1000);
+            }
+        }
+        else
+            expires.setVisibility(View.GONE);
     }
 
     private synchronized void updateStatus()
@@ -357,7 +413,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case 1: // Loading
                 status.setText(R.string.loading);
-                if(mMode != Mode.LOADING)
+                if(mMode != Mode.LOADING && mMode != Mode.SETTINGS && mMode != Mode.INFO)
                 {
                     findViewById(R.id.wallets).setVisibility(View.GONE);
                     findViewById(R.id.dialog).setVisibility(View.GONE);
@@ -463,6 +519,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         // Run again in 2 seconds
         mDelayHandler.postDelayed(mStatusUpdateRunnable, 2000);
+    }
+
+    public synchronized void displayWallets()
+    {
+        findViewById(R.id.dialog).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.wallets).setVisibility(View.VISIBLE);
+        findViewById(R.id.statusBar).setVisibility(View.VISIBLE);
+        mMode = Mode.IN_PROGRESS;
     }
 
     public synchronized void updateWallets()
@@ -702,16 +767,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             View button;
             int offset = 0;
 
-            for(Wallet wallet : mBitcoin.wallets)
-            {
-                // Edit button
-                button = inflater.inflate(R.layout.button, walletsView, false);
-                button.findViewById(R.id.button).setId(R.id.editWallet);
-                button.setTag(offset);
-                ((TextView)button.findViewById(R.id.text)).setText(wallet.name);
-                walletsView.addView(button);
-                offset++;
-            }
+            if(mBitcoin.wallets != null)
+                for(Wallet wallet : mBitcoin.wallets)
+                {
+                    // Edit button
+                    button = inflater.inflate(R.layout.button, walletsView, false);
+                    button.findViewById(R.id.button).setId(R.id.editWallet);
+                    button.setTag(offset);
+                    ((TextView)button.findViewById(R.id.text)).setText(wallet.name);
+                    walletsView.addView(button);
+                    offset++;
+                }
         }
 
         dialogView.addView(settingsView);
@@ -776,7 +842,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case SCAN_REQUEST_CODE:
             case IntentIntegrator.REQUEST_CODE:
                 if(pResultCode == RESULT_OK && pData != null)
-                    displaySendPayment(pData.getStringExtra("SCAN_RESULT"));
+                {
+                    mPaymentRequest = mBitcoin.decodePaymentCode(pData.getStringExtra("SCAN_RESULT"));
+                    if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
+                        displaySendPayment();
+                    else
+                    {
+                        showMessage(getString(R.string.failed_payment_code), 2000);
+                        updateWallets();
+                    }
+                }
                 break;
             default:
                 super.onActivityResult(pRequestCode, pResultCode, pData);
@@ -893,16 +968,26 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         satoshiAmount.setText(Bitcoin.satoshiText(mPaymentAmount));
     }
 
-    public void displaySendPayment(String pPaymentCode)
+    public void displaySendPayment()
     {
-        Log.i(logTag, String.format("Displaying Payment Code : %s", pPaymentCode));
-
-        mPaymentRequest = mBitcoin.decodePaymentCode(pPaymentCode);
-
-        if(pPaymentCode == null)
+        if(mPaymentRequest == null)
         {
             showMessage(getString(R.string.failed_payment_code), 2000);
             updateWallets();
+            return;
+        }
+
+        if(mPaymentRequest.secureURL != null && mPaymentRequest.paymentScript == null)
+        {
+            ProcessPaymentRequestTask processPaymentRequestTask = new ProcessPaymentRequestTask(this, mCurrentWalletIndex,
+              mPaymentRequest);
+            processPaymentRequestTask.execute();
+
+            findViewById(R.id.wallets).setVisibility(View.GONE);
+            findViewById(R.id.statusBar).setVisibility(View.GONE);
+            findViewById(R.id.dialog).setVisibility(View.GONE);
+            findViewById(R.id.progress).setVisibility(View.VISIBLE);
+            mMode = Mode.SEND;
             return;
         }
 
@@ -915,7 +1000,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mPaymentFunds += outpoint.output.amount;
 
         if(mPaymentRequest.format == PaymentRequest.FORMAT_INVALID ||
-          mPaymentRequest.type != PaymentRequest.TYPE_PUB_KEY_HASH)
+          (mPaymentRequest.type != PaymentRequest.TYPE_PUB_KEY_HASH &&
+          mPaymentRequest.type != PaymentRequest.TYPE_BIP0700))
         {
             showMessage(getString(R.string.invalid_payment_code), 2000);
             updateWallets();
@@ -1070,7 +1156,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 amount.setFocusable(false);
             }
 
-            ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.address.toLowerCase());
+            if(mPaymentRequest.address != null)
+                ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.address.toLowerCase());
+            else if(mPaymentRequest.site != null && mPaymentRequest.label != null)
+                ((TextView)sendView.findViewById(R.id.address)).setText(String.format("%s (%s)", mPaymentRequest.site,
+                  mPaymentRequest.label));
+            else if(mPaymentRequest.site != null)
+                ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.site);
+            else if(mPaymentRequest.label != null)
+                ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.label);
+            else
+                ((TextView)sendView.findViewById(R.id.address)).setText("");
 
             // Description
             String description = mPaymentRequest.description();
@@ -1081,6 +1177,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 sendView.findViewById(R.id.descriptionTitle).setVisibility(View.GONE);
                 sendView.findViewById(R.id.description).setVisibility(View.GONE);
             }
+
+            // TODO Add expire time to payment screen
 
             dialogView.addView(sendView);
 
@@ -1093,6 +1191,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             dialogView.setVisibility(View.VISIBLE);
             ((ScrollView)findViewById(R.id.mainScroll)).setScrollY(0);
 
+            if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
+                updateRequestExpires();
+
             if(mPaymentRequest.amount == 0)
             {
                 focusOnText(amount);
@@ -1103,8 +1204,26 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
+    public void acknowledgePaymentSent()
+    {
+        if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasPaymentUrl())
+        {
+            FinishPaymentRequestTask finishPaymentRequestTask = new FinishPaymentRequestTask(this,
+              mCurrentWalletIndex, mPaymentRequest);
+            finishPaymentRequestTask.execute();
+        }
+    }
+
+    public void clearPaymentProcess()
+    {
+        mPaymentRequest = null;
+    }
+
     public void openTransaction(int pWalletOffset, String pTransactionHash)
     {
+        mTransactionToShowWalletIndex = 0;
+        mTransactionToShow = null;
+
         findViewById(R.id.wallets).setVisibility(View.GONE);
         findViewById(R.id.progress).setVisibility(View.VISIBLE);
 
@@ -2268,7 +2387,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 {
                     TextView paymentCode = findViewById(R.id.paymentCode);
                     if(paymentCode != null)
-                        displaySendPayment(paymentCode.getText().toString());
+                    {
+                        mPaymentRequest = mBitcoin.decodePaymentCode(paymentCode.getText().toString());
+                        if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
+                            displaySendPayment();
+                        else
+                        {
+                            showMessage(getString(R.string.failed_payment_code), 2000);
+                            updateWallets();
+                        }
+                    }
                     else
                     {
                         showMessage(getString(R.string.failed_payment_code), 2000);
@@ -2302,6 +2430,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     break;
                 case R.id.sendPayment:
                 {
+                    mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
+
+                    if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
+                    {
+                        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                        if(mPaymentRequest.protocolDetails.getExpires() <=
+                          (calendar.getTimeInMillis() / 1000L) + 6)
+                        {
+                            showMessage(getString(R.string.request_expired), 2000);
+                            mPaymentRequest = null;
+                            displayWallets();
+                            return;
+                        }
+                    }
+
                     mAuthorizedTask = AuthorizedTask.SIGN_TRANSACTION;
                     displayAuthorize();
                     break;
@@ -2362,8 +2505,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         }
                         case SIGN_TRANSACTION:
                         {
+                            if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
+                            {
+                                Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                                if(mPaymentRequest.protocolDetails.getExpires() <=
+                                  (calendar.getTimeInMillis() / 1000L) + 5)
+                                {
+                                    showMessage(getString(R.string.request_expired), 2000);
+                                    mPaymentRequest = null;
+                                    displayWallets();
+                                    return;
+                                }
+                            }
+
                             CreateTransactionTask task = new CreateTransactionTask(this, mBitcoin, passcode,
-                              mCurrentWalletIndex, mPaymentRequest.address, mPaymentAmount, mPaymentFeeRate,
+                              mCurrentWalletIndex, mPaymentRequest, mPaymentAmount, mPaymentFeeRate,
                               mPaymentSendMax);
                             task.execute();
 
@@ -2610,6 +2766,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         if(mMode != Mode.WALLETS && mMode != Mode.LOADING)
         {
+            mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
             if(mMode == Mode.AUTHORIZE)
             {
                 mSeed = null;
