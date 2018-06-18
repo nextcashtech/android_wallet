@@ -51,6 +51,7 @@
         android:background="@color/warningBackground"
         android:textColor="@color/warningText"
         android:padding="10dp"
+        android:layout_marginTop="10dp"
         android:layout_gravity="center"
         android:visibility="gone"/>
 
@@ -60,17 +61,35 @@
         android:layout_height="wrap_content"
         android:visibility="gone"/>
 
-    <TextView
-        android:id="@+id/sendMax"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right"
-        android:layout_marginRight="10dp"
-        android:text="@string/send_max"
-        android:padding="8dp"
-        android:textColor="#ffff"
-        android:background="@drawable/button_background"
-        android:onClick="onClick"/>
+    <RelativeLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Switch
+            android:id="@+id/usePendingToggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:switchPadding="10dp"
+            android:textStyle="bold"
+            android:text="@string/use_pending"/>
+
+        <TextView
+            android:id="@+id/sendMax"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="10dp"
+            android:text="@string/send_max"
+            android:padding="8dp"
+            android:textColor="#ffff"
+            android:background="@drawable/button_background"
+            android:onClick="onClick"/>
+
+    </RelativeLayout>
 
     <RelativeLayout
         android:orientation="horizontal"

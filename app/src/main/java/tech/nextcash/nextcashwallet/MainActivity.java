@@ -76,12 +76,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private boolean mServiceIsBound;
     private ServiceConnection mServiceConnection;
     private IntentIntegrator mQRScanner;
-    private long mPaymentAmount;
     private PaymentRequest mPaymentRequest;
-    private Outpoint[] mPaymentOutpoints;
-    private long mPaymentFunds;
-    private double mPaymentFeeRate;
-    private boolean mPaymentSendMax;
     private boolean mDontUpdatePaymentAmount;
     private TextWatcher mSeedWordWatcher, mAmountWatcher, mRequestAmountWatcher;
     private int mTransactionToShowWalletIndex;
@@ -140,8 +135,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mFinishOnBack = false;
         mFiatRate = 0.0;
         mCurrentWalletIndex = -1;
-        mDontUpdatePaymentAmount = false;
         mWalletsLoaded = false;
+        mDontUpdatePaymentAmount = false;
 
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
@@ -641,7 +636,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
             }
 
-            if(mBitcoin.walletsModified)
+            if(mBitcoin.walletsModified || !mWalletsLoaded)
             {
                 walletView = inflater.inflate(R.layout.button, wallets, false);
                 walletView.setTag(R.id.addWallet);
@@ -690,13 +685,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onCheckedChanged(CompoundButton pButtonView, boolean pIsChecked)
     {
-        if(pButtonView.getId() == R.id.notifyTransactionsToggle)
+        switch(pButtonView.getId())
         {
+        case R.id.notifyTransactionsToggle:
             Settings.getInstance(getFilesDir()).setBoolValue("notify_transactions", pIsChecked);
             if(pIsChecked)
                 Log.i(logTag, "Transaction notifications turned on");
             else
                 Log.i(logTag, "Transaction notifications turned off");
+            break;
+        case R.id.usePendingToggle:
+            mPaymentRequest.usePending = ((Switch)findViewById(R.id.usePendingToggle)).isChecked();
+            updateFee(); // Update "insufficient funds" message
+            break;
         }
     }
 
@@ -865,48 +866,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         TextView satoshiFee = findViewById(R.id.satoshiFee);
         Spinner units = findViewById(R.id.units);
 
-        long feeSatoshis;
+        long feeSatoshis = mPaymentRequest.estimatedFee();
+        long available = mPaymentRequest.amountAvailable();
 
-        if(mPaymentAmount == 0 || mPaymentOutpoints == null)
-            feeSatoshis = 0;
-        else
+        if(mPaymentRequest.sendMax)
         {
-            // Get estimated transaction size
-            int inputCount = 0;
-            long inputAmount = 0;
-
-            if(mPaymentSendMax)
-            {
-                for(Outpoint outpoint : mPaymentOutpoints)
-                {
-                    inputAmount += outpoint.output.amount;
-                    inputCount++;
-                }
-            }
-            else
-            {
-                for(Outpoint outpoint : mPaymentOutpoints)
-                {
-                    inputAmount += outpoint.output.amount;
-                    inputCount++;
-
-                    if(inputAmount > mPaymentAmount + (Bitcoin.estimatedP2PKHSize(inputCount, 2) *
-                      mPaymentFeeRate))
-                        break;
-                }
-            }
-
-            feeSatoshis = (long)((double)Bitcoin.estimatedP2PKHSize(inputCount, mPaymentSendMax ? 1 : 2) * mPaymentFeeRate);
-
-            if(mPaymentSendMax)
-            {
-                mPaymentAmount = inputAmount - feeSatoshis;
-                updateSendAmount();
-            }
+            mPaymentRequest.amount = available - feeSatoshis;
+            updateSendAmount();
         }
 
-        if(mPaymentAmount + feeSatoshis > mPaymentFunds)
+        if(mPaymentRequest.amount + feeSatoshis > available)
+        {
             findViewById(R.id.insufficientFunds).setVisibility(View.VISIBLE);
+            findViewById(R.id.usePendingToggle).setVisibility(View.VISIBLE);
+        }
         else
             findViewById(R.id.insufficientFunds).setVisibility(View.GONE);
 
@@ -948,15 +921,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         switch(units.getSelectedItemPosition())
         {
             case 0: // USD
-                amount = Bitcoin.bitcoinsFromSatoshis(mPaymentAmount) * mFiatRate;
+                amount = Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount) * mFiatRate;
                 amountField.setText(String.format(Locale.getDefault(), "%.2f", amount));
                 break;
             case 1: // bits
-                amount = Bitcoin.bitsFromSatoshis(mPaymentAmount);
+                amount = Bitcoin.bitsFromSatoshis(mPaymentRequest.amount);
                 amountField.setText(String.format(Locale.getDefault(), "%.6f", amount));
                 break;
             case 2: // bitcoins
-                amount = Bitcoin.bitcoinsFromSatoshis(mPaymentAmount);
+                amount = Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount);
                 amountField.setText(String.format(Locale.getDefault(), "%.8f", amount));
                 break;
             default:
@@ -965,7 +938,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
         }
 
-        satoshiAmount.setText(Bitcoin.satoshiText(mPaymentAmount));
+        satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
     }
 
     public void displaySendPayment()
@@ -993,11 +966,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
 
-        mPaymentOutpoints = mBitcoin.getUnspentOutputs(mCurrentWalletIndex);
-        mPaymentSendMax = false;
-        mPaymentFunds = 0;
-        for(Outpoint outpoint : mPaymentOutpoints)
-            mPaymentFunds += outpoint.output.amount;
+        mPaymentRequest.outpoints = mBitcoin.getUnspentOutputs(mCurrentWalletIndex);
 
         if(mPaymentRequest.format == PaymentRequest.FORMAT_INVALID ||
           (mPaymentRequest.type != PaymentRequest.TYPE_PUB_KEY_HASH &&
@@ -1007,11 +976,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             updateWallets();
             return;
         }
-
-        if(mPaymentRequest.amount != 0)
-            mPaymentAmount = mPaymentRequest.amount;
-        else
-            mPaymentAmount = 0;
 
         synchronized(this)
         {
@@ -1056,9 +1020,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             ((TextView)sendView.findViewById(R.id.title)).setText(title);
 
+            // Configure "use pending" toggle
+            Switch usePending = sendView.findViewById(R.id.usePendingToggle);
+            usePending.setChecked(mPaymentRequest.usePending);
+            usePending.setOnCheckedChangeListener(this);
+
             EditText amount = sendView.findViewById(R.id.sendAmount);
             TextView satoshiAmount = sendView.findViewById(R.id.satoshiAmount);
-            if(mPaymentRequest.amount != 0)
+            if(mPaymentRequest.amountSpecified)
             {
                 amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mFiatRate));
                 satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
@@ -1106,20 +1075,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         switch(units.getSelectedItemPosition())
                         {
                             case 0: // USD
-                                mPaymentAmount = Bitcoin.satoshisFromBitcoins(amount / mFiatRate);
+                                mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount / mFiatRate);
                                 break;
                             case 1: // bits
-                                mPaymentAmount = Bitcoin.satoshisFromBits(amount);
+                                mPaymentRequest.amount = Bitcoin.satoshisFromBits(amount);
                                 break;
                             case 2: // bitcoins
-                                mPaymentAmount = Bitcoin.satoshisFromBitcoins(amount);
+                                mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount);
                                 break;
                             default:
-                                mPaymentAmount = 0;
+                                mPaymentRequest.amount = 0;
                                 break;
                         }
 
-                        satoshiAmount.setText(Bitcoin.satoshiText(mPaymentAmount));
+                        satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
                         updateFee();
                     }
 
@@ -1130,7 +1099,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     }
                 };
             }
-            if(mPaymentRequest.amount == 0)
+            if(!mPaymentRequest.amountSpecified)
                 amount.addTextChangedListener(mAmountWatcher);
 
             Spinner units = sendView.findViewById(R.id.units);
@@ -1177,8 +1146,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 sendView.findViewById(R.id.descriptionTitle).setVisibility(View.GONE);
                 sendView.findViewById(R.id.description).setVisibility(View.GONE);
             }
-
-            // TODO Add expire time to payment screen
 
             dialogView.addView(sendView);
 
@@ -1651,32 +1618,28 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             EditText amountField = findViewById(R.id.sendAmount);
             boolean isRequest = false;
-            long amount = mPaymentAmount;
             if(amountField == null)
             {
                 isRequest = true;
                 amountField = findViewById(R.id.requestAmount);
-                amount = mPaymentRequest.amount;
             }
-            else if(mPaymentRequest.amount != 0)
-                amount = mPaymentRequest.amount;
 
-            if(amount == 0)
+            if(mPaymentRequest.amount == 0)
                 amountField.setText("");
             else
                 switch(pPosition)
                 {
                     case 0: // USD
                         amountField.setText(String.format(Locale.getDefault(), "%.2f",
-                          Bitcoin.bitcoinsFromSatoshis(amount) * mFiatRate));
+                          Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount) * mFiatRate));
                         break;
                     case 1: // bits
                         amountField.setText(String.format(Locale.getDefault(), "%.6f",
-                          Bitcoin.bitsFromBitcoins(Bitcoin.bitcoinsFromSatoshis(amount))));
+                          Bitcoin.bitsFromBitcoins(Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount))));
                         break;
                     case 2: // bitcoins
                         amountField.setText(String.format(Locale.getDefault(), "%.8f",
-                          Bitcoin.bitcoinsFromSatoshis(amount)));
+                          Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount)));
                         break;
                     default:
                         amountField.setText("");
@@ -1691,14 +1654,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             switch(pPosition)
             {
                 case 0: // Priority
-                    mPaymentFeeRate = 5.0;
+                    mPaymentRequest.feeRate = 5.0;
                     break;
                 default:
                 case 1: // Normal
-                    mPaymentFeeRate = 2.0;
+                    mPaymentRequest.feeRate = 2.0;
                     break;
                 case 2: // Low
-                    mPaymentFeeRate = 1.0;
+                    mPaymentRequest.feeRate = 1.0;
                     break;
             }
 
@@ -2519,8 +2482,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             }
 
                             CreateTransactionTask task = new CreateTransactionTask(this, mBitcoin, passcode,
-                              mCurrentWalletIndex, mPaymentRequest, mPaymentAmount, mPaymentFeeRate,
-                              mPaymentSendMax);
+                              mCurrentWalletIndex, mPaymentRequest);
                             task.execute();
 
                             synchronized(this)
@@ -2730,15 +2692,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.sendMax:
         {
-            mPaymentSendMax = true;
-            findViewById(R.id.sendAmount).setEnabled(false);
-            findViewById(R.id.sendAmount).setFocusable(false);
+            if(!mPaymentRequest.amountSpecified)
+            {
+                mPaymentRequest.sendMax = true;
+                findViewById(R.id.sendAmount).setEnabled(false);
+                findViewById(R.id.sendAmount).setFocusable(false);
 
-            mPaymentAmount = 0;
-            for(Outpoint outpoint : mPaymentOutpoints)
-                mPaymentAmount += outpoint.output.amount;
-            mPaymentAmount -= Bitcoin.estimatedP2PKHSize(mPaymentOutpoints.length, 1) * mPaymentFeeRate;
-            updateFee();
+                mPaymentRequest.amount = mPaymentRequest.amountAvailable() - mPaymentRequest.estimatedFee();
+                updateFee();
+            }
         }
         case R.id.systemNotificationSettings:
         {

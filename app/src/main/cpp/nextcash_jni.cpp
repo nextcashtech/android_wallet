@@ -59,6 +59,7 @@ extern "C"
     jfieldID sPaymentRequestTypeID = NULL;
     jfieldID sPaymentRequestAddressID = NULL;
     jfieldID sPaymentRequestAmountID = NULL;
+    jfieldID sPaymentRequestAmountSpecifiedID = NULL;
     jfieldID sPaymentRequestLabelID = NULL;
     jfieldID sPaymentRequestMessageID = NULL;
     jfieldID sPaymentRequestSecureID = NULL;
@@ -170,6 +171,8 @@ extern "C"
         sPaymentRequestAddressID = pEnvironment->GetFieldID(sPaymentRequestClass, "address",
           "Ljava/lang/String;");
         sPaymentRequestAmountID = pEnvironment->GetFieldID(sPaymentRequestClass, "amount", "J");
+        sPaymentRequestAmountSpecifiedID = pEnvironment->GetFieldID(sPaymentRequestClass,
+          "amountSpecified", "Z");
         sPaymentRequestLabelID = pEnvironment->GetFieldID(sPaymentRequestClass, "label",
           "Ljava/lang/String;");
         sPaymentRequestMessageID = pEnvironment->GetFieldID(sPaymentRequestClass, "message",
@@ -1300,6 +1303,10 @@ extern "C"
         // Set amount
         pEnvironment->SetLongField(result, sPaymentRequestAmountID, (jlong)request.amount);
 
+        // Set amount specified
+        pEnvironment->SetBooleanField(result, sPaymentRequestAmountSpecifiedID,
+          (jboolean)request.amountSpecified);
+
         // Set label
         if(request.label)
             pEnvironment->SetObjectField(result, sPaymentRequestLabelID,
@@ -1476,6 +1483,7 @@ extern "C"
                                                                                       jstring pAddress,
                                                                                       jlong pAmount,
                                                                                       jdouble pFeeRate,
+                                                                                      jboolean pUsePending,
                                                                                       jboolean pSendAll)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
@@ -1499,7 +1507,7 @@ extern "C"
         }
 
         int result = daemon->sendP2PKHPayment((unsigned int)pWalletOffset, hash, (uint64_t)pAmount,
-          pFeeRate, pSendAll);
+          pFeeRate, pUsePending, pSendAll);
 
         if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
             daemon->saveMonitor();
@@ -1515,7 +1523,8 @@ extern "C"
                                                                                        jstring pPassCode,
                                                                                        jbyteArray pOutputScript,
                                                                                        jlong pAmount,
-                                                                                       jdouble pFeeRate)
+                                                                                       jdouble pFeeRate,
+                                                                                       jboolean pUsePending)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL || daemon->keyStore()->size() <= pWalletOffset)
@@ -1537,7 +1546,7 @@ extern "C"
         }
 
         int result = daemon->sendSpecifiedOutputPayment((unsigned int)pWalletOffset, outputScript,
-          (uint64_t)pAmount, pFeeRate);
+          (uint64_t)pAmount, pFeeRate, pUsePending, false);
 
         if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
             daemon->saveMonitor();

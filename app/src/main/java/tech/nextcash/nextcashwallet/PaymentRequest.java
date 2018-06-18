@@ -28,6 +28,7 @@ public class PaymentRequest
     public String uri;
     public String address;
     public long amount;
+    public boolean amountSpecified;
     public String label;
     public String message;
 
@@ -41,13 +42,22 @@ public class PaymentRequest
 
     public PaymentRequestBufferProtocols.PaymentDetails protocolDetails;
 
+    // For calculations
+    public boolean usePending, sendMax;
+    public double feeRate;
+    public Outpoint[] outpoints;
+
     PaymentRequest()
     {
         format = FORMAT_INVALID;
         type = TYPE_NONE;
         amount = 0;
+        amountSpecified = false;
         secure = false;
         expires = 0;
+        usePending = false;
+        sendMax = false;
+        feeRate = 1.0;
     }
 
     public String description()
@@ -74,6 +84,7 @@ public class PaymentRequest
     {
         format = FORMAT_INVALID;
         type = TYPE_NONE;
+        amountSpecified = false;
         amount = 0;
         secure = false;
         label = null;
@@ -83,6 +94,9 @@ public class PaymentRequest
         paymentScript = null;
         expires = 0;
         transactionID = null;
+        usePending = false;
+        sendMax = false;
+        outpoints = null;
     }
 
     public boolean setAddress(String pAddress)
@@ -169,5 +183,43 @@ public class PaymentRequest
     {
         //PluginProtos.CodeGeneratorRequest.
         return false;
+    }
+
+    public long amountAvailable()
+    {
+        if(outpoints == null)
+            return 0L;
+
+        long result = 0L;
+        for(Outpoint outpoint : outpoints)
+            if(usePending || outpoint.confirmations > 0)
+                result += outpoint.output.amount;
+        return result;
+    }
+
+    public long estimatedTransactionSize()
+    {
+        if(outpoints == null)
+            return (int)((double)Bitcoin.estimatedP2PKHSize(1, sendMax ? 1 : 2) * feeRate);
+
+        long inputAmount = 0;
+        int inputCount = 0;
+        for(Outpoint outpoint : outpoints)
+            if(usePending || outpoint.confirmations > 0)
+            {
+                inputAmount += outpoint.output.amount;
+                inputCount++;
+
+                if(inputAmount > amount + (Bitcoin.estimatedP2PKHSize(inputCount, 2) *
+                  feeRate))
+                    break;
+            }
+
+        return Bitcoin.estimatedP2PKHSize(inputCount == 0 ? 1 : inputCount, sendMax ? 1 : 2);
+    }
+
+    public long estimatedFee()
+    {
+        return (long)((double)estimatedTransactionSize() * feeRate);
     }
 }

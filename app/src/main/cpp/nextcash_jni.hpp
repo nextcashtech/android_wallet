@@ -167,6 +167,7 @@ extern "C"
                                                                                       jstring pAddress,
                                                                                       jlong pAmount,
                                                                                       jdouble pFeeRate,
+                                                                                      jboolean pUsePending,
                                                                                       jboolean pSendAll);
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendOutputPayment(JNIEnv *pEnvironment,
@@ -175,7 +176,8 @@ extern "C"
                                                                                        jstring pPassCode,
                                                                                        jbyteArray pOutputScript,
                                                                                        jlong pAmount,
-                                                                                       jdouble pFeeRate);
+                                                                                       jdouble pFeeRate,
+                                                                                       jboolean pUsePending);
 
     JNIEXPORT jbyteArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getRawTransaction(JNIEnv *pEnvironment,
                                                                                              jobject pObject,

@@ -10,21 +10,15 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
     private int mWalletOffset;
     public PaymentRequest mRequest;
     private String mPassCode;
-    private long mAmount;
-    private double mFeeRate;
-    private boolean mSendAll;
 
     public CreateTransactionTask(MainActivity pActivity, Bitcoin pBitcoin, String pPassCode, int pWalletOffset,
-      PaymentRequest pRequest, long pAmount, double pFeeRate, boolean pSendAll)
+      PaymentRequest pRequest)
     {
         mActivity = pActivity;
         mBitcoin = pBitcoin;
         mPassCode = pPassCode;
         mWalletOffset = pWalletOffset;
         mRequest = pRequest;
-        mAmount = pAmount;
-        mFeeRate = pFeeRate;
-        mSendAll = pSendAll;
     }
 
     @Override
@@ -32,9 +26,11 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
     {
         int result = 1;
         if(mRequest.paymentScript != null)
-            result = mBitcoin.sendOutputPayment(mWalletOffset, mPassCode, mRequest.paymentScript, mAmount, mFeeRate);
+            result = mBitcoin.sendOutputPayment(mWalletOffset, mPassCode, mRequest.paymentScript, mRequest.amount,
+              mRequest.feeRate, mRequest.usePending);
         else
-            result = mBitcoin.sendP2PKHPayment(mWalletOffset, mPassCode, mRequest.address, mAmount, mFeeRate, mSendAll);
+            result = mBitcoin.sendP2PKHPayment(mWalletOffset, mPassCode, mRequest.address, mRequest.amount,
+              mRequest.feeRate, mRequest.usePending, mRequest.sendMax);
 
         if(result == 0)
             mActivity.acknowledgePaymentSent();

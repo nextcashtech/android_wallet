@@ -86,6 +86,7 @@
     <string name="failed_send_payment">Failed to send payment</string>
     <string name="failed_insufficient_funds">Insufficient Funds</string>
     <string name="insufficient_funds">Insufficient Funds</string>
+    <string name="use_pending">Use Pending</string>
     <string name="failed_invalid_address">Invalid Address</string>
     <string name="failed_change_address">Change Address Not Found</string>
     <string name="failed_signing">Failed to Sign Transaction</string>
@@ -444,6 +445,24 @@
         transaction out there that conflicts with it and can invalidate it if included in a block.
         The more nodes that have accepted your transaction while pending, the more likely it is that
         it is valid and will be included in a block.
+    </string>
+
+    <string name="why_does_it_say_i_need_to_use_pending">
+        Why does it say I need to \"use pending\" when I have enough balance not pending?
+    </string>
+
+    <string name="why_does_it_say_i_need_to_use_pending_answer">
+        When you send a payment you \"cash in\" a certain amount of \"coins\" of varying amounts,
+        also called UTXOs.
+        Usually the total amount you \"cash in\" is more than what you are sending.
+        So you send the remaining balance back to yourself in a \"change\" address.
+        If a previous send transaction is still pending, then so is the \"change\" which you may
+        need to make the next payment.
+        If you \"use pending\", then this transaction can\'t confirm until the pending transaction
+        has confirmed.
+        They can confirm at the same time though and that is most likely.
+        It is up to the merchant whether they will accept payments based on pending UTXOs or not, so
+        do it with caution.
     </string>
 
     <string name="what_are_the_units">

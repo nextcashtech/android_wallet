@@ -182,6 +182,14 @@
 
     <TextView
         style="@style/Question"
+        android:text="@string/why_does_it_say_i_need_to_use_pending"/>
+
+    <TextView
+        style="@style/Answer"
+        android:text="@string/why_does_it_say_i_need_to_use_pending_answer"/>
+
+    <TextView
+        style="@style/Question"
         android:text="@string/what_are_the_units"/>
 
     <TextView

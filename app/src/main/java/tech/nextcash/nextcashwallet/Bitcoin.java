@@ -308,13 +308,13 @@ public class Bitcoin
     // Amount in satoshis
     // Fee rate in satoshis per byte of transaction size
     public native int sendP2PKHPayment(int pWalletOffset, String pPassCode, String pAddress, long pAmount,
-      double pFeeRate, boolean pSendAll);
+      double pFeeRate, boolean pUsePending, boolean pSendAll);
 
     // Send a payment given a specific output script to pay
-    //    // Amount in satoshis
-    //    // Fee rate in satoshis per byte of transaction size
+    // Amount in satoshis
+    // Fee rate in satoshis per byte of transaction size
     public native int sendOutputPayment(int pWalletOffset, String pPassCode, byte[] pOutputScript, long pAmount,
-      double pFeeRate);
+      double pFeeRate, boolean pUsePending);
 
     // Get the raw data for the transaction paying the specified output script
     public native byte[] getRawTransaction(byte[] pPayingOutputScript, long pAmount);

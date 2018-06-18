@@ -44,6 +44,12 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
         mActivity = pActivity;
         mWalletOffset = pWalletOffset;
         mPaymentRequest = pPaymentRequest;
+
+        // Clear any previous values from request
+        mPaymentRequest.amountSpecified = false;
+        mPaymentRequest.amount = 0;
+        mPaymentRequest.label = null;
+        mPaymentRequest.message = null;
     }
 
     private boolean connect()
@@ -227,6 +233,7 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
             if(output.hasAmount() && output.hasScript())
             {
                 mPaymentRequest.amount = output.getAmount();
+                mPaymentRequest.amountSpecified = true;
                 mPaymentRequest.paymentScript = output.getScript().toByteArray();
                 paymentMethodSpecified = true;
                 break;
