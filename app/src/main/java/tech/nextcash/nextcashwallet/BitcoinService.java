@@ -137,8 +137,7 @@ public class BitcoinService extends Service
         LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, filter);
     }
 
-    @Override
-    public int onStartCommand(Intent pIntent, int pFlags, int pStartId)
+    private void start(Intent pIntent)
     {
         Bundle extras = pIntent.getExtras();
         int finishMode;
@@ -163,7 +162,12 @@ public class BitcoinService extends Service
             Log.i(logTag, "Updating finish mode to on request");
             mBitcoin.setFinishMode(finishMode); // Upgrade to finish on request
         }
+    }
 
+    @Override
+    public int onStartCommand(Intent pIntent, int pFlags, int pStartId)
+    {
+        start(pIntent);
         return START_NOT_STICKY;
     }
 
@@ -192,6 +196,7 @@ public class BitcoinService extends Service
     @Override
     public IBinder onBind(Intent pIntent)
     {
+        start(pIntent);
         mIsBound = true;
         return mBinder;
     }

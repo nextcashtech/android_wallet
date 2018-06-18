@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private boolean mFinishOnBack;
     private BitcoinService.CallBacks mServiceCallBacks;
     private BitcoinService mService;
-    private boolean mServiceIsBound;
+    private boolean mServiceIsBound, mServiceIsBinding;
     private ServiceConnection mServiceConnection;
     private IntentIntegrator mQRScanner;
     private PaymentRequest mPaymentRequest;
@@ -187,6 +187,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         };
 
         mServiceIsBound = false;
+        mServiceIsBinding = false;
         mService = null;
         mServiceConnection = new ServiceConnection()
         {
@@ -195,8 +196,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 Log.d(logTag, "Bitcoin service connected");
                 mServiceIsBound = true;
+                mServiceIsBinding = false;
                 mService = ((BitcoinService.LocalBinder)pBinder).getService();
                 mService.setCallBacks(mServiceCallBacks);
+                mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
             }
 
             @Override
@@ -219,15 +222,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private void startBitcoinService()
     {
-        Intent intent = new Intent(this, BitcoinService.class);
-        intent.putExtra("FinishMode", Bitcoin.FINISH_ON_REQUEST);
-
-        if(!mBitcoin.isRunning())
-            startService(intent);
-
-        if(!mServiceIsBound)
+        if(!mServiceIsBound && !mServiceIsBinding)
         {
             Log.d(logTag, "Binding Bitcoin service");
+            mServiceIsBinding = true;
+            Intent intent = new Intent(this, BitcoinService.class);
+            intent.putExtra("FinishMode", Bitcoin.FINISH_ON_REQUEST);
             bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
         }
     }
@@ -313,7 +313,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onStart()
     {
-        mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
+        startBitcoinService();
         startUpdateRates();
         super.onStart();
     }

@@ -20,7 +20,7 @@ public class BitcoinJob extends JobService
     private Bitcoin mBitcoin;
     private BitcoinService.CallBacks mServiceCallBacks;
     private BitcoinService mService;
-    private boolean mServiceIsBound;
+    private boolean mServiceIsBound, mServiceIsBinding;
     private ServiceConnection mServiceConnection;
     private boolean mFinished;
     private JobParameters mJobParameters;
@@ -30,13 +30,12 @@ public class BitcoinJob extends JobService
         if(mBitcoin.isRunning())
             return false;
 
-        Intent intent = new Intent(this, BitcoinService.class);
-        intent.putExtra("FinishMode", Bitcoin.FINISH_ON_SYNC);
-        startService(intent);
-
-        if(!mServiceIsBound)
+        if(!mServiceIsBound && !mServiceIsBinding)
         {
             Log.d(logTag, "Binding Bitcoin service");
+            mServiceIsBinding = true;
+            Intent intent = new Intent(this, BitcoinService.class);
+            intent.putExtra("FinishMode", Bitcoin.FINISH_ON_SYNC);
             bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
         }
 
@@ -79,6 +78,7 @@ public class BitcoinJob extends JobService
         };
 
         mServiceIsBound = false;
+        mServiceIsBinding = false;
         mService = null;
         mServiceConnection = new ServiceConnection()
         {
@@ -87,6 +87,7 @@ public class BitcoinJob extends JobService
             {
                 Log.d(logTag, "Bitcoin service connected");
                 mServiceIsBound = true;
+                mServiceIsBinding = false;
                 mService = ((BitcoinService.LocalBinder)pBinder).getService();
                 mService.setCallBacks(mServiceCallBacks);
             }
