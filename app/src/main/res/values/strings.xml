@@ -8,6 +8,7 @@
     <string name="initial_block_download_message">
         The initial block download is not yet complete.
         It might take an hour or more.
+        Sometimes it may take a few minutes just to find some initial peers.
         You will not be able to send or confirm transactions until it is complete.
         You can request payments, you just won\'t be able to validate confirms.
     </string>
@@ -307,8 +308,7 @@
     <string name="primer_description">
         Bitcoin Cash is peer to peer money.
         Anyone with a smart phone or computer can install a wallet and send and receive it.
-        Creating a wallet doesn\'t require anything except for a wallet app to generate a large
-        random number.
+        Creating a wallet only requires a wallet app to generate a large random number.
         To receive Bitcoin Cash just create a wallet and give someone an \"address\"
         (hash of one of your wallet\'s public keys).
         To send Bitcoin Cash just enter someone else\'s \"address\" into your wallet and create a
