@@ -31,7 +31,7 @@ public class Bitcoin
 
     Bitcoin()
     {
-        walletsModified = false;
+        walletsModified = true;
         mHandle = 0;
         mLoaded = false;
         mNeedsUpdate = false;
