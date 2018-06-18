@@ -74,8 +74,7 @@
     <TextView
         android:id="@+id/transactionStatus"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        style="@style/SubHeadingText"/>
+        android:layout_height="wrap_content"/>
 
     <TextView
         android:layout_width="match_parent"

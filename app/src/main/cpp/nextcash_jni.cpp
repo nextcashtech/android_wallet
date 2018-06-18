@@ -100,6 +100,7 @@ extern "C"
     jfieldID sOutpointTransactionID = NULL;
     jfieldID sOutpointIndexID = NULL;
     jfieldID sOutpointOutputID = NULL;
+    jfieldID sOutpointConfirmationsID = NULL;
 
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_NextCash_test(JNIEnv *pEnvironment,
@@ -239,6 +240,7 @@ extern "C"
         sOutpointIndexID = pEnvironment->GetFieldID(sOutpointClass, "index", "I");
         sOutpointOutputID = pEnvironment->GetFieldID(sOutpointClass, "output",
           "Ltech/nextcash/nextcashwallet/Output;");
+        sOutpointConfirmationsID = pEnvironment->GetFieldID(sOutpointClass, "confirmations", "I");
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setupJNI(JNIEnv *pEnvironment,
@@ -1312,8 +1314,9 @@ extern "C"
         pEnvironment->SetBooleanField(result, sPaymentRequestSecureID, (jboolean)request.secure);
 
         // Set secure URL
-        pEnvironment->SetObjectField(result, sPaymentRequestSecureURLID,
-          pEnvironment->NewStringUTF(request.secureURL));
+        if(request.secureURL)
+            pEnvironment->SetObjectField(result, sPaymentRequestSecureURLID,
+              pEnvironment->NewStringUTF(request.secureURL));
 
         return result;
     }
@@ -1671,6 +1674,19 @@ extern "C"
         pEnvironment->SetObjectField(result, sOutpointOutputID,
           createOutput(pEnvironment, pDaemon, *pOutpoint.output, true));
 
+        // Confirmations
+        if(pOutpoint.confirmations != 0xffffffff)
+            pEnvironment->SetIntField(result, sOutpointConfirmationsID, pOutpoint.confirmations);
+        else
+        {
+            NextCash::Hash confirmBlock =
+              pDaemon->monitor()->confirmBlockHash(pOutpoint.transactionID);
+            jint confirms = 0;
+            if(!confirmBlock.isEmpty())
+                confirms = pDaemon->chain()->height() - pDaemon->chain()->blockHeight(confirmBlock);
+            pEnvironment->SetIntField(result, sOutpointConfirmationsID, confirms);
+        }
+
         return result;
     }
 
@@ -1693,7 +1709,7 @@ extern "C"
         // Get UTXOs from monitor
         std::vector<BitCoin::Outpoint> unspentOutputs;
         if(!daemon->monitor()->getUnspentOutputs(chainKeys->begin(), chainKeys->end(),
-          unspentOutputs, true))
+          unspentOutputs, daemon->chain(), true))
             return NULL;
 
         jobjectArray result = pEnvironment->NewObjectArray((jsize)unspentOutputs.size(),
