@@ -117,7 +117,7 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp">
+        android:layout_marginTop="5dp">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -133,11 +133,29 @@
     </LinearLayout>
 
     <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SubHeadingText"
+            android:layout_marginEnd="10dp"
+            android:text="@string/size"/>
+
+        <TextView
+            android:id="@+id/size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/feeGroup"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp">
+        android:layout_marginTop="5dp">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -171,13 +189,23 @@
             android:textSize="@dimen/text_size_smallheading"/>
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/inputsTitle"
+    <LinearLayout
+        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        style="@style/HeadingText"
-        android:text="@string/inputs"/>
+        android:layout_marginTop="10dp">
+        <TextView
+            android:id="@+id/inputsTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            style="@style/HeadingText"
+            android:text="@string/inputs"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/coins_being_spent"/>
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/inputs"
@@ -186,13 +214,23 @@
         android:layout_height="wrap_content">
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/outputsTitle"
+    <LinearLayout
+        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        style="@style/HeadingText"
-        android:text="@string/outputs"/>
+        android:layout_marginTop="10dp">
+        <TextView
+            android:id="@+id/outputsTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            style="@style/HeadingText"
+            android:text="@string/outputs"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/coins_being_sent"/>
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/outputs"

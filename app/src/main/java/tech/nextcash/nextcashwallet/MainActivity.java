@@ -1251,6 +1251,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             ((TextView)transactionView.findViewById(R.id.id)).setText(pTransaction.hash);
+            ((TextView)transactionView.findViewById(R.id.size)).setText(String.format(Locale.getDefault(), "%,d %s",
+              pTransaction.size, getString(R.string.bytes)));
             ((TextView)transactionView.findViewById(R.id.lockTime)).setText(pTransaction.lockTimeString(this));
             ((TextView)transactionView.findViewById(R.id.version)).setText(String.format(Locale.getDefault(), "%d",
               pTransaction.version));

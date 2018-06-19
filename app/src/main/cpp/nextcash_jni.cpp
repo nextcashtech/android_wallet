@@ -94,6 +94,7 @@ extern "C"
     jfieldID sFullTransactionOutputsID = NULL;
     jfieldID sFullTransactionLockTimeID = NULL;
     jfieldID sFullTransactionDateID = NULL;
+    jfieldID sFullTransactionSizeID = NULL;
 
     // Outpoint
     jclass sOutpointClass = NULL;
@@ -222,6 +223,8 @@ extern "C"
           "I");
         sFullTransactionDateID = pEnvironment->GetFieldID(sFullTransactionClass, "date",
           "J");
+        sFullTransactionSizeID = pEnvironment->GetFieldID(sFullTransactionClass, "size",
+          "I");
     }
 
     void setupOutputClass(JNIEnv *pEnvironment)
@@ -1390,6 +1393,9 @@ extern "C"
               (jlong)daemon->chain()->blockStats()
                 .time((unsigned int)daemon->chain()->blockHeight(transaction.blockHash)));
         }
+
+        // Size
+        pEnvironment->SetIntField(result, sFullTransactionSizeID, transaction.transaction.size());
 
         // Version
         pEnvironment->SetIntField(result, sFullTransactionVersionID,
