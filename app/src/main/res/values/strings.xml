@@ -247,6 +247,7 @@
     <string name="secure">Secure</string>
     <string name="payment_code">Payment Code</string>
     <string name="description">Description</string>
+    <string name="using_wallet">Using Wallet :</string>
     <string name="not_supported">Not Supported Yet</string>
     <string name="legacy_warning">
         This is a \"Legacy\" address! Do not send Bitcoin Cash to it unless you are sure

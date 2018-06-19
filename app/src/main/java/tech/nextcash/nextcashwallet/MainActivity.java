@@ -1030,6 +1030,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             ((TextView)sendView.findViewById(R.id.title)).setText(title);
 
+            ((TextView)sendView.findViewById(R.id.walletName)).setText(mBitcoin.wallets[mCurrentWalletIndex].name);
+
             // Configure "use pending" toggle
             Switch usePending = sendView.findViewById(R.id.usePendingToggle);
             if(!mPaymentRequest.usePending)

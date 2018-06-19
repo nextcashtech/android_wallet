@@ -20,16 +20,19 @@
     <style name="HeadingText">
         <item name="android:textSize">@dimen/text_size_heading</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/heading</item>
     </style>
 
     <style name="SubHeadingText">
         <item name="android:textSize">@dimen/text_size_subheading</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/heading</item>
     </style>
 
     <style name="SmallHeadingText">
         <item name="android:textSize">@dimen/text_size_smallheading</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/heading</item>
     </style>
 
     <style name="Question">

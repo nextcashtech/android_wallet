@@ -61,10 +61,29 @@
         android:layout_height="wrap_content"
         android:visibility="gone"/>
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            style="@style/SubHeadingText"
+            android:text="@string/using_wallet"/>
+        <TextView
+            android:id="@+id/walletName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SubHeadingText"/>
+    </LinearLayout>
+
     <RelativeLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
 
         <Switch
             android:id="@+id/usePendingToggle"
@@ -73,7 +92,7 @@
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
             android:switchPadding="10dp"
-            android:textStyle="bold"
+            style="@style/SubHeadingText"
             android:text="@string/use_pending"/>
 
         <TextView
@@ -85,7 +104,7 @@
             android:layout_marginRight="10dp"
             android:text="@string/send_max"
             android:padding="8dp"
-            android:textColor="#ffff"
+            android:textColor="@color/buttonText"
             android:background="@drawable/button_background"
             android:onClick="onClick"/>
 
@@ -102,7 +121,7 @@
             android:layout_height="wrap_content"
             android:text="@string/amount_title"
             android:labelFor="@id/sendAmount"
-            android:textStyle="bold"
+            style="@style/SubHeadingText"
             android:layout_centerVertical="true"
             android:layout_alignParentStart="true"
             android:layout_marginEnd="10dp"/>
@@ -136,7 +155,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
             android:text="@string/bitcoins"
-            android:textStyle="bold"/>
+            style="@style/SmallHeadingText"/>
         <TextView
             android:id="@+id/satoshiAmount"
             android:layout_width="wrap_content"
@@ -156,7 +175,7 @@
             android:layout_height="wrap_content"
             android:text="@string/estimated_fee"
             android:labelFor="@id/sendFee"
-            android:textStyle="bold"
+            style="@style/SubHeadingText"
             android:layout_centerVertical="true"
             android:layout_alignParentStart="true"
             android:layout_marginEnd="10dp"/>
@@ -189,7 +208,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
             android:text="@string/bitcoins"
-            android:textStyle="bold"/>
+            style="@style/SmallHeadingText"/>
         <TextView
             android:id="@+id/satoshiFee"
             android:layout_width="wrap_content"
@@ -202,7 +221,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        style="@style/SubHeadingText"
         android:text="@string/description"/>
 
     <TextView
