@@ -133,7 +133,8 @@
             android:inputType="numberDecimal"
             android:layout_centerVertical="true"
             android:layout_toEndOf="@id/amountLabel"
-            android:layout_toStartOf="@id/units"/>
+            android:layout_toStartOf="@id/units"
+            android:imeOptions="actionSend"/>
 
         <Spinner
             android:id="@+id/units"

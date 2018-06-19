@@ -70,7 +70,8 @@
             android:inputType="numberDecimal"
             android:layout_centerVertical="true"
             android:layout_alignParentStart="true"
-            android:layout_toStartOf="@id/units"/>
+            android:layout_toStartOf="@id/units"
+            android:imeOptions="actionDone"/>
 
         <Spinner
             android:id="@+id/units"
@@ -114,7 +115,9 @@
     <EditText
         android:id="@+id/label"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:imeOptions="actionDone"/>
 
     <TextView
         android:id="@+id/messageLabel"
@@ -128,8 +131,9 @@
 
     <EditText
         android:id="@+id/message"
-        android:inputType="text"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:imeOptions="actionDone"/>
 
 </LinearLayout>

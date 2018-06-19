@@ -26,7 +26,8 @@
             android:layout_height="wrap_content"
             android:inputType="textNoSuggestions"
             android:maxLines="1"
-            android:minWidth="200dp"/>
+            android:minWidth="200dp"
+            android:imeOptions="actionDone"/>
     </HorizontalScrollView>
 
 </LinearLayout>
