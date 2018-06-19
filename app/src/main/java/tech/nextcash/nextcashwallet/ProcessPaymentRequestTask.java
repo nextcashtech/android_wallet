@@ -281,7 +281,7 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
             if(mIsFailed)
                 mActivity.clearPaymentProcess();
             else
-                mActivity.displaySendPayment();
+                mActivity.displayEnterPaymentDetails();
             if(mMessage != null)
                 mActivity.showMessage(mMessage, 2000);
         }

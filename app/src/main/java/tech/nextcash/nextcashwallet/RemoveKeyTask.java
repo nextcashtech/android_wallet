@@ -64,7 +64,7 @@ public class RemoveKeyTask extends AsyncTask<String, Integer, Integer>
             }
 
             if(mBitcoin.isLoaded())
-                mActivity.displayWallets();
+                mActivity.displaySettings();
         }
 
         super.onPostExecute(pResult);

@@ -58,13 +58,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification,
       mRequestExpiresUpdater;
-    private enum Mode { LOADING, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, VERIFY_SEED, BACKUP_WALLET,
-      RECOVER_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, SEND, SETUP, AUTHORIZE, INFO, SETTINGS }
+    private enum Mode { LOADING, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET, IMPORT_WALLET,
+      VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, ENTER_PAYMENT_CODE, ENTER_PAYMENT_DETAILS,
+      AUTHORIZE, INFO, SETTINGS }
     private Mode mMode;
     private boolean mWalletsLoaded;
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private AuthorizedTask mAuthorizedTask;
     private String mKeyToLoad, mSeed;
+    private int mSeedEntropyBytes;
     private boolean mSeedIsRecovered, mSeedIsBackedUp;
     private int mCurrentWalletIndex;
     private boolean mSeedBackupOnly;
@@ -137,6 +139,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mCurrentWalletIndex = -1;
         mWalletsLoaded = false;
         mDontUpdatePaymentAmount = false;
+        mSeedEntropyBytes = 0;
 
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
@@ -857,7 +860,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 {
                     mPaymentRequest = mBitcoin.decodePaymentCode(pData.getStringExtra("SCAN_RESULT"));
                     if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
-                        displaySendPayment();
+                        displayEnterPaymentDetails();
                     else
                     {
                         showMessage(getString(R.string.failed_payment_code), 2000);
@@ -952,7 +955,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
     }
 
-    public void displaySendPayment()
+    public synchronized void displayEnterPaymentDetails()
     {
         if(mPaymentRequest == null)
         {
@@ -971,7 +974,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             findViewById(R.id.statusBar).setVisibility(View.GONE);
             findViewById(R.id.dialog).setVisibility(View.GONE);
             findViewById(R.id.progress).setVisibility(View.VISIBLE);
-            mMode = Mode.SEND;
+            mMode = Mode.ENTER_PAYMENT_DETAILS;
             return;
         }
 
@@ -988,222 +991,218 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             return;
         }
 
-        synchronized(this)
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        findViewById(R.id.wallets).setVisibility(View.GONE);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
         {
-            LayoutInflater inflater = getLayoutInflater();
-            ViewGroup dialogView = findViewById(R.id.dialog);
+            actionBar.setIcon(R.drawable.ic_send_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.send_payment));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
 
-            findViewById(R.id.wallets).setVisibility(View.GONE);
+        ViewGroup sendView = (ViewGroup)inflater.inflate(R.layout.send_payment, dialogView, false);
 
-            dialogView.removeAllViews();
-            findViewById(R.id.statusBar).setVisibility(View.GONE);
-            findViewById(R.id.progress).setVisibility(View.GONE);
+        // Display payment details
+        String formatText;
+        switch(mPaymentRequest.format)
+        {
+        default:
+        case PaymentRequest.FORMAT_LEGACY:
+            formatText = getString(R.string.legacy);
+            sendView.findViewById(R.id.legacyWarning).setVisibility(View.VISIBLE);
+            break;
+        case PaymentRequest.FORMAT_CASH:
+            formatText = getString(R.string.cash);
+            break;
+        }
 
-            ActionBar actionBar = getSupportActionBar();
-            if(actionBar != null)
+        String title;
+        if(mPaymentRequest.secure)
+            title = String.format("%s %s %s", getString(R.string.secure), formatText, getString(R.string.address));
+        else
+            title = String.format("%s %s", formatText, getString(R.string.address));
+
+        ((TextView)sendView.findViewById(R.id.title)).setText(title);
+
+        ((TextView)sendView.findViewById(R.id.walletName)).setText(mBitcoin.wallets[mCurrentWalletIndex].name);
+
+        // Configure "use pending" toggle
+        Switch usePending = sendView.findViewById(R.id.usePendingToggle);
+        if(!mPaymentRequest.usePending)
+            usePending.setVisibility(View.GONE);
+        usePending.setChecked(mPaymentRequest.usePending);
+        usePending.setOnCheckedChangeListener(this);
+
+        EditText amount = sendView.findViewById(R.id.sendAmount);
+        TextView satoshiAmount = sendView.findViewById(R.id.satoshiAmount);
+        if(mPaymentRequest.amountSpecified)
+        {
+            amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mFiatRate));
+            satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
+            sendView.findViewById(R.id.sendMax).setVisibility(View.GONE);
+        }
+        else
+            satoshiAmount.setText(Bitcoin.satoshiText(0));
+
+        if(!mPaymentRequest.amountSpecified)
+        {
+            if(mAmountWatcher == null)
             {
-                actionBar.setIcon(R.drawable.ic_send_black_36dp);
-                actionBar.setTitle(" " + getResources().getString(R.string.send_payment));
-                actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
-            }
-
-            ViewGroup sendView = (ViewGroup)inflater.inflate(R.layout.send_payment, dialogView, false);
-
-            // Display payment details
-            String formatText;
-            switch(mPaymentRequest.format)
-            {
-            default:
-            case PaymentRequest.FORMAT_LEGACY:
-                formatText = getString(R.string.legacy);
-                sendView.findViewById(R.id.legacyWarning).setVisibility(View.VISIBLE);
-                break;
-            case PaymentRequest.FORMAT_CASH:
-                formatText = getString(R.string.cash);
-                break;
-            }
-
-            String title;
-            if(mPaymentRequest.secure)
-                title = String.format("%s %s %s", getString(R.string.secure), formatText, getString(R.string.address));
-            else
-                title = String.format("%s %s", formatText, getString(R.string.address));
-
-            ((TextView)sendView.findViewById(R.id.title)).setText(title);
-
-            ((TextView)sendView.findViewById(R.id.walletName)).setText(mBitcoin.wallets[mCurrentWalletIndex].name);
-
-            // Configure "use pending" toggle
-            Switch usePending = sendView.findViewById(R.id.usePendingToggle);
-            if(!mPaymentRequest.usePending)
-                usePending.setVisibility(View.GONE);
-            usePending.setChecked(mPaymentRequest.usePending);
-            usePending.setOnCheckedChangeListener(this);
-
-            EditText amount = sendView.findViewById(R.id.sendAmount);
-            TextView satoshiAmount = sendView.findViewById(R.id.satoshiAmount);
-            if(mPaymentRequest.amountSpecified)
-            {
-                amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mFiatRate));
-                satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
-                sendView.findViewById(R.id.sendMax).setVisibility(View.GONE);
-            }
-            else
-                satoshiAmount.setText(Bitcoin.satoshiText(0));
-
-            if(!mPaymentRequest.amountSpecified)
-            {
-
-                if(mAmountWatcher == null)
-                {
-                    mAmountWatcher = new TextWatcher()
-                    {
-                        @Override
-                        public void beforeTextChanged(CharSequence pString, int pStart, int pCount, int pAfter)
-                        {
-
-                        }
-
-                        @Override
-                        public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
-                        {
-                            if(mDontUpdatePaymentAmount)
-                            {
-                                mDontUpdatePaymentAmount = false;
-                                return;
-                            }
-
-                            Spinner units = findViewById(R.id.units);
-                            EditText amountField = findViewById(R.id.sendAmount);
-                            TextView satoshiAmount = findViewById(R.id.satoshiAmount);
-                            double amount;
-
-                            if(units == null || amountField == null || satoshiAmount == null)
-                                return;
-
-                            try
-                            {
-                                amount = Double.parseDouble(amountField.getText().toString());
-                            }
-                            catch(Exception pException)
-                            {
-                                amount = 0.0;
-                            }
-
-                            switch(units.getSelectedItemPosition())
-                            {
-                                case 0: // USD
-                                    mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount / mFiatRate);
-                                    break;
-                                case 1: // bits
-                                    mPaymentRequest.amount = Bitcoin.satoshisFromBits(amount);
-                                    break;
-                                case 2: // bitcoins
-                                    mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount);
-                                    break;
-                                default:
-                                    mPaymentRequest.amount = 0;
-                                    break;
-                            }
-
-                            satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
-                            updateFee();
-                        }
-
-                        @Override
-                        public void afterTextChanged(Editable pString)
-                        {
-
-                        }
-                    };
-                }
-                amount.addTextChangedListener(mAmountWatcher);
-
-                TextView.OnEditorActionListener amountListener = new TextView.OnEditorActionListener()
+                mAmountWatcher = new TextWatcher()
                 {
                     @Override
-                    public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
+                    public void beforeTextChanged(CharSequence pString, int pStart, int pCount, int pAfter)
                     {
-                        if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE ||
-                          pActionId == EditorInfo.IME_ACTION_SEND || (pEvent != null &&
-                          pEvent.getAction() == KeyEvent.ACTION_DOWN && pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
+
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
+                    {
+                        if(mDontUpdatePaymentAmount)
                         {
-                            processClick(pView, R.id.sendPayment);
-                            return true;
+                            mDontUpdatePaymentAmount = false;
+                            return;
                         }
-                        return false;
+
+                        Spinner units = findViewById(R.id.units);
+                        EditText amountField = findViewById(R.id.sendAmount);
+                        TextView satoshiAmount = findViewById(R.id.satoshiAmount);
+                        double amount;
+
+                        if(units == null || amountField == null || satoshiAmount == null)
+                            return;
+
+                        try
+                        {
+                            amount = Double.parseDouble(amountField.getText().toString());
+                        }
+                        catch(Exception pException)
+                        {
+                            amount = 0.0;
+                        }
+
+                        switch(units.getSelectedItemPosition())
+                        {
+                            case 0: // USD
+                                mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount / mFiatRate);
+                                break;
+                            case 1: // bits
+                                mPaymentRequest.amount = Bitcoin.satoshisFromBits(amount);
+                                break;
+                            case 2: // bitcoins
+                                mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount);
+                                break;
+                            default:
+                                mPaymentRequest.amount = 0;
+                                break;
+                        }
+
+                        satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
+                        updateFee();
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable pString)
+                    {
+
                     }
                 };
-                amount.setOnEditorActionListener(amountListener);
             }
+            amount.addTextChangedListener(mAmountWatcher);
 
-            Spinner units = sendView.findViewById(R.id.units);
-            ArrayAdapter<CharSequence> unitAdapter = ArrayAdapter.createFromResource(this, R.array.amount_units,
-              android.R.layout.simple_spinner_item);
-            unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            units.setAdapter(unitAdapter);
-            units.setOnItemSelectedListener(this);
-
-            Spinner feeRates = sendView.findViewById(R.id.feeRates);
-            ArrayAdapter<CharSequence> feeRateAdapter = ArrayAdapter.createFromResource(this, R.array.fee_rates,
-              android.R.layout.simple_spinner_item);
-            feeRateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            feeRates.setAdapter(feeRateAdapter);
-            feeRates.setOnItemSelectedListener(this);
-            feeRates.setSelection(2); // Default to Low
-
-            if(mPaymentRequest.amount != 0)
+            TextView.OnEditorActionListener amountListener = new TextView.OnEditorActionListener()
             {
-                // Make amount not modifiable
-                amount.setInputType(InputType.TYPE_NULL);
-                amount.setEnabled(false);
-                amount.setFocusable(false);
-            }
-
-            if(mPaymentRequest.address != null)
-                ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.address.toLowerCase());
-            else if(mPaymentRequest.site != null && mPaymentRequest.label != null)
-                ((TextView)sendView.findViewById(R.id.address)).setText(String.format("%s (%s)", mPaymentRequest.site,
-                  mPaymentRequest.label));
-            else if(mPaymentRequest.site != null)
-                ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.site);
-            else if(mPaymentRequest.label != null)
-                ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.label);
-            else
-                ((TextView)sendView.findViewById(R.id.address)).setText("");
-
-            // Description
-            String description = mPaymentRequest.description();
-            if(description != null)
-                ((TextView)sendView.findViewById(R.id.description)).setText(description);
-            else
-            {
-                sendView.findViewById(R.id.descriptionTitle).setVisibility(View.GONE);
-                sendView.findViewById(R.id.description).setVisibility(View.GONE);
-            }
-
-            dialogView.addView(sendView);
-
-            // Verify button
-            View button = inflater.inflate(R.layout.button, dialogView, false);
-            button.setTag(R.id.sendPayment);
-            ((TextView)button.findViewById(R.id.text)).setText(R.string.continue_string);
-            dialogView.addView(button);
-
-            dialogView.setVisibility(View.VISIBLE);
-            findViewById(R.id.mainScroll).setScrollY(0);
-
-            if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
-                updateRequestExpires();
-
-            if(mPaymentRequest.amount == 0)
-            {
-                focusOnText(amount);
-                amount.selectAll();
-            }
-
-            mMode = Mode.SEND;
+                @Override
+                public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
+                {
+                    if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE ||
+                      pActionId == EditorInfo.IME_ACTION_SEND || (pEvent != null &&
+                      pEvent.getAction() == KeyEvent.ACTION_DOWN && pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
+                    {
+                        processClick(pView, R.id.sendPayment);
+                        return true;
+                    }
+                    return false;
+                }
+            };
+            amount.setOnEditorActionListener(amountListener);
         }
+
+        Spinner units = sendView.findViewById(R.id.units);
+        ArrayAdapter<CharSequence> unitAdapter = ArrayAdapter.createFromResource(this, R.array.amount_units,
+          android.R.layout.simple_spinner_item);
+        unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        units.setAdapter(unitAdapter);
+        units.setOnItemSelectedListener(this);
+
+        Spinner feeRates = sendView.findViewById(R.id.feeRates);
+        ArrayAdapter<CharSequence> feeRateAdapter = ArrayAdapter.createFromResource(this, R.array.fee_rates,
+          android.R.layout.simple_spinner_item);
+        feeRateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        feeRates.setAdapter(feeRateAdapter);
+        feeRates.setOnItemSelectedListener(this);
+        feeRates.setSelection(2); // Default to Low
+
+        if(mPaymentRequest.amountSpecified)
+        {
+            // Make amount not modifiable
+            amount.setInputType(InputType.TYPE_NULL);
+            amount.setEnabled(false);
+            amount.setFocusable(false);
+        }
+
+        if(mPaymentRequest.address != null)
+            ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.address.toLowerCase());
+        else if(mPaymentRequest.site != null && mPaymentRequest.label != null)
+            ((TextView)sendView.findViewById(R.id.address)).setText(String.format("%s (%s)", mPaymentRequest.site,
+              mPaymentRequest.label));
+        else if(mPaymentRequest.site != null)
+            ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.site);
+        else if(mPaymentRequest.label != null)
+            ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.label);
+        else
+            ((TextView)sendView.findViewById(R.id.address)).setText("");
+
+        // Description
+        String description = mPaymentRequest.description();
+        if(description != null)
+            ((TextView)sendView.findViewById(R.id.description)).setText(description);
+        else
+        {
+            sendView.findViewById(R.id.descriptionTitle).setVisibility(View.GONE);
+            sendView.findViewById(R.id.description).setVisibility(View.GONE);
+        }
+
+        dialogView.addView(sendView);
+
+        // Verify button
+        View button = inflater.inflate(R.layout.button, dialogView, false);
+        button.setTag(R.id.sendPayment);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.continue_string);
+        dialogView.addView(button);
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+
+        if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
+            updateRequestExpires();
+
+        if(!mPaymentRequest.amountSpecified)
+        {
+            focusOnText(amount);
+            amount.selectAll();
+        }
+
+        mMode = Mode.ENTER_PAYMENT_DETAILS;
     }
 
     public void acknowledgePaymentSent()
@@ -1403,69 +1402,70 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
-    public void displayEnterPaymentCode()
+    public synchronized void displayEnterPaymentCode()
     {
-        synchronized(this)
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.wallets).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
         {
-            LayoutInflater inflater = getLayoutInflater();
-            ViewGroup dialogView = findViewById(R.id.dialog);
-
-            dialogView.removeAllViews();
-            findViewById(R.id.wallets).setVisibility(View.GONE);
-            findViewById(R.id.statusBar).setVisibility(View.GONE);
-            findViewById(R.id.progress).setVisibility(View.GONE);
-
-            ActionBar actionBar = getSupportActionBar();
-            if(actionBar != null)
-            {
-                actionBar.setIcon(R.drawable.ic_send_black_36dp);
-                actionBar.setTitle(" " + getResources().getString(R.string.send_payment));
-                actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
-            }
-
-            ViewGroup paymentCodeView = (ViewGroup)inflater.inflate(R.layout.enter_payment_code, dialogView,
-              false);
-            dialogView.addView(paymentCodeView);
-
-            // Continue button
-            View continueButton = inflater.inflate(R.layout.button, dialogView, false);
-            continueButton.setTag(R.id.enterPaymentDetails);
-            ((TextView)continueButton.findViewById(R.id.text)).setText(R.string.continue_string);
-            dialogView.addView(continueButton);
-
-            // Scan button
-            View scanButton = inflater.inflate(R.layout.button, dialogView, false);
-            scanButton.setTag(R.id.openScanner);
-            ImageView scanIcon = scanButton.findViewById(R.id.image);
-            scanIcon.setImageResource(R.drawable.ic_scan_white_36dp);
-            scanIcon.setVisibility(View.VISIBLE);
-            ((TextView)scanButton.findViewById(R.id.text)).setText(R.string.scan);
-            dialogView.addView(scanButton);
-
-            EditText paymentCodeEntry = paymentCodeView.findViewById(R.id.paymentCode);
-            TextView.OnEditorActionListener paymentCodeListener = new TextView.OnEditorActionListener()
-            {
-                @Override
-                public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
-                {
-                    if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE ||
-                      pActionId == EditorInfo.IME_ACTION_SEND ||
-                      (pEvent != null && pEvent.getAction() == KeyEvent.ACTION_DOWN &&
-                        pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
-                    {
-                        processClick(pView, R.id.enterPaymentDetails);
-                        return true;
-                    }
-                    return false;
-                }
-            };
-            paymentCodeEntry.setOnEditorActionListener(paymentCodeListener);
-
-            dialogView.setVisibility(View.VISIBLE);
-            findViewById(R.id.mainScroll).setScrollY(0);
-            focusOnText(paymentCodeEntry);
-            mMode = Mode.SEND;
+            actionBar.setIcon(R.drawable.ic_send_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.send_payment));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
+
+        ViewGroup paymentCodeView = (ViewGroup)inflater.inflate(R.layout.enter_payment_code, dialogView,
+          false);
+
+        EditText paymentCodeEntry = paymentCodeView.findViewById(R.id.paymentCode);
+        if(mPaymentRequest != null && mPaymentRequest.uri != null)
+            paymentCodeEntry.setText(mPaymentRequest.uri);
+
+        dialogView.addView(paymentCodeView);
+
+        // Continue button
+        View continueButton = inflater.inflate(R.layout.button, dialogView, false);
+        continueButton.setTag(R.id.enterPaymentDetails);
+        ((TextView)continueButton.findViewById(R.id.text)).setText(R.string.continue_string);
+        dialogView.addView(continueButton);
+
+        // Scan button
+        View scanButton = inflater.inflate(R.layout.button, dialogView, false);
+        scanButton.setTag(R.id.openScanner);
+        ImageView scanIcon = scanButton.findViewById(R.id.image);
+        scanIcon.setImageResource(R.drawable.ic_scan_white_36dp);
+        scanIcon.setVisibility(View.VISIBLE);
+        ((TextView)scanButton.findViewById(R.id.text)).setText(R.string.scan);
+        dialogView.addView(scanButton);
+
+        TextView.OnEditorActionListener paymentCodeListener = new TextView.OnEditorActionListener()
+        {
+            @Override
+            public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
+            {
+                if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE ||
+                  pActionId == EditorInfo.IME_ACTION_SEND ||
+                  (pEvent != null && pEvent.getAction() == KeyEvent.ACTION_DOWN &&
+                    pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
+                {
+                    processClick(pView, R.id.enterPaymentDetails);
+                    return true;
+                }
+                return false;
+            }
+        };
+        paymentCodeEntry.setOnEditorActionListener(paymentCodeListener);
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+        focusOnText(paymentCodeEntry);
+        mMode = Mode.ENTER_PAYMENT_CODE;
     }
 
     public void displayRequestPaymentCode(PaymentRequest pPaymentCode, Bitmap pQRCode)
@@ -1656,6 +1656,75 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
+    public synchronized void displayAddOptions()
+    {
+        // Display options for adding wallets
+        View button;
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.wallets).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+
+        button = inflater.inflate(R.layout.button, dialogView, false);
+        button.setTag(R.id.createWallet);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.create_new_key);
+        dialogView.addView(button);
+
+        button = inflater.inflate(R.layout.button, dialogView, false);
+        button.setTag(R.id.recoverWallet);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.recover_wallet);
+        dialogView.addView(button);
+
+        button = inflater.inflate(R.layout.button, dialogView, false);
+        button.setTag(R.id.importWallet);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.import_bip0032_key);
+        dialogView.addView(button);
+
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_add_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.title_add_wallet));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+        mMode = Mode.ADD_WALLET;
+    }
+
+    public synchronized void displayImportWallet()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.wallets).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+
+        inflater.inflate(R.layout.import_bip32_key, dialogView, true);
+
+        Spinner derivationMethod = findViewById(R.id.derivationMethodSpinner);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.derivation_methods, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        derivationMethod.setAdapter(adapter);
+
+        // Load button
+        View button = inflater.inflate(R.layout.button, dialogView, false);
+        button.setTag(R.id.loadKey);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.import_text);
+        dialogView.addView(button);
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+        focusOnText((EditText)dialogView.findViewById(R.id.importText));
+        mMode = Mode.IMPORT_WALLET;
+    }
+
     public synchronized void displayCreateWallet()
     {
         LayoutInflater inflater = getLayoutInflater();
@@ -1676,12 +1745,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.view_seed, dialogView, false);
-        mSeed = mBitcoin.generateMnemonicSeed(28);
+        dialogView.addView(createWallet);
+
         mSeedIsBackedUp = false;
         mSeedIsRecovered = false;
         mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION;
         mSeedBackupOnly = false;
-        ((TextView)createWallet.findViewById(R.id.seed)).setText(mSeed);
 
         Spinner entropy = createWallet.findViewById(R.id.seedEntropy);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
@@ -1689,9 +1758,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         entropy.setAdapter(adapter);
         entropy.setOnItemSelectedListener(this);
-        entropy.setSelection(1);
 
-        dialogView.addView(createWallet);
+        int entropyPosition = 1;
+        if(mSeedEntropyBytes != 0)
+        {
+            int[] values = getResources().getIntArray(R.array.mnemonic_seed_length_values);
+            int offset = 0;
+            for(int value : values)
+            {
+                if(value == mSeedEntropyBytes)
+                    entropyPosition = offset;
+                offset++;
+            }
+        }
+        entropy.setSelection(entropyPosition);
 
         // Verify button
         View button = inflater.inflate(R.layout.button, dialogView, false);
@@ -1715,9 +1795,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 Log.e(logTag, String.format("Invalid seed entropy position selected : %d", pPosition));
             else
             {
-                mSeed = mBitcoin.generateMnemonicSeed(values[pPosition]);
-                mSeedIsRecovered = false;
-                mSeedIsBackedUp = false;
+                if(mSeed == null || mSeedEntropyBytes != values[pPosition])
+                {
+                    mSeedEntropyBytes = values[pPosition];
+                    mSeed = mBitcoin.generateMnemonicSeed(mSeedEntropyBytes);
+                    mSeedIsRecovered = false;
+                    mSeedIsBackedUp = false;
+                }
                 ((TextView)findViewById(R.id.seed)).setText(mSeed);
             }
         }
@@ -1956,7 +2040,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.view_seed, dialogView, false);
+        ViewGroup viewSeed = (ViewGroup)inflater.inflate(R.layout.view_seed, dialogView, false);
         mSeed = mBitcoin.seed(pPassCode, mCurrentWalletIndex);
         if(mSeed == null)
         {
@@ -1967,11 +2051,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mSeedIsRecovered = false;
         mSeedIsBackedUp = false;
         mSeedBackupOnly = true;
-        ((TextView)createWallet.findViewById(R.id.seed)).setText(mSeed);
+        ((TextView)viewSeed.findViewById(R.id.seed)).setText(mSeed);
 
-        createWallet.findViewById(R.id.seedEntropyContainer).setVisibility(View.GONE);
+        viewSeed.findViewById(R.id.seedEntropyContainer).setVisibility(View.GONE);
 
-        dialogView.addView(createWallet);
+        dialogView.addView(viewSeed);
 
         // Verify button
         View button = inflater.inflate(R.layout.button, dialogView, false);
@@ -2324,48 +2408,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         switch(pID)
         {
         case R.id.addWallet:
-        {
-            synchronized(this)
-            {
-                // Display options for adding wallets
-                View button;
-                LayoutInflater inflater = getLayoutInflater();
-                ViewGroup dialogView = findViewById(R.id.dialog);
-
-                dialogView.removeAllViews();
-                findViewById(R.id.wallets).setVisibility(View.GONE);
-                findViewById(R.id.progress).setVisibility(View.GONE);
-                findViewById(R.id.statusBar).setVisibility(View.GONE);
-
-                button = inflater.inflate(R.layout.button, dialogView, false);
-                button.setTag(R.id.createWallet);
-                ((TextView)button.findViewById(R.id.text)).setText(R.string.create_new_key);
-                dialogView.addView(button);
-
-                button = inflater.inflate(R.layout.button, dialogView, false);
-                button.setTag(R.id.recoverWallet);
-                ((TextView)button.findViewById(R.id.text)).setText(R.string.recover_wallet);
-                dialogView.addView(button);
-
-                button = inflater.inflate(R.layout.button, dialogView, false);
-                button.setTag(R.id.importWallet);
-                ((TextView)button.findViewById(R.id.text)).setText(R.string.import_bip0032_key);
-                dialogView.addView(button);
-
-                ActionBar actionBar = getSupportActionBar();
-                if(actionBar != null)
-                {
-                    actionBar.setIcon(R.drawable.ic_add_black_36dp);
-                    actionBar.setTitle(" " + getResources().getString(R.string.title_add_wallet));
-                    actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
-                }
-
-                dialogView.setVisibility(View.VISIBLE);
-                findViewById(R.id.mainScroll).setScrollY(0);
-                mMode = Mode.ADD_WALLET;
-            }
+            displayAddOptions();
             break;
-        }
         case R.id.buyFromCoinbase:
         {
             String coinbaseReferallUrl = "https://www.coinbase.com/join/597a904283ff1a00a71aae6c";
@@ -2414,36 +2458,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         }
         case R.id.importWallet:
-        {
-            synchronized(this)
-            {
-                LayoutInflater inflater = getLayoutInflater();
-                ViewGroup dialogView = findViewById(R.id.dialog);
-
-                dialogView.removeAllViews();
-                findViewById(R.id.wallets).setVisibility(View.GONE);
-                findViewById(R.id.progress).setVisibility(View.GONE);
-                findViewById(R.id.statusBar).setVisibility(View.GONE);
-
-                inflater.inflate(R.layout.import_bip32_key, dialogView, true);
-
-                Spinner derivationMethod = findViewById(R.id.derivationMethodSpinner);
-                ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.derivation_methods, android.R.layout.simple_spinner_item);
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                derivationMethod.setAdapter(adapter);
-
-                // Load button
-                View button = inflater.inflate(R.layout.button, dialogView, false);
-                button.setTag(R.id.loadKey);
-                ((TextView)button.findViewById(R.id.text)).setText(R.string.import_text);
-                dialogView.addView(button);
-
-                dialogView.setVisibility(View.VISIBLE);
-                findViewById(R.id.mainScroll).setScrollY(0);
-                focusOnText((EditText)dialogView.findViewById(R.id.importText));
-            }
+            displayImportWallet();
             break;
-        }
         case R.id.loadKey: // Import BIP-0032 encoded key
         {
             mAuthorizedTask = AuthorizedTask.ADD_KEY;
@@ -2480,7 +2496,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 mPaymentRequest = mBitcoin.decodePaymentCode(paymentCode.getText().toString());
                 if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
-                    displaySendPayment();
+                    displayEnterPaymentDetails();
                 else
                 {
                     showMessage(getString(R.string.failed_payment_code), 2000);
@@ -2677,7 +2693,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     else
                     {
                         showMessage(getString(R.string.seed_doesnt_match), 2000);
-                        displayVerifySeed();
+                        displayCreateWallet();
                     }
                 }
             }
@@ -2853,26 +2869,83 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onBackPressed()
     {
-        if(mMode != Mode.WALLETS && mMode != Mode.LOADING)
+        switch(mMode)
         {
-            mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
-            if(mMode == Mode.AUTHORIZE)
+        case LOADING:
+        case WALLETS:
+            if(mFinishOnBack)
             {
+                mBitcoin.stop();
+                super.onBackPressed();
+            }
+            else
+            {
+                mFinishOnBack = true;
+                showMessage(getString(R.string.double_tap_back), 1000);
+                mDelayHandler.postDelayed(mClearFinishOnBack, 1000);
+            }
+            break;
+        case IN_PROGRESS:
+            break;
+        case ADD_WALLET:
+            mSeed = null;
+            mKeyToLoad = null;
+            mSeedEntropyBytes = 0;
+            break;
+        case CREATE_WALLET:
+        case RECOVER_WALLET:
+        case IMPORT_WALLET:
+            mSeed = null;
+            mKeyToLoad = null;
+            mSeedEntropyBytes = 0;
+            displayAddOptions();
+            return;
+        case VERIFY_SEED:
+            displayCreateWallet();
+            return;
+        case BACKUP_WALLET:
+            displayEditWallet();
+            return;
+        case EDIT_WALLET:
+            displaySettings();
+            return;
+        case HISTORY:
+            break;
+        case TRANSACTION:
+            break;
+        case RECEIVE:
+            break;
+        case ENTER_PAYMENT_CODE:
+            break;
+        case ENTER_PAYMENT_DETAILS:
+            mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
+            displayEnterPaymentCode();
+            return;
+        case AUTHORIZE:
+            switch(mAuthorizedTask)
+            {
+            case NONE:
                 mSeed = null;
                 mKeyToLoad = null;
+                mSeedEntropyBytes = 0;
+                break;
+            case ADD_KEY:
+                break;
+            case BACKUP_KEY:
+            case REMOVE_KEY:
+                displayEditWallet();
+                return;
+            case SIGN_TRANSACTION:
+                displayEnterPaymentDetails();
+                return;
             }
-            displayWallets(); // Go back to main wallets view
+            break;
+        case INFO:
+            break;
+        case SETTINGS:
+            break;
         }
-        else if(mFinishOnBack)
-        {
-            mBitcoin.stop();
-            super.onBackPressed();
-        }
-        else
-        {
-            mFinishOnBack = true;
-            showMessage(getString(R.string.double_tap_back), 1000);
-            mDelayHandler.postDelayed(mClearFinishOnBack, 1000);
-        }
+
+        displayWallets(); // Go back to main wallets view
     }
 }
