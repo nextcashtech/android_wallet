@@ -72,7 +72,7 @@ public class CreateKeyTask extends AsyncTask<String, Integer, Integer>
             }
 
             if(mBitcoin.isLoaded())
-                mActivity.updateWallets();
+                mActivity.displayWallets();
         }
 
         super.onPostExecute(pResult);

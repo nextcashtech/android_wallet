@@ -20,14 +20,14 @@ public class BitcoinJob extends JobService
     private Bitcoin mBitcoin;
     private BitcoinService.CallBacks mServiceCallBacks;
     private BitcoinService mService;
-    private boolean mServiceIsBound, mServiceIsBinding;
+    private boolean mServiceIsBound, mServiceIsBinding, mServiceIsUnbinding;
     private ServiceConnection mServiceConnection;
     private boolean mFinished;
     private JobParameters mJobParameters;
 
     private boolean startBitcoinService()
     {
-        if(mBitcoin.isRunning())
+        if(mBitcoin.appIsOpen)
             return false;
 
         if(!mServiceIsBound && !mServiceIsBinding)
@@ -74,11 +74,18 @@ public class BitcoinJob extends JobService
                     jobFinished(mJobParameters, false);
                     mFinished = true;
                 }
+                if(mServiceIsBound && !mServiceIsUnbinding)
+                {
+                    Log.d(logTag, "Unbinding Bitcoin service");
+                    mServiceIsUnbinding = true;
+                    unbindService(mServiceConnection);
+                }
             }
         };
 
         mServiceIsBound = false;
         mServiceIsBinding = false;
+        mServiceIsUnbinding = false;
         mService = null;
         mServiceConnection = new ServiceConnection()
         {
@@ -86,17 +93,18 @@ public class BitcoinJob extends JobService
             public void onServiceConnected(ComponentName pComponentName, IBinder pBinder)
             {
                 Log.d(logTag, "Bitcoin service connected");
-                mServiceIsBound = true;
-                mServiceIsBinding = false;
                 mService = ((BitcoinService.LocalBinder)pBinder).getService();
                 mService.setCallBacks(mServiceCallBacks);
+                mServiceIsBound = true;
+                mServiceIsBinding = false;
             }
 
             @Override
             public void onServiceDisconnected(ComponentName pComponentName)
             {
                 Log.d(logTag, "Bitcoin service disconnected");
-                mServiceIsBound = true;
+                mServiceIsBound = false;
+                mServiceIsUnbinding = false;
                 mService.removeCallBacks(mServiceCallBacks);
                 mService = null;
                 if(!mFinished)
@@ -113,9 +121,10 @@ public class BitcoinJob extends JobService
     @Override
     public void onDestroy()
     {
-        if(mServiceIsBound)
+        if(mServiceIsBound && !mServiceIsUnbinding)
         {
             Log.d(logTag, "Unbinding Bitcoin service");
+            mServiceIsUnbinding = true;
             unbindService(mServiceConnection);
         }
         super.onDestroy();
@@ -129,7 +138,10 @@ public class BitcoinJob extends JobService
         mFinished = false;
 
         if(!startBitcoinService())
+        {
+            Log.i(logTag, "Aborting job start");
             return false;
+        }
 
         new FiatRateRequestTask(getFilesDir()).execute();
 

@@ -27,10 +27,12 @@ public class Bitcoin
     private boolean mNeedsUpdate;
     private int mChangeID;
 
+    public boolean appIsOpen;
     public boolean walletsModified;
 
     Bitcoin()
     {
+        appIsOpen = false;
         walletsModified = true;
         mHandle = 0;
         mLoaded = false;
@@ -225,8 +227,8 @@ public class Bitcoin
 
         int changeID = getChangeID();
         int count = keyCount();
-        if(!mNeedsUpdate && !pForce && ((count == 0 && wallets == null) || (wallets != null && count == wallets.length)) &&
-          changeID == mChangeID)
+        if(!mNeedsUpdate && !pForce && ((count == 0 && wallets == null) ||
+          (wallets != null && count == wallets.length)) && changeID == mChangeID)
             return false; // No changes detected
 
         // Check for initial creation of wallets

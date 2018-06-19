@@ -44,7 +44,7 @@ public class BitcoinService extends Service
     private int mFinishMode;
     private Thread mBitcoinThread, mMonitorThread;
     private Runnable mBitcoinRunnable, mMonitorRunnable;
-    private boolean mIsRegistered, mIsBound;
+    private boolean mIsRegistered;
     private int mNextNotificationID;
     private Notification mProgressNotification;
     private int mStartBlockHeight, mStartMerkleHeight;
@@ -73,7 +73,6 @@ public class BitcoinService extends Service
         mProgressNotification = null;
         mStartBlockHeight = 0;
         mStartMerkleHeight = 0;
-        mIsBound = false;
         mFinishMode = Bitcoin.FINISH_ON_REQUEST;
         mBitcoinThread = null;
         mMonitorThread= null;
@@ -137,7 +136,7 @@ public class BitcoinService extends Service
         LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, filter);
     }
 
-    private void start(Intent pIntent)
+    public void start(Intent pIntent)
     {
         Bundle extras = pIntent.getExtras();
         int finishMode;
@@ -197,14 +196,12 @@ public class BitcoinService extends Service
     public IBinder onBind(Intent pIntent)
     {
         start(pIntent);
-        mIsBound = true;
         return mBinder;
     }
 
     @Override
     public boolean onUnbind(Intent pIntent)
     {
-        mIsBound = false;
         return super.onUnbind(pIntent);
     }
 
@@ -276,8 +273,7 @@ public class BitcoinService extends Service
     {
         for(CallBacks callBacks : mCallBacks)
             callBacks.onFinish();
-        if(!mIsBound)
-            stopSelf();
+        stopSelf();
     }
 
     private static final String sProgressNotificationChannel = "Progress";

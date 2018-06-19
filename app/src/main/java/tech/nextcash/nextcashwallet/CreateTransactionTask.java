@@ -70,7 +70,7 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
                     break;
             }
 
-            mActivity.updateWallets();
+            mActivity.displayWallets();
         }
 
         super.onPostExecute(pResult);
