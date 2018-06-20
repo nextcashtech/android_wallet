@@ -25,23 +25,6 @@ public class BitcoinJob extends JobService
     private boolean mFinished;
     private JobParameters mJobParameters;
 
-    private boolean startBitcoinService()
-    {
-        if(mBitcoin.appIsOpen)
-            return false;
-
-        if(!mServiceIsBound && !mServiceIsBinding)
-        {
-            Log.d(logTag, "Binding Bitcoin service");
-            mServiceIsBinding = true;
-            Intent intent = new Intent(this, BitcoinService.class);
-            intent.putExtra("FinishMode", Bitcoin.FINISH_ON_SYNC);
-            bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-        }
-
-        return true;
-    }
-
     @Override
     public void onCreate()
     {
@@ -121,13 +104,31 @@ public class BitcoinJob extends JobService
     @Override
     public void onDestroy()
     {
-        if(mServiceIsBound && !mServiceIsUnbinding)
+        if(!mServiceIsUnbinding && (mServiceIsBound || mServiceIsBinding))
         {
             Log.d(logTag, "Unbinding Bitcoin service");
             mServiceIsUnbinding = true;
             unbindService(mServiceConnection);
         }
         super.onDestroy();
+    }
+
+    private boolean startBitcoinService()
+    {
+        if(mBitcoin.appIsOpen)
+            return false;
+
+        if(!mServiceIsBound && !mServiceIsBinding)
+        {
+            Log.d(logTag, "Binding Bitcoin service");
+            mServiceIsBinding = true;
+            Intent intent = new Intent(this, BitcoinService.class);
+            intent.putExtra("FinishMode", Bitcoin.FINISH_ON_SYNC);
+            startService(intent);
+            bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+        }
+
+        return true;
     }
 
     @Override

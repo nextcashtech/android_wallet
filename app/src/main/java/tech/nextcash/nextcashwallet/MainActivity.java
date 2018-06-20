@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private PaymentRequest mPaymentRequest;
     private boolean mDontUpdatePaymentAmount;
     private TextWatcher mSeedWordWatcher, mAmountWatcher, mRequestAmountWatcher;
-    private int mTransactionToShowWalletIndex;
+    private int mTransactionToShowWalletIndex, mHistoryToShowWalletIndex;
     private String mTransactionToShow;
 
 
@@ -140,6 +140,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mWalletsLoaded = false;
         mDontUpdatePaymentAmount = false;
         mSeedEntropyBytes = 0;
+        mTransactionToShowWalletIndex = -1;
+        mHistoryToShowWalletIndex = -1;
 
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
@@ -155,6 +157,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         updateStatus();
                         if(mTransactionToShow != null)
                             openTransaction(mTransactionToShowWalletIndex, mTransactionToShow);
+                        else if(mHistoryToShowWalletIndex != -1)
+                        {
+                            mCurrentWalletIndex = mHistoryToShowWalletIndex;
+                            mHistoryToShowWalletIndex = -1;
+                            displayWalletHistory();
+                        }
                     }
                 });
             }
@@ -222,6 +230,35 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         scheduleJobs();
 
         startBitcoinService();
+
+        if(pSavedInstanceState != null && pSavedInstanceState.containsKey("State"))
+        {
+            String state = pSavedInstanceState.getString("State");
+            if(state != null)
+                switch(state)
+                {
+                case "Transaction":
+                    if(pSavedInstanceState.containsKey("Transaction") && pSavedInstanceState.containsKey("Wallet"))
+                    {
+                        mTransactionToShowWalletIndex = pSavedInstanceState.getInt("Wallet");
+                        mTransactionToShow = pSavedInstanceState.getString("Transaction");
+                    }
+                    break;
+                case "History":
+                    if(pSavedInstanceState.containsKey("Wallet"))
+                        mHistoryToShowWalletIndex = pSavedInstanceState.getInt("Wallet");
+                    break;
+                case "Info":
+                    displayInfo();
+                    break;
+                case "Settings":
+                    displaySettings();
+                    break;
+                }
+        }
+
+        if(mBitcoin.isLoaded())
+            mServiceCallBacks.onLoad();
     }
 
     private void startBitcoinService()
@@ -321,6 +358,58 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             showMessage(getString(extras.getInt("Message")), 2000);
 
         super.onNewIntent(pIntent);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle pState)
+    {
+        switch(mMode)
+        {
+            case LOADING:
+                break;
+            case IN_PROGRESS:
+                break;
+            case WALLETS:
+                break;
+            case ADD_WALLET:
+                break;
+            case CREATE_WALLET:
+                break;
+            case RECOVER_WALLET:
+                break;
+            case IMPORT_WALLET:
+                break;
+            case VERIFY_SEED:
+                break;
+            case BACKUP_WALLET:
+                break;
+            case EDIT_WALLET:
+                break;
+            case HISTORY:
+                pState.putString("State", "History");
+                pState.putInt("Wallet", mCurrentWalletIndex);
+                break;
+            case TRANSACTION:
+                pState.putString("State", "Transaction");
+                pState.putString("Transaction", ((TextView)findViewById(R.id.id)).getText().toString());
+                pState.putInt("Wallet", mCurrentWalletIndex);
+                break;
+            case RECEIVE:
+                break;
+            case ENTER_PAYMENT_CODE:
+                break;
+            case ENTER_PAYMENT_DETAILS:
+                break;
+            case AUTHORIZE:
+                break;
+            case INFO:
+                pState.putString("State", "Info");
+                break;
+            case SETTINGS:
+                pState.putString("State", "Settings");
+                break;
+        }
+        super.onSaveInstanceState(pState);
     }
 
     @Override
@@ -1226,6 +1315,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mTransactionToShow = null;
 
         findViewById(R.id.wallets).setVisibility(View.GONE);
+        findViewById(R.id.dialog).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
         findViewById(R.id.progress).setVisibility(View.VISIBLE);
 
         GetTransactionTask task = new GetTransactionTask(this, mBitcoin, pWalletOffset, pTransactionHash);
@@ -1240,7 +1331,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ViewGroup dialogView = findViewById(R.id.dialog);
 
             dialogView.removeAllViews();
-
             findViewById(R.id.wallets).setVisibility(View.GONE);
             findViewById(R.id.statusBar).setVisibility(View.GONE);
             findViewById(R.id.progress).setVisibility(View.GONE);

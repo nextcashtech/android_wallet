@@ -9,7 +9,7 @@ public class GetTransactionTask extends AsyncTask<String, Integer, Integer>
     private Bitcoin mBitcoin;
     private int mWalletOffset;
     private String mID;
-    FullTransaction mTransaction;
+    private FullTransaction mTransaction;
 
     public GetTransactionTask(MainActivity pActivity, Bitcoin pBitcoin, int pWalletOffset, String pID)
     {
