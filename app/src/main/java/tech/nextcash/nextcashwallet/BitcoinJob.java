@@ -57,12 +57,6 @@ public class BitcoinJob extends JobService
                     jobFinished(mJobParameters, false);
                     mFinished = true;
                 }
-                if(mServiceIsBound && !mServiceIsUnbinding)
-                {
-                    Log.d(logTag, "Unbinding Bitcoin service");
-                    mServiceIsUnbinding = true;
-                    unbindService(mServiceConnection);
-                }
             }
         };
 
