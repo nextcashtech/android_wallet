@@ -344,7 +344,7 @@ extern "C"
             return;
 
         const char *newPath = pEnvironment->GetStringUTFChars(pPath, NULL);
-        BitCoin::Info::instance().setPath(newPath);
+        BitCoin::Info::setPath(newPath);
         pEnvironment->ReleaseStringUTFChars(pPath, newPath);
     }
 
