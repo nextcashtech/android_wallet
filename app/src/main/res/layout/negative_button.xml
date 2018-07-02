@@ -32,7 +32,8 @@
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             android:textStyle="bold"
             android:textColor="@color/buttonText"
-            android:textAlignment="center"/>
+            android:textAlignment="center"
+            android:text="Test"/>
 
     </LinearLayout>
 

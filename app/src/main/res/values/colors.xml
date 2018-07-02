@@ -2,9 +2,12 @@
 <resources>
     <color name="colorPrimary">#f3b5</color>
     <color name="colorPrimaryDark">#f082</color>
+    <color name="colorPrimaryDarkEnd">#f0a2</color>
     <color name="colorButton">#f13b</color>
+    <color name="colorButtonEnd">#f46d</color>
     <color name="buttonText">#ffff</color>
     <color name="colorButtonNegative">#fc32</color>
+    <color name="colorButtonNegativeEnd">#fe43</color>
     <color name="colorButtonLight">#f59c</color>
     <color name="colorNotification">#ff93</color>
     <color name="colorProgress">#53b5</color>
