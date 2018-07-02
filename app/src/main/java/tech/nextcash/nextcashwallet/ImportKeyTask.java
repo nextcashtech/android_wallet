@@ -25,8 +25,7 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        String name = String.format(Locale.getDefault(), "%s %d", mActivity.getString(R.string.wallet),
-          mBitcoin.wallets.length + 1);
+        String name = String.format(Locale.getDefault(), "%s %d", mActivity.getString(R.string.wallet), mBitcoin.walletCount() + 1);
         int result = mBitcoin.loadKey(mPasscode, mKey, mDerivationMethod, name);
 
         if(result == 0)

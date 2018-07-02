@@ -30,6 +30,8 @@ public class Bitcoin
     public boolean appIsOpen;
     public boolean walletsModified;
 
+    private Wallet[] mWallets;
+
     Bitcoin()
     {
         appIsOpen = false;
@@ -38,6 +40,7 @@ public class Bitcoin
         mLoaded = false;
         mNeedsUpdate = false;
         mChangeID = -1;
+        mWallets = new Wallet[0];
     }
 
     public static double bitcoinsFromSatoshis(long pSatoshis)
@@ -213,11 +216,26 @@ public class Bitcoin
     public native String encodePaymentCode(String pAddressHash, int pFormat, int pProtocol);
     public native PaymentRequest decodePaymentCode(String pPaymentCode);
 
-    public Wallet[] wallets;
-
     public void onLoaded()
     {
         mLoaded = true;
+    }
+
+    public synchronized int walletCount()
+    {
+        return mWallets.length;
+    }
+
+    public synchronized Wallet wallet(int pOffset)
+    {
+        if(mWallets != null && mWallets.length > pOffset)
+            return mWallets[pOffset];
+        return null;
+    }
+
+    public synchronized Wallet[] wallets()
+    {
+        return mWallets;
     }
 
     public synchronized boolean update(boolean pForce)
@@ -227,35 +245,25 @@ public class Bitcoin
 
         int changeID = getChangeID();
         int count = keyCount();
-        if(!mNeedsUpdate && !pForce && ((count == 0 && wallets == null) ||
-          (wallets != null && count == wallets.length)) && changeID == mChangeID)
+        if(!mNeedsUpdate && !pForce && count == mWallets.length && changeID == mChangeID)
             return false; // No changes detected
 
-        // Check for initial creation of wallets
-        if(wallets == null || (wallets.length == 0 && count > 0))
-        {
-            walletsModified = true;
-            wallets = new Wallet[count];
-            for(int i=0;i<wallets.length;i++)
-                wallets[i] = new Wallet();
-        }
-
         // Check if wallets needs to be expanded
-        if(wallets.length != count)
+        if(mWallets.length != count)
         {
             Log.i(logTag, String.format("Allocating %d wallets", count));
 
-            // Initialize new wallets
+            // Initialize wallets
             walletsModified = true;
-            wallets = new Wallet[count];
-            for(int i=0;i<wallets.length;i++)
-                wallets[i] = new Wallet();
+            mWallets = new Wallet[count];
+            for(int i=0;i<mWallets.length;i++)
+                mWallets[i] = new Wallet();
         }
 
         // Update wallets
         boolean result = true;
-        for(int offset = 0; offset < wallets.length; offset++)
-            if(!updateWallet(wallets[offset], offset))
+        for(int offset = 0; offset < mWallets.length; offset++)
+            if(!updateWallet(mWallets[offset], offset))
             {
                 mNeedsUpdate = true;
                 result = false;

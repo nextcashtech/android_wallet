@@ -255,7 +255,7 @@ extern "C"
         // Bitcoin
         sBitcoinClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Bitcoin");
         sBitcoinHandleID = pEnvironment->GetFieldID(sBitcoinClass, "mHandle", "J");
-        sBitcoinWalletsID = pEnvironment->GetFieldID(sBitcoinClass, "wallets",
+        sBitcoinWalletsID = pEnvironment->GetFieldID(sBitcoinClass, "mWallets",
           "[Ltech/nextcash/nextcashwallet/Wallet;");
         sBitcoinLoadedID = pEnvironment->GetFieldID(sBitcoinClass, "mLoaded", "Z");
     }

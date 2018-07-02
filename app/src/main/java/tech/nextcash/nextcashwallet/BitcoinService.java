@@ -559,7 +559,6 @@ public class BitcoinService extends Service
     private void monitor()
     {
         String title;
-        boolean force = false;
         int progressUpdate = 0;
 
         while(mBitcoin.isRunning())
@@ -571,55 +570,58 @@ public class BitcoinService extends Service
                 updateProgressNotification();
             }
 
-            if(mBitcoin.update(force))
+            if(mBitcoin.update(false))
             {
                 int offset = 0;
-                for(Wallet wallet : mBitcoin.wallets)
-                {
-                    // Check for new transactions and notify
-                    if(wallet.updatedTransactions != null && wallet.updatedTransactions.length > 0)
+                Wallet[] wallets = mBitcoin.wallets();
+                if(wallets != null)
+                    for(Wallet wallet : wallets)
                     {
-                        // Notify of new transaction
-                        for(Transaction transaction : wallet.updatedTransactions)
+                        // Check for new transactions and notify
+                        if(wallet.updatedTransactions != null)
                         {
-                            if(transaction.block == null)
+                            // Notify of new transaction
+                            for(Transaction transaction : wallet.updatedTransactions)
                             {
-                                Log.d(logTag, String.format("Updated pending transaction found : %s",
-                                  transaction.hash));
+                                if(transaction.block == null)
+                                {
+                                    Log.d(logTag, String.format("Updated pending transaction found : %s",
+                                      transaction.hash));
 
-                                // Pending
-                                if(!addToPendingFile(transaction.hash, offset))
-                                    continue; // Already notified about this pending transaction
+                                    // Pending
+                                    if(!addToPendingFile(transaction.hash, offset))
+                                        continue; // Already notified about this pending transaction
 
-                                if(transaction.amount > 0)
-                                    title = getString(R.string.pending_receive_title);
+                                    if(transaction.amount > 0)
+                                        title = getString(R.string.pending_receive_title);
+                                    else
+                                        title = getString(R.string.pending_send_title);
+                                }
                                 else
-                                    title = getString(R.string.pending_send_title);
+                                {
+                                    Log.d(logTag, String.format("Updated confirmed transaction found : %s",
+                                      transaction.hash));
+
+                                    // Confirmed
+                                    removeFromPendingFile(transaction.hash, offset);
+
+                                    if(transaction.amount > 0)
+                                        title = getString(R.string.confirmed_receive_title);
+                                    else
+                                        title = getString(R.string.confirmed_send_title);
+                                }
+
+                                if(wallet.isSynchronized || transaction.block != null)
+                                    for(CallBacks callBacks : mCallBacks)
+                                        callBacks.onTransactionUpdate(offset, transaction);
+
+                                if(wallet.isSynchronized)
+                                    notify(title, transaction.description(this), offset, transaction.hash);
                             }
-                            else
-                            {
-                                Log.d(logTag, String.format("Updated confirmed transaction found : %s",
-                                  transaction.hash));
-
-                                // Confirmed
-                                removeFromPendingFile(transaction.hash, offset);
-
-                                if(transaction.amount > 0)
-                                    title = getString(R.string.confirmed_receive_title);
-                                else
-                                    title = getString(R.string.confirmed_send_title);
-                            }
-
-                            for(CallBacks callBacks : mCallBacks)
-                                callBacks.onTransactionUpdate(offset, transaction);
-
-                            if(wallet.isSynchronized)
-                                notify(title, transaction.description(this), offset, transaction.hash);
                         }
-                    }
 
-                    offset++;
-                }
+                        offset++;
+                    }
 
                 for(CallBacks callBacks : mCallBacks)
                     callBacks.onUpdate();
