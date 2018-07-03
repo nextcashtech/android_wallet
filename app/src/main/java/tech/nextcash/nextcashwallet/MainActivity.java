@@ -654,13 +654,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup walletsView = findViewById(R.id.wallets), transactions;
-        Wallet[] wallets = mBitcoin.wallets();
+        Wallet[] wallets;
+        boolean rebuildNeeded;
         View walletView;
         int index;
 
+        synchronized(mBitcoin)
+        {
+            wallets = mBitcoin.wallets();
+            rebuildNeeded = mBitcoin.walletsModified || !mWalletsLoaded;
+            mBitcoin.walletsModified = false;
+        }
+
         mFiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
 
-        if(mBitcoin.walletsModified || !mWalletsLoaded)
+        if(rebuildNeeded)
         {
             Log.i(logTag, String.format("Rebuilding %d wallets", wallets.length));
 
@@ -679,76 +687,73 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 inflater.inflate(R.layout.initial_block_download_message, walletsView, true);
         }
 
-        if(wallets != null)
+        Log.i(logTag, String.format("Updating %d wallets", wallets.length));
+
+        index = 0;
+        for(Wallet wallet : wallets)
         {
-            Log.i(logTag, String.format("Updating %d wallets", wallets.length));
+            if(wallet == null)
+                break;
 
-            index = 0;
-            for(Wallet wallet : wallets)
+            walletView = walletsView.getChildAt(index);
+            if(walletView == null)
+                break;
+
+            ((TextView)walletView.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance,
+              mFiatRate));
+
+            if(mFiatRate != 0.0)
             {
-                if(wallet == null)
-                    break;
-
-                walletView = walletsView.getChildAt(index);
-                if(walletView == null)
-                    break;
-
-                ((TextView)walletView.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance,
-                  mFiatRate));
-
-                if(mFiatRate != 0.0)
-                {
-                    ((TextView)walletView.findViewById(R.id.walletBitcoinBalance)).setText(String.format(Locale.getDefault(),
-                      "%,.5f BCH", Bitcoin.bitcoinsFromSatoshis(wallet.balance)));
-                }
-
-                ((TextView)walletView.findViewById(R.id.walletName)).setText(wallet.name);
-
-                if(!wallet.isPrivate)
-                {
-                    walletView.findViewById(R.id.walletLocked).setVisibility(View.VISIBLE);
-                    walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
-                    walletView.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
-                }
-
-                if(!mBitcoin.initialBlockDownloadIsComplete())
-                    walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
-
-                if(!wallet.isSynchronized)
-                {
-                    TextView walletWarning = walletView.findViewById(R.id.walletWarning);
-                    if(walletWarning != null)
-                    {
-                        walletWarning.setVisibility(View.VISIBLE);
-                        walletWarning.setText(R.string.synchronizing);
-                    }
-                }
-                else if(!wallet.isBackedUp)
-                {
-                    TextView walletWarning = walletView.findViewById(R.id.walletWarning);
-                    if(walletWarning != null)
-                    {
-                        walletWarning.setVisibility(View.VISIBLE);
-                        walletWarning.setText(R.string.needs_backed_up);
-                    }
-                }
-                else
-                {
-                    TextView walletWarning = walletView.findViewById(R.id.walletWarning);
-                    if(walletWarning != null)
-                        walletWarning.setVisibility(View.GONE);
-                }
-
-                transactions = walletView.findViewById(R.id.walletTransactions);
-                populateTransactions(transactions, wallet.transactions, 3);
-
-                alignTransactions(transactions);
-
-                index++;
+                ((TextView)walletView.findViewById(R.id.walletBitcoinBalance)).setText(String.format(Locale.getDefault(),
+                  "%,.5f BCH", Bitcoin.bitcoinsFromSatoshis(wallet.balance)));
             }
+
+            ((TextView)walletView.findViewById(R.id.walletName)).setText(wallet.name);
+
+            if(!wallet.isPrivate)
+            {
+                walletView.findViewById(R.id.walletLocked).setVisibility(View.VISIBLE);
+                walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
+                walletView.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
+            }
+
+            if(!mBitcoin.initialBlockDownloadIsComplete())
+                walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
+
+            if(!wallet.isSynchronized)
+            {
+                TextView walletWarning = walletView.findViewById(R.id.walletWarning);
+                if(walletWarning != null)
+                {
+                    walletWarning.setVisibility(View.VISIBLE);
+                    walletWarning.setText(R.string.synchronizing);
+                }
+            }
+            else if(!wallet.isBackedUp)
+            {
+                TextView walletWarning = walletView.findViewById(R.id.walletWarning);
+                if(walletWarning != null)
+                {
+                    walletWarning.setVisibility(View.VISIBLE);
+                    walletWarning.setText(R.string.needs_backed_up);
+                }
+            }
+            else
+            {
+                TextView walletWarning = walletView.findViewById(R.id.walletWarning);
+                if(walletWarning != null)
+                    walletWarning.setVisibility(View.GONE);
+            }
+
+            transactions = walletView.findViewById(R.id.walletTransactions);
+            populateTransactions(transactions, wallet.transactions, 3);
+
+            alignTransactions(transactions);
+
+            index++;
         }
 
-        if(mBitcoin.walletsModified || !mWalletsLoaded)
+        if(rebuildNeeded)
         {
             walletView = inflater.inflate(R.layout.button, walletsView, false);
             walletView.setTag(R.id.addWallet);
@@ -761,7 +766,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             walletsView.addView(walletView);
         }
 
-        mBitcoin.walletsModified = false;
         mWalletsLoaded = true;
     }
 

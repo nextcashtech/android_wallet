@@ -311,22 +311,19 @@ public class BitcoinService extends Service
         if(mIsStopped)
             return;
 
-        boolean sync = mBitcoin.isInSync();
-        if(sync && mBitcoin.merkleHeight() == mBitcoin.blockHeight())
+        boolean isLoaded = mBitcoin.isLoaded();
+        boolean isInSync = mBitcoin.isInSync();
+        int merkleHeight = mBitcoin.merkleHeight();
+        int blockHeight = mBitcoin.blockHeight();
+        if(isInSync && merkleHeight == blockHeight)
         {
-            if(mProgressNotification != null)
-            {
-                NotificationManagerCompat.from(this).cancel(sProgressNotificationID);
-                mProgressNotification = null;
-                stopForeground(true);
-            }
+            clearProgress();
             return;
         }
 
         // Setup intent to open activity
         Intent openIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingOpenIntent = PendingIntent.getActivity(this, 0, openIntent, 0);
-
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, sProgressNotificationChannel)
           .setSmallIcon(R.drawable.icon_notification)
           .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.icon))
@@ -346,25 +343,24 @@ public class BitcoinService extends Service
         int max = 0;
         int progress = 0;
         boolean indeterminate = false;
-
-        if(!mBitcoin.isLoaded())
+        if(!isLoaded)
         {
             indeterminate = true;
             builder.setContentText(getString(R.string.loading_for_synchronize));
         }
-        else if(mBitcoin.isInSync())
+        else if(isInSync)
         {
-            if(mStartMerkleHeight > mBitcoin.merkleHeight())
-                mStartMerkleHeight = mBitcoin.merkleHeight();
-            max = mBitcoin.blockHeight() - mStartMerkleHeight;
-            progress = mBitcoin.merkleHeight() - mStartMerkleHeight;
+            if(mStartMerkleHeight > merkleHeight)
+                mStartMerkleHeight = merkleHeight;
+            max = blockHeight - mStartMerkleHeight;
+            progress = merkleHeight - mStartMerkleHeight;
             builder.setContentText(getString(R.string.looking_for_transactions));
         }
         else
         {
             int estimatedHeight = mBitcoin.estimatedBlockHeight();
             max = estimatedHeight - mStartBlockHeight;
-            progress = mBitcoin.blockHeight() - mStartBlockHeight;
+            progress = blockHeight - mStartBlockHeight;
             builder.setContentText(getString(R.string.looking_for_blocks));
         }
 
