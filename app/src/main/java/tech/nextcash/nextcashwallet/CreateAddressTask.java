@@ -47,8 +47,10 @@ public class CreateAddressTask extends AsyncTask<String, Integer, Integer>
                     paymentRequest.setAddress(mAddress);
                     mActivity.displayRequestPaymentCode(paymentRequest, mQRCode);
                     break;
+                default:
                 case 1: // Unknown error
                     mActivity.showMessage(mActivity.getString(R.string.failed_generate_address), 2000);
+                    mActivity.displayWallets();
                     break;
             }
         }

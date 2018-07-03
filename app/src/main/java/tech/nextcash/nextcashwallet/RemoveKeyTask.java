@@ -24,12 +24,7 @@ public class RemoveKeyTask extends AsyncTask<String, Integer, Integer>
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        int result = mBitcoin.removeKey(mPassCode, mOffset);
-
-        if(result == 0)
-            mBitcoin.update(true);
-
-        return result;
+        return mBitcoin.removeKey(mPassCode, mOffset);
     }
 
     @Override

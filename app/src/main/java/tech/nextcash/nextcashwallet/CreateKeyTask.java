@@ -31,12 +31,7 @@ public class CreateKeyTask extends AsyncTask<String, Integer, Integer>
     protected Integer doInBackground(String... pStrings)
     {
         String name = String.format(Locale.getDefault(), "%s %d", mActivity.getString(R.string.wallet), mBitcoin.walletCount() + 1);
-        int result = mBitcoin.addSeed(mPasscode, mSeed, mDerivationMethod, name, mStartNewPass, mIsBackedUp);
-
-        if(result == 0)
-            mBitcoin.update(true);
-
-        return result;
+        return mBitcoin.addSeed(mPasscode, mSeed, mDerivationMethod, name, mStartNewPass, mIsBackedUp);
     }
 
     @Override

@@ -43,8 +43,10 @@ public class CreatePaymentRequestTask extends AsyncTask<String, Integer, Integer
                 case 0: // Success
                     mActivity.displayRequestPaymentCode(mPaymentRequest, mQRCode);
                     break;
+                default:
                 case 1: // Unknown error
                     mActivity.showMessage(mActivity.getString(R.string.failed_generate_payment_code), 2000);
+                    mActivity.displayWallets();
                     break;
             }
         }

@@ -16,7 +16,6 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.PatternMatcher;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -254,7 +253,6 @@ public class BitcoinService extends Service
     public void onLoaded()
     {
         mBitcoin.onLoaded();
-        mBitcoin.update(false);
         mStartMerkleHeight = mBitcoin.merkleHeight();
         mStartBlockHeight = mBitcoin.blockHeight();
         for(CallBacks callBacks : mCallBacks)
@@ -561,6 +559,8 @@ public class BitcoinService extends Service
         String title;
         int progressUpdate = 0;
 
+        Log.i(logTag, "Starting monitoring.");
+
         while(mBitcoin.isRunning())
         {
             progressUpdate++;
@@ -629,12 +629,14 @@ public class BitcoinService extends Service
 
             try
             {
-                Thread.sleep(1000);
+                Thread.sleep(1000); // One second
             }
             catch(InterruptedException pException)
             {
                 Log.w(logTag, String.format("Monitor thread sleep exception : %s", pException.toString()));
             }
         }
+
+        Log.i(logTag, "Stopping monitoring.");
     }
 }
