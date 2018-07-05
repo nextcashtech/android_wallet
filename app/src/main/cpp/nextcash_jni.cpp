@@ -579,7 +579,7 @@ extern "C"
             return NULL;
 
         return createBlock(pEnvironment, pHeight, pEnvironment->NewStringUTF(hash.hex().text()),
-          daemon->chain()->blockStats().time((unsigned int)pHeight));
+          daemon->chain()->time((unsigned int)pHeight));
     }
 
     JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getBlockFromHash(JNIEnv *pEnvironment,
@@ -598,7 +598,7 @@ extern "C"
         pEnvironment->ReleaseStringUTFChars(pHash, hashHex);
 
         return createBlock(pEnvironment, height, pHash,
-          daemon->chain()->blockStats().time((unsigned int)height));
+          daemon->chain()->time((unsigned int)height));
     }
 
     bool savePublicKeys(BitCoin::Daemon *pDaemon)
@@ -720,7 +720,7 @@ extern "C"
 
             if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
             {
-                daemon->monitor()->setKeyStore(daemon->keyStore(), true);
+                daemon->monitor()->setKeyStore(daemon->keyStore(), daemon->chain(), true);
                 daemon->saveMonitor();
             }
             else
@@ -751,7 +751,7 @@ extern "C"
             int blockHeight = pDaemon->chain()->blockHeight(pTransaction.blockHash);
 
             if(blockHeight >= 0)
-                result = pDaemon->chain()->blockStats().time((unsigned int)blockHeight);
+                result = pDaemon->chain()->time((unsigned int)blockHeight);
         }
 
         if(result == 0) // Use "announce" time
@@ -1042,7 +1042,7 @@ extern "C"
 
         if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
         {
-            daemon->monitor()->setKeyStore(daemon->keyStore(), pStartNewPass);
+            daemon->monitor()->setKeyStore(daemon->keyStore(), daemon->chain(), pStartNewPass);
             daemon->saveMonitor();
             daemon->keyStore()->unloadPrivate();
             return (jint)0;
@@ -1390,8 +1390,8 @@ extern "C"
 
             // Set date
             pEnvironment->SetLongField(result, sFullTransactionDateID,
-              (jlong)daemon->chain()->blockStats()
-                .time((unsigned int)daemon->chain()->blockHeight(transaction.blockHash)));
+              (jlong)daemon->chain()->time(
+              (unsigned int)daemon->chain()->blockHeight(transaction.blockHash)));
         }
 
         // Size
@@ -1580,7 +1580,7 @@ extern "C"
             return NULL;
 
         BitCoin::Transaction *transaction = daemon->monitor()->findTransactionPaying(outputScript,
-          (uint64_t)pAmount);
+          (int64_t)pAmount);
         if(transaction == NULL)
             return NULL;
 
