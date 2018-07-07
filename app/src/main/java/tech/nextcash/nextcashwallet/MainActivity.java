@@ -184,6 +184,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     {
                         updateWallets();
                         updateStatus();
+                        if(mMode == Mode.SETTINGS)
+                            displaySettings();
                     }
                 });
                 return true;
@@ -419,6 +421,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mBitcoin.appIsOpen = true;
         startBitcoinService();
         startUpdateRates();
+        updateStatus();
         super.onStart();
     }
 
@@ -565,7 +568,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             blocks.setText(String.format(Locale.getDefault(), "%,d", blockHeight));
             if(mBitcoin.isInSync())
             {
-                if(merkleHeight == blockHeight)
+                if(merkleHeight == blockHeight || mBitcoin.walletCount() == 0)
                     merkleBlocks.setTextColor(getResources().getColor(R.color.textPositive));
                 else
                     merkleBlocks.setTextColor(getResources().getColor(R.color.textWarning));
@@ -622,7 +625,30 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             updateWallets();
 
         // Run again in 2 seconds
+        mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
         mDelayHandler.postDelayed(mStatusUpdateRunnable, 2000);
+    }
+
+    public synchronized void displayDialog()
+    {
+        if(mMode != Mode.IN_PROGRESS)
+            return;
+
+        // Setup action bar
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(null);
+            actionBar.setTitle(getResources().getString(R.string.app_name));
+            actionBar.setDisplayHomeAsUpEnabled(false); // Show the Up button in the action bar.
+        }
+
+        findViewById(R.id.dialog).setVisibility(View.VISIBLE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.wallets).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+
+        mMode = Mode.WALLETS;
     }
 
     public synchronized void displayWallets()
@@ -2691,9 +2717,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                     synchronized(this)
                     {
-                        ViewGroup dialogView = findViewById(R.id.dialog);
-                        dialogView.removeAllViews();
-
                         findViewById(R.id.wallets).setVisibility(View.GONE);
                         findViewById(R.id.dialog).setVisibility(View.GONE);
                         findViewById(R.id.progress).setVisibility(View.VISIBLE);
