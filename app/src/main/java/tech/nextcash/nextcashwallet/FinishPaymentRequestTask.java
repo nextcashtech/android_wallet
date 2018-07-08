@@ -1,5 +1,7 @@
 package tech.nextcash.nextcashwallet;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -23,7 +25,8 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
     private static final String PAYMENT_TYPE = "application/bitcoincash-payment";
     private static final String ACK_TYPE = "application/bitcoincash-paymentack";
 
-    private MainActivity mActivity;
+    private Context mContext;
+    private Bitcoin mBitcoin;
     private int mWalletOffset;
     private PaymentRequest mPaymentRequest;
     private HttpURLConnection mConnection;
@@ -32,11 +35,14 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
     private String mMessage;
 
 
-    public FinishPaymentRequestTask(MainActivity pActivity, int pWalletOffset, PaymentRequest pPaymentRequest)
+    public FinishPaymentRequestTask(Context pContext, Bitcoin pBitcoin, int pWalletOffset,
+      PaymentRequest pPaymentRequest)
     {
-        mActivity = pActivity;
+        mContext = pContext;
+        mBitcoin = pBitcoin;
         mWalletOffset = pWalletOffset;
         mPaymentRequest = pPaymentRequest;
+        mMessage = null;
     }
 
     private boolean sendPayment()
@@ -52,8 +58,6 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
             if(mPaymentRequest.protocolDetails.hasMerchantData())
                 paymentBuilder.setMerchantData(mPaymentRequest.protocolDetails.getMerchantData());
 
-            Bitcoin bitcoin = ((MainApp)mActivity.getApplication()).bitcoin;
-
             // Get sent transaction
             byte paymentScript[] = null;
             long amount = 0;
@@ -67,15 +71,15 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
 
             if(paymentScript == null)
             {
-                mMessage = mActivity.getString(R.string.failed_transaction);
+                mMessage = mContext.getString(R.string.failed_transaction);
                 Log.e(logTag, "Failed to find payment output");
                 return false;
             }
 
-            byte rawTransaction[] = bitcoin.getRawTransaction(paymentScript, amount);
+            byte rawTransaction[] = mBitcoin.getRawTransaction(paymentScript, amount);
             if(rawTransaction == null)
             {
-                mMessage = mActivity.getString(R.string.failed_transaction);
+                mMessage = mContext.getString(R.string.failed_transaction);
                 Log.e(logTag, "Failed to find payment transaction");
                 return false;
             }
@@ -83,10 +87,10 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
             paymentBuilder.addTransactions(ByteString.copyFrom(rawTransaction));
 
             // Build refund output
-            byte refundOutput[] = bitcoin.getNextReceiveOutput(mWalletOffset, 0);
+            byte refundOutput[] = mBitcoin.getNextReceiveOutput(mWalletOffset, 0);
             if(refundOutput == null)
             {
-                mMessage = mActivity.getString(R.string.failed_transaction);
+                mMessage = mContext.getString(R.string.failed_transaction);
                 Log.e(logTag, "Failed to generate refund output");
                 return false;
             }
@@ -116,13 +120,13 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
         }
         catch(MalformedURLException pException)
         {
-            mMessage = mActivity.getString(R.string.failed_url) + " : " + pException.toString();
+            mMessage = mContext.getString(R.string.failed_url) + " : " + pException.toString();
             Log.e(logTag, String.format("Invalid Payment URL : %s", pException.toString()));
             return false;
         }
         catch(IOException pException)
         {
-            mMessage = mActivity.getString(R.string.failed_connection) + " : " + pException.toString();
+            mMessage = mContext.getString(R.string.failed_connection) + " : " + pException.toString();
             Log.e(logTag, String.format("Payment Connection Error : %s", pException.toString()));
             return false;
         }
@@ -136,7 +140,7 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
             if(responseCode != 200)
             {
                 Log.e(logTag, String.format("Invalid payment acknowledge response code : %d", responseCode));
-                mMessage = mActivity.getString(R.string.failed_connection) + String.format(Locale.getDefault(),
+                mMessage = mContext.getString(R.string.failed_connection) + String.format(Locale.getDefault(),
                   " : %d", responseCode);
 
                 BufferedReader reader = new BufferedReader(new InputStreamReader(mConnection.getErrorStream()));
@@ -157,7 +161,7 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
             if(!contentType.equals(ACK_TYPE))
             {
                 Log.e(logTag, String.format("Invalid payment acknowledge content type : %s", contentType));
-                mMessage = mActivity.getString(R.string.failed_invalid_message);
+                mMessage = mContext.getString(R.string.failed_invalid_message);
 
                 if(contentType.startsWith("text/"))
                 {
@@ -188,7 +192,7 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
         {
             Log.e(logTag, String.format("Error reading payment request : %s",
               pException.toString()));
-            mMessage = mActivity.getString(R.string.failed_invalid_acknowledge);
+            mMessage = mContext.getString(R.string.failed_invalid_acknowledge);
             return false;
         }
     }
@@ -208,13 +212,12 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
     @Override
     protected void onPostExecute(Integer pResult)
     {
-        if(!mActivity.isDestroyed() && !mActivity.isFinishing())
-        {
-            if(mMessage != null)
-                mActivity.showMessage(mMessage, 2000);
-            mActivity.clearPaymentProcess();
-        }
+        Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
+        if(mMessage != null)
+            finishIntent.putExtra(MainActivity.ACTION_MESSAGE_STRING_FIELD, mMessage);
+        finishIntent.setAction(MainActivity.ACTION_CLEAR_PAYMENT);
 
+        mContext.sendBroadcast(finishIntent);
         super.onPostExecute(pResult);
     }
 }

@@ -40,13 +40,13 @@ public class BitcoinJob extends JobService
             @Override
             public boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
             {
-                return true;
+                return false;
             }
 
             @Override
             public boolean onUpdate()
             {
-                return true;
+                return false;
             }
 
             @Override

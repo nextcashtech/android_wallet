@@ -1331,18 +1331,19 @@ extern "C"
         return result;
     }
 
-    JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getTransaction(JNIEnv *pEnvironment,
-                                                                                       jobject pObject,
-                                                                                       jint pKeyOffset,
-                                                                                       jstring pID)
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getTransaction(JNIEnv *pEnvironment,
+                                                                                        jobject pObject,
+                                                                                        jint pKeyOffset,
+                                                                                        jstring pID,
+                                                                                        jobject pTransaction)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL || daemon->keyStore()->size() <= pKeyOffset)
-            return NULL;
+            return JNI_FALSE;
 
         std::vector<BitCoin::Key *> *chainKeys = daemon->keyStore()->chainKeys(pKeyOffset);
         if(chainKeys == NULL)
-            return NULL;
+            return JNI_FALSE;
 
         const char *id = pEnvironment->GetStringUTFChars(pID, NULL);
         BitCoin::Monitor::RelatedTransactionData transaction;
@@ -1355,57 +1356,55 @@ extern "C"
         NextCash::String hex = buffer.readHexString(buffer.length());
 
         if(!success)
-            return NULL;
+            return JNI_FALSE;
 
         setupFullTransactionClass(pEnvironment);
 
-        // Create result transaction
-        jobject result = pEnvironment->NewObject(sFullTransactionClass,
-          sFullTransactionConstructor);
-
         // Hash
-        pEnvironment->SetObjectField(result, sFullTransactionHashID,
+        pEnvironment->SetObjectField(pTransaction, sFullTransactionHashID,
           pEnvironment->NewStringUTF(transaction.transaction.hash.hex().text()));
 
         // Block
         if(!transaction.blockHash.isEmpty())
-            pEnvironment->SetObjectField(result, sFullTransactionBlockID,
+            pEnvironment->SetObjectField(pTransaction, sFullTransactionBlockID,
               pEnvironment->NewStringUTF(transaction.blockHash.hex().text()));
+        else
+            pEnvironment->SetObjectField(pTransaction, sFullTransactionBlockID, NULL);
 
         // Count
         if(transaction.blockHash.isEmpty())
         {
-            pEnvironment->SetIntField(result, sFullTransactionCountID,
+            pEnvironment->SetIntField(pTransaction, sFullTransactionCountID,
               (jint)transaction.nodesVerified);
 
             // Set date
-            pEnvironment->SetLongField(result, sFullTransactionDateID,
+            pEnvironment->SetLongField(pTransaction, sFullTransactionDateID,
               (jlong)transaction.transaction.time());
         }
         else
         {
-            pEnvironment->SetIntField(result, sFullTransactionCountID,
+            pEnvironment->SetIntField(pTransaction, sFullTransactionCountID,
               (jint)(daemon->chain()->height() + 1 -
               daemon->chain()->blockHeight(transaction.blockHash)));
 
             // Set date
-            pEnvironment->SetLongField(result, sFullTransactionDateID,
+            pEnvironment->SetLongField(pTransaction, sFullTransactionDateID,
               (jlong)daemon->chain()->time(
               (unsigned int)daemon->chain()->blockHeight(transaction.blockHash)));
         }
 
         // Size
-        pEnvironment->SetIntField(result, sFullTransactionSizeID, transaction.transaction.size());
+        pEnvironment->SetIntField(pTransaction, sFullTransactionSizeID,
+          transaction.transaction.size());
 
         // Version
-        pEnvironment->SetIntField(result, sFullTransactionVersionID,
+        pEnvironment->SetIntField(pTransaction, sFullTransactionVersionID,
           (jint)transaction.transaction.version);
 
         // Inputs
         jobjectArray inputs =
           pEnvironment->NewObjectArray((jsize)transaction.transaction.inputs.size(), sInputClass,
             NULL);
-        pEnvironment->SetObjectField(result, sFullTransactionInputsID, inputs);
 
         unsigned int offset = 0;
         jobject inputObject;
@@ -1441,11 +1440,12 @@ extern "C"
             pEnvironment->SetObjectArrayElement(inputs, offset, inputObject);
         }
 
+        pEnvironment->SetObjectField(pTransaction, sFullTransactionInputsID, inputs);
+
         // Outputs
         jobjectArray outputs =
           pEnvironment->NewObjectArray((jsize)transaction.transaction.outputs.size(), sOutputClass,
           NULL);
-        pEnvironment->SetObjectField(result, sFullTransactionOutputsID, outputs);
 
         jobject outputObject;
         offset = 0;
@@ -1475,11 +1475,13 @@ extern "C"
             pEnvironment->SetObjectArrayElement(outputs, offset, outputObject);
         }
 
+        pEnvironment->SetObjectField(pTransaction, sFullTransactionOutputsID, outputs);
+
         // Lock Time
-        pEnvironment->SetIntField(result, sFullTransactionLockTimeID,
+        pEnvironment->SetIntField(pTransaction, sFullTransactionLockTimeID,
           (jint)transaction.transaction.lockTime);
 
-        return result;
+        return JNI_TRUE;
     }
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendP2PKHPayment(JNIEnv *pEnvironment,

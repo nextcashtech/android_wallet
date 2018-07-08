@@ -1,34 +1,43 @@
 package tech.nextcash.nextcashwallet;
 
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 
 
 public class CreateAddressTask extends AsyncTask<String, Integer, Integer>
 {
-    private MainActivity mActivity;
+    private Context mContext;
     private Bitcoin mBitcoin;
     private int mWalletOffset, mChainIndex;
-    private String mAddress;
+    private PaymentRequest mPaymentRequest;
     private Bitmap mQRCode;
 
-    public CreateAddressTask(MainActivity pActivity, Bitcoin pBitcoin, int pWalletOffset, int pChainIndex)
+    public CreateAddressTask(Context pContext, Bitcoin pBitcoin, int pWalletOffset, int pChainIndex,
+      PaymentRequest pPaymentRequest, Bitmap pQRCode)
     {
-        mActivity = pActivity;
+        mContext = pContext;
         mBitcoin = pBitcoin;
         mWalletOffset = pWalletOffset;
         mChainIndex = pChainIndex;
+        mPaymentRequest = pPaymentRequest;
+        mQRCode = pQRCode;
+
+        mPaymentRequest.clear();
     }
 
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        mAddress = mBitcoin.getNextReceiveAddress(mWalletOffset, mChainIndex);
-        if(mAddress == null)
+        String address = mBitcoin.getNextReceiveAddress(mWalletOffset, mChainIndex);
+        if(address == null)
             return 1;
 
-        mQRCode = mBitcoin.qrCode(mAddress);
-        if(mQRCode == null)
+        if(!mPaymentRequest.setAddress(address))
+            return 1;
+
+        if(!mBitcoin.generateQRCode(mPaymentRequest.uri, mQRCode))
             return 1;
 
         return 0;
@@ -37,24 +46,22 @@ public class CreateAddressTask extends AsyncTask<String, Integer, Integer>
     @Override
     protected void onPostExecute(Integer pResult)
     {
-        if(!mActivity.isDestroyed() && !mActivity.isFinishing())
+        Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
+
+        // Send intent back to activity
+        switch(pResult)
         {
-            // Send intent back to activity
-            switch(pResult)
-            {
-                case 0: // Success
-                    PaymentRequest paymentRequest = new PaymentRequest();
-                    paymentRequest.setAddress(mAddress);
-                    mActivity.displayRequestPaymentCode(paymentRequest, mQRCode);
-                    break;
-                default:
-                case 1: // Unknown error
-                    mActivity.showMessage(mActivity.getString(R.string.failed_generate_address), 2000);
-                    mActivity.displayWallets();
-                    break;
-            }
+            case 0: // Success
+                finishIntent.setAction(MainActivity.ACTION_DISPLAY_REQUEST_PAYMENT);
+                break;
+            default:
+            case 1: // Unknown error
+                finishIntent.setAction(MainActivity.ACTION_DISPLAY_WALLETS); // Return from "in progress"
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_generate_address);
+                break;
         }
 
+        mContext.sendBroadcast(finishIntent);
         super.onPostExecute(pResult);
     }
 }

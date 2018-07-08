@@ -155,10 +155,11 @@ extern "C"
                                                                                           jobject pObject,
                                                                                           jstring pPaymentCode);
 
-    JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getTransaction(JNIEnv *pEnvironment,
-                                                                                       jobject pObject,
-                                                                                       jint pWalletOffset,
-                                                                                       jstring pID);
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getTransaction(JNIEnv *pEnvironment,
+                                                                                        jobject pObject,
+                                                                                        jint pWalletOffset,
+                                                                                        jstring pID,
+                                                                                        jobject pTransaction);
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendP2PKHPayment(JNIEnv *pEnvironment,
                                                                                       jobject pObject,

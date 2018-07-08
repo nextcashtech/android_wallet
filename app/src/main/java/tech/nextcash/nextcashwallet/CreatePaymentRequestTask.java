@@ -1,22 +1,24 @@
 package tech.nextcash.nextcashwallet;
 
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 
 
 public class CreatePaymentRequestTask extends AsyncTask<String, Integer, Integer>
 {
-    private MainActivity mActivity;
+    private Context mContext;
     private Bitcoin mBitcoin;
     private PaymentRequest mPaymentRequest;
-    private String mText;
     private Bitmap mQRCode;
 
-    public CreatePaymentRequestTask(MainActivity pActivity, Bitcoin pBitcoin, PaymentRequest pPaymentRequest)
+    public CreatePaymentRequestTask(Context pContext, Bitcoin pBitcoin, PaymentRequest pPaymentRequest, Bitmap mBitmap)
     {
-        mActivity = pActivity;
+        mContext = pContext;
         mBitcoin = pBitcoin;
         mPaymentRequest = pPaymentRequest;
+        mQRCode = mBitmap;
     }
 
     @Override
@@ -25,8 +27,7 @@ public class CreatePaymentRequestTask extends AsyncTask<String, Integer, Integer
         if(!mPaymentRequest.encode())
             return 1;
 
-        mQRCode = mBitcoin.qrCode(mPaymentRequest.uri);
-        if(mQRCode == null)
+        if(!mBitcoin.generateQRCode(mPaymentRequest.uri, mQRCode))
             return 1;
 
         return 0;
@@ -35,22 +36,21 @@ public class CreatePaymentRequestTask extends AsyncTask<String, Integer, Integer
     @Override
     protected void onPostExecute(Integer pResult)
     {
-        if(!mActivity.isDestroyed() && !mActivity.isFinishing())
+        Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
+
+        switch(pResult)
         {
-            // Send intent back to activity
-            switch(pResult)
-            {
-                case 0: // Success
-                    mActivity.displayRequestPaymentCode(mPaymentRequest, mQRCode);
-                    break;
-                default:
-                case 1: // Unknown error
-                    mActivity.showMessage(mActivity.getString(R.string.failed_generate_payment_code), 2000);
-                    mActivity.displayWallets();
-                    break;
-            }
+            case 0: // Success
+                finishIntent.setAction(MainActivity.ACTION_DISPLAY_REQUEST_PAYMENT);
+                break;
+            default:
+            case 1: // Unknown
+                finishIntent.setAction(MainActivity.ACTION_DISPLAY_WALLETS); // Return from "in progress"
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_generate_payment_code);
+                break;
         }
 
+        mContext.sendBroadcast(finishIntent);
         super.onPostExecute(pResult);
     }
 }

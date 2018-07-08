@@ -20,7 +20,7 @@ public class Bitcoin
     private static final int sSampleBlockHeight = 526256;
     private static final long sSampleTime = 1523978805;
     private static final long sSecondsPerBlock = 600;
-    private static final int sQRWidth = 200;
+    public static final int QR_WIDTH = 200;
 
     private long mHandle; // Used by JNI
     private boolean mLoaded;
@@ -178,38 +178,36 @@ public class Bitcoin
     public native String getNextReceiveAddress(int pWalletOffset, int pChainIndex);
     public native byte[] getNextReceiveOutput(int pWalletOffset, int pChainIndex);
 
-    public Bitmap qrCode(String pText)
+    public boolean generateQRCode(String pURI, Bitmap pBitmap)
     {
         MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
 
         try
         {
-            BitMatrix bitMatrix = multiFormatWriter.encode(pText, BarcodeFormat.QR_CODE,
-              sQRWidth, sQRWidth);
-            Bitmap bitmap = Bitmap.createBitmap(sQRWidth, sQRWidth, Bitmap.Config.ALPHA_8);
-            BitArray rowBits = new BitArray(sQRWidth);
-            int row[] = new int[sQRWidth];
+            BitMatrix bitMatrix = multiFormatWriter.encode(pURI, BarcodeFormat.QR_CODE, QR_WIDTH, QR_WIDTH);
+            BitArray rowBits = new BitArray(QR_WIDTH);
+            int row[] = new int[QR_WIDTH];
             int on = 0xffffffff;
 
-            for(int y = 0; y < sQRWidth; y++)
+            for(int y = 0; y < QR_WIDTH; y++)
             {
                 rowBits = bitMatrix.getRow(y, rowBits);
-                for(int x = 0; x < sQRWidth; x++)
+                for(int x = 0; x < QR_WIDTH; x++)
                 {
                     if(rowBits.get(x))
                         row[x] = on;
                     else
                         row[x] = 0;
                 }
-                bitmap.setPixels(row, 0, sQRWidth, 0, y, sQRWidth, 1);
+                pBitmap.setPixels(row, 0, QR_WIDTH, 0, y, QR_WIDTH, 1);
             }
 
-            return bitmap;
+            return true;
         }
         catch (WriterException pException)
         {
             Log.e(logTag, String.format("Failed to create QR Code : %s", pException.toString()));
-            return null;
+            return false;
         }
     }
 
@@ -287,7 +285,7 @@ public class Bitcoin
 
     private native synchronized boolean updateWallet(Wallet pWallet, int pOffset);
 
-    public native FullTransaction getTransaction(int pWalletOffset, String pID);
+    public native boolean getTransaction(int pWalletOffset, String pID, FullTransaction pTransaction);
 
     public native boolean setName(int pOffset, String pName);
 

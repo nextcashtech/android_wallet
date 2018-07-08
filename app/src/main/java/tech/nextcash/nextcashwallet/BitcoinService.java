@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
@@ -37,7 +38,9 @@ public class BitcoinService extends Service
     private static final String logTag = "BitcoinService";
 
     private static final int sProgressNotificationID = 1;
-    private static final String sStopAction = "STOP";
+
+    public static final String SERVICE_ACTION = "tech.nextcash.nextcashwallet.SERVICE_ACTION";
+    public static final String STOP_ACTION = "STOP";
 
     private Bitcoin mBitcoin;
     private int mFinishMode;
@@ -122,7 +125,7 @@ public class BitcoinService extends Service
             @Override
             public void onReceive(Context pContext, Intent pIntent)
             {
-                if(pIntent.getAction() != null && pIntent.getAction().equals(sStopAction))
+                if(pIntent.getAction() != null && pIntent.getAction().equals(STOP_ACTION))
                 {
                     Log.i(logTag, "Stop action received");
                     mBitcoin.stop();
@@ -130,9 +133,9 @@ public class BitcoinService extends Service
             }
         };
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(sStopAction);
-        LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, filter);
+        IntentFilter filter = new IntentFilter(SERVICE_ACTION);
+        filter.addAction(STOP_ACTION);
+        registerReceiver(mReceiver, filter);
     }
 
     public void start(Intent pIntent)
@@ -158,7 +161,7 @@ public class BitcoinService extends Service
         if(finishMode == Bitcoin.FINISH_ON_REQUEST && mBitcoin.finishMode() != finishMode)
         {
             Log.i(logTag, "Updating finish mode to on request");
-            mBitcoin.setFinishMode(finishMode); // Upgrade to finish on request
+            mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST); // Upgrade to finish on request
         }
     }
 
@@ -172,6 +175,7 @@ public class BitcoinService extends Service
     @Override
     public void onDestroy()
     {
+        unregisterReceiver(mReceiver);
         mBitcoin.destroy();
         super.onDestroy();
     }
@@ -334,8 +338,8 @@ public class BitcoinService extends Service
         if(mBitcoin.finishMode() != Bitcoin.FINISH_ON_REQUEST)
         {
             // Setup an intent to stop synchronization
-            Intent stopIntent = new Intent();
-            stopIntent.setAction(sStopAction);
+            Intent stopIntent = new Intent(SERVICE_ACTION);
+            stopIntent.setAction(STOP_ACTION);
             PendingIntent pendingStopIntent = PendingIntent.getBroadcast(this, 0, stopIntent, 0);
             builder.addAction(R.drawable.ic_stop_black_24dp, getString(R.string.stop), pendingStopIntent);
         }
@@ -609,7 +613,8 @@ public class BitcoinService extends Service
 
                                 if(wallet.isSynchronized || transaction.block != null)
                                     for(CallBacks callBacks : mCallBacks)
-                                        callBacks.onTransactionUpdate(offset, transaction);
+                                        if(callBacks.onTransactionUpdate(offset, transaction))
+                                            break;
 
                                 if(wallet.isSynchronized)
                                     notify(title, transaction.description(this), offset, transaction.hash);
@@ -620,7 +625,8 @@ public class BitcoinService extends Service
                     }
 
                 for(CallBacks callBacks : mCallBacks)
-                    callBacks.onUpdate();
+                    if(callBacks.onUpdate())
+                        break;
             }
 
             try

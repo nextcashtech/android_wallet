@@ -1,5 +1,7 @@
 package tech.nextcash.nextcashwallet;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -27,8 +29,7 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
 {
     public static final String logTag = "ProcessPaymentRequest";
 
-    private MainActivity mActivity;
-    private int mWalletOffset;
+    private Context mContext;
     private PaymentRequest mPaymentRequest;
     private URL mURL;
     private HttpURLConnection mConnection;
@@ -39,10 +40,9 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
     private String mName, mMessage;
     private boolean mIsFailed;
 
-    public ProcessPaymentRequestTask(MainActivity pActivity, int pWalletOffset, PaymentRequest pPaymentRequest)
+    public ProcessPaymentRequestTask(Context pContext, PaymentRequest pPaymentRequest)
     {
-        mActivity = pActivity;
-        mWalletOffset = pWalletOffset;
+        mContext = pContext;
         mPaymentRequest = pPaymentRequest;
 
         // Clear any previous values from request
@@ -64,21 +64,18 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
                 mConnection = (HttpURLConnection)mURL.openConnection();
             mConnection.setRequestProperty("accept", REQUEST_TYPE);
             mConnection.setRequestProperty("user-agent", Bitcoin.userAgent());
-            //.setRequestProperty("accept-transfer-encoding", "binary");
-            //mConnection.setRequestProperty("accept-encoding", "binary");
-            //mConnection.setRequestMethod("GET");
         }
         catch(MalformedURLException pException)
         {
             mIsFailed = true;
-            mMessage = mActivity.getString(R.string.failed_url) + " : " + pException.toString();
+            mMessage = mContext.getString(R.string.failed_url) + " : " + pException.toString();
             Log.e(logTag, String.format("Invalid URL : %s", pException.toString()));
             return false;
         }
         catch(IOException pException)
         {
             mIsFailed = true;
-            mMessage = mActivity.getString(R.string.failed_connection) + " : " + pException.toString();
+            mMessage = mContext.getString(R.string.failed_connection) + " : " + pException.toString();
             Log.e(logTag, String.format("Connection Error : %s", pException.toString()));
             return false;
         }
@@ -89,7 +86,7 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
             if(responseCode != 200)
             {
                 mIsFailed = true;
-                mMessage = mActivity.getString(R.string.failed_connection) + String.format(Locale.getDefault(),
+                mMessage = mContext.getString(R.string.failed_connection) + String.format(Locale.getDefault(),
                    " : %d", responseCode);
 
                 BufferedReader reader = new BufferedReader(new InputStreamReader(mConnection.getErrorStream()));
@@ -119,7 +116,7 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
                 if(certificates.length == 0)
                 {
                     mIsFailed = true;
-                    mMessage = mActivity.getString(R.string.failed_ssl_verify) + " : No certificates";
+                    mMessage = mContext.getString(R.string.failed_ssl_verify) + " : No certificates";
                     return false;
                 }
 
@@ -151,14 +148,14 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
         catch(SSLPeerUnverifiedException|CertificateException pException)
         {
             mIsFailed = true;
-            mMessage = mActivity.getString(R.string.failed_ssl_verify) + " : " + pException.toString();
+            mMessage = mContext.getString(R.string.failed_ssl_verify) + " : " + pException.toString();
             Log.e(logTag, String.format("Invalid Certificate : %s", pException.toString()));
             return false;
         }
         catch(IOException pException)
         {
             mIsFailed = true;
-            mMessage = mActivity.getString(R.string.failed_connection) + " : " + pException.toString();
+            mMessage = mContext.getString(R.string.failed_connection) + " : " + pException.toString();
             Log.e(logTag, String.format("Connection Failed : %s", pException.toString()));
             return false;
         }
@@ -173,7 +170,7 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
             {
                 Log.e(logTag, String.format("Invalid payment request content type : %s", contentType));
                 mIsFailed = true;
-                mMessage = mActivity.getString(R.string.failed_invalid_message);
+                mMessage = mContext.getString(R.string.failed_invalid_message);
 
                 if(contentType.startsWith("text/"))
                 {
@@ -202,7 +199,7 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
             Log.e(logTag, String.format("Error reading payment request : %s",
               pException.toString()));
             mIsFailed = true;
-            mMessage = mActivity.getString(R.string.failed_invalid_message);
+            mMessage = mContext.getString(R.string.failed_invalid_message);
             return false;
         }
 
@@ -212,7 +209,7 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
             Log.e(logTag, String.format("Payment request not for main network : %s",
               mPaymentRequest.protocolDetails.getNetwork()));
             mIsFailed = true;
-            mMessage = mActivity.getString(R.string.failed_not_main_network);
+            mMessage = mContext.getString(R.string.failed_not_main_network);
             return false;
         }
 
@@ -224,7 +221,7 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
             Log.e(logTag, String.format("Payment request expired at %1$tY-%1$tm-%1$td %1$tH:%1$tM",
               mPaymentRequest.protocolDetails.getExpires()));
             mIsFailed = true;
-            mMessage = mActivity.getString(R.string.failed_request_expired);
+            mMessage = mContext.getString(R.string.failed_request_expired);
             return false;
         }
 
@@ -243,7 +240,7 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
         {
             Log.e(logTag, "Payment request does not contain payment method");
             mIsFailed = true;
-            mMessage = mActivity.getString(R.string.failed_invalid_request);
+            mMessage = mContext.getString(R.string.failed_invalid_request);
             return false;
         }
 
@@ -276,16 +273,17 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
     @Override
     protected void onPostExecute(Integer pResult)
     {
-        if(!mActivity.isDestroyed() && !mActivity.isFinishing())
-        {
-            if(mIsFailed)
-                mActivity.clearPaymentProcess();
-            else
-                mActivity.displayEnterPaymentDetails();
-            if(mMessage != null)
-                mActivity.showMessage(mMessage, 2000);
-        }
+        Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
 
+        if(mMessage != null)
+            finishIntent.putExtra(MainActivity.ACTION_MESSAGE_STRING_FIELD, mMessage);
+
+        if(mIsFailed)
+            finishIntent.setAction(MainActivity.ACTION_CLEAR_PAYMENT);
+        else
+            finishIntent.setAction(MainActivity.ACTION_DISPLAY_ENTER_PAYMENT);
+
+        mContext.sendBroadcast(finishIntent);
         super.onPostExecute(pResult);
     }
 }

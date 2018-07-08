@@ -1,20 +1,22 @@
 package tech.nextcash.nextcashwallet;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 
 
 public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
 {
-    private MainActivity mActivity;
+    private Context mContext;
     private Bitcoin mBitcoin;
     private int mWalletOffset;
-    public PaymentRequest mRequest;
+    private PaymentRequest mRequest;
     private String mPassCode;
 
-    public CreateTransactionTask(MainActivity pActivity, Bitcoin pBitcoin, String pPassCode, int pWalletOffset,
+    public CreateTransactionTask(Context pContext, Bitcoin pBitcoin, String pPassCode, int pWalletOffset,
       PaymentRequest pRequest)
     {
-        mActivity = pActivity;
+        mContext = pContext;
         mBitcoin = pBitcoin;
         mPassCode = pPassCode;
         mWalletOffset = pWalletOffset;
@@ -24,7 +26,7 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        int result = 1;
+        int result;
         if(mRequest.paymentScript != null)
             result = mBitcoin.sendOutputPayment(mWalletOffset, mPassCode, mRequest.paymentScript, mRequest.amount,
               mRequest.feeRate, mRequest.usePending);
@@ -32,47 +34,47 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
             result = mBitcoin.sendP2PKHPayment(mWalletOffset, mPassCode, mRequest.address, mRequest.amount,
               mRequest.feeRate, mRequest.usePending, mRequest.sendMax);
 
-        if(result == 0)
-            mActivity.acknowledgePaymentSent();
-
         return result;
     }
 
     @Override
     protected void onPostExecute(Integer pResult)
     {
-        if(!mActivity.isDestroyed() && !mActivity.isFinishing())
-        {
-            // Send intent back to activity
-            switch(pResult)
-            {
-                case 0: // Success
-                    mActivity.showMessage(mActivity.getString(R.string.sent_payment), 2000);
-                    break;
-                default:
-                case 1: // Unknown error
-                    mActivity.showMessage(mActivity.getString(R.string.failed_send_payment), 2000);
-                    break;
-                case 2: // Insufficient Funds
-                    mActivity.showMessage(mActivity.getString(R.string.failed_insufficient_funds), 2000);
-                    break;
-                case 3: // Invalid Address
-                    mActivity.showMessage(mActivity.getString(R.string.failed_invalid_address), 2000);
-                    break;
-                case 4: // No Change Address
-                    mActivity.showMessage(mActivity.getString(R.string.failed_change_address), 2000);
-                    break;
-                case 5: // Signing Failed
-                    mActivity.showMessage(mActivity.getString(R.string.failed_signing), 2000);
-                    break;
-                case 6: // Below dust
-                    mActivity.showMessage(mActivity.getString(R.string.failed_dust), 2000);
-                    break;
-            }
+        Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
 
-            mActivity.displayWallets();
+        if(pResult == 0 && mRequest.protocolDetails != null && mRequest.protocolDetails.hasPaymentUrl())
+            finishIntent.setAction(MainActivity.ACTION_ACKNOWLEDGE_PAYMENT);
+        else
+            finishIntent.setAction(MainActivity.ACTION_DISPLAY_WALLETS); // Return from "in progress"
+
+        // Send intent back to activity
+        switch(pResult)
+        {
+            case 0: // Success
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.sent_payment);
+                break;
+            default:
+            case 1: // Unknown error
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_send_payment);
+                break;
+            case 2: // Insufficient Funds
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_insufficient_funds);
+                break;
+            case 3: // Invalid Address
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_invalid_address);
+                break;
+            case 4: // No Change Address
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_change_address);
+                break;
+            case 5: // Signing Failed
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_signing);
+                break;
+            case 6: // Below dust
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_dust);
+                break;
         }
 
+        mContext.sendBroadcast(finishIntent);
         super.onPostExecute(pResult);
     }
 }
