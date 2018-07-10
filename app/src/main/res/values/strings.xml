@@ -35,10 +35,10 @@
 
     <string name="title_sync_frequency">Sync Frequency</string>
     <string name="description_sync_frequency">
-        How often to synchronize the block chain with peer nodes when not on WiFi. This involves
-        connecting to peer nodes and downloading block headers and transactions. This is just
-        referring to background synchronizing. Whenever the application is opened it will attempt to
-        synchronize as well.
+        How often to synchronize the block chain with peer nodes.
+        This involves connecting to peer nodes and downloading block headers and transactions.
+        This is just referring to background synchronizing.
+        Whenever the application is opened it will attempt to synchronize as well.
     </string>
     <string-array name="sync_frequency_titles">
         <item>1 hour</item>
