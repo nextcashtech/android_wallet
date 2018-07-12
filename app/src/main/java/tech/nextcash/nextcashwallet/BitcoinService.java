@@ -11,7 +11,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
@@ -20,7 +19,6 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -43,7 +41,6 @@ public class BitcoinService extends Service
     public static final String STOP_ACTION = "STOP";
 
     private Bitcoin mBitcoin;
-    private int mFinishMode;
     private Thread mBitcoinThread, mMonitorThread;
     private Runnable mBitcoinRunnable, mMonitorRunnable;
     private boolean mIsRegistered;
@@ -75,7 +72,6 @@ public class BitcoinService extends Service
         mProgressNotification = null;
         mStartBlockHeight = 0;
         mStartMerkleHeight = 0;
-        mFinishMode = Bitcoin.FINISH_ON_REQUEST;
         mBitcoinThread = null;
         mMonitorThread= null;
         mCallBacks = new CallBacks[0];
@@ -101,7 +97,7 @@ public class BitcoinService extends Service
                 onLoaded();
 
                 // Run daemon
-                mBitcoin.run(mFinishMode);
+                mBitcoin.run();
                 mIsStopped = true;
 
                 // Finish everything
@@ -138,7 +134,7 @@ public class BitcoinService extends Service
         registerReceiver(mReceiver, filter);
     }
 
-    public void start(Intent pIntent)
+    public synchronized void start(Intent pIntent)
     {
         Bundle extras = pIntent.getExtras();
         int finishMode;
@@ -152,13 +148,14 @@ public class BitcoinService extends Service
             if(finishMode == Bitcoin.FINISH_ON_REQUEST)
                 Log.i(logTag, "Starting Bitcoin thread in finish on request mode");
             else
+            {
                 Log.i(logTag, "Starting Bitcoin thread in finish on sync mode");
-            mFinishMode = finishMode;
+                mBitcoin.setFinishMode(finishMode);
+            }
             mBitcoinThread = new Thread(mBitcoinRunnable, "BitcoinDaemon");
             mBitcoinThread.start();
         }
-
-        if(finishMode == Bitcoin.FINISH_ON_REQUEST && mBitcoin.finishMode() != finishMode)
+        else if(finishMode == Bitcoin.FINISH_ON_REQUEST && mBitcoin.finishMode() != finishMode)
         {
             Log.i(logTag, "Updating finish mode to on request");
             mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST); // Upgrade to finish on request

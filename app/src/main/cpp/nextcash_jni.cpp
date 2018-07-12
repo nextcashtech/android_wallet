@@ -454,26 +454,13 @@ extern "C"
         daemon->setFinishTime(0);
     }
 
-    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setFinishModeNoCreate(JNIEnv *pEnvironment,
-                                                                                           jobject pObject,
-                                                                                           jint pMode)
-    {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject, false);
-        if(daemon == NULL)
-            return;
-
-        daemon->setFinishMode(pMode);
-    }
-
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_run(JNIEnv *pEnvironment,
-                                                                         jobject pObject,
-                                                                         jint pMode)
+                                                                         jobject pObject)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject, true);
         if(daemon == NULL)
             return;
 
-        daemon->setFinishMode(pMode);
         daemon->run(false);
     }
 

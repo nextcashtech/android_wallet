@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -118,7 +119,10 @@ public class BitcoinJob extends JobService
             mServiceIsBinding = true;
             Intent intent = new Intent(this, BitcoinService.class);
             intent.putExtra("FinishMode", Bitcoin.FINISH_ON_SYNC);
-            startService(intent);
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                startForegroundService(intent);
+            else
+                startService(intent);
             bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
         }
 
@@ -147,8 +151,11 @@ public class BitcoinJob extends JobService
     public boolean onStopJob(JobParameters pParams)
     {
         Log.i(logTag, "Stopping job from stop job request");
-        if(mBitcoin.finishMode() == Bitcoin.FINISH_ON_SYNC)
+        if(!mBitcoin.appIsOpen)
+        {
             mBitcoin.stop();
+            Log.i(logTag, "Stopping bitcoin because app is not open");
+        }
         else
             jobFinished(mJobParameters, false);
         return false;
