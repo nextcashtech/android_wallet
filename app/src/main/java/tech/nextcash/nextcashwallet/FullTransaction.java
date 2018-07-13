@@ -22,7 +22,7 @@ public class FullTransaction
     {
         version = 0;
         lockTime = 0xffffffff;
-        count = 0xffffffff;
+        count = 0;
     }
 
     long amount()

@@ -21,7 +21,8 @@ extern "C"
     jclass sBitcoinClass = NULL;
     jfieldID sBitcoinHandleID = NULL;
     jfieldID sBitcoinWalletsID = NULL;
-    jfieldID sBitcoinLoadedID = NULL;
+    jfieldID sBitcoinWalletsLoadedID = NULL;
+    jfieldID sBitcoinChainLoadedID = NULL;
 
     // Wallet
     jclass sWalletClass = NULL;
@@ -257,7 +258,8 @@ extern "C"
         sBitcoinHandleID = pEnvironment->GetFieldID(sBitcoinClass, "mHandle", "J");
         sBitcoinWalletsID = pEnvironment->GetFieldID(sBitcoinClass, "mWallets",
           "[Ltech/nextcash/nextcashwallet/Wallet;");
-        sBitcoinLoadedID = pEnvironment->GetFieldID(sBitcoinClass, "mLoaded", "Z");
+        sBitcoinWalletsLoadedID = pEnvironment->GetFieldID(sBitcoinClass, "mWalletsLoaded", "Z");
+        sBitcoinChainLoadedID = pEnvironment->GetFieldID(sBitcoinClass, "mChainLoaded", "Z");
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Wallet_setupJNI(JNIEnv *pEnvironment,
@@ -326,7 +328,8 @@ extern "C"
 
         // Zeroize handle in java object
         pEnvironment->SetLongField(pObject, sBitcoinHandleID, 0);
-        pEnvironment->SetBooleanField(pObject, sBitcoinLoadedID, JNI_FALSE);
+        pEnvironment->SetBooleanField(pObject, sBitcoinWalletsLoadedID, JNI_FALSE);
+        pEnvironment->SetBooleanField(pObject, sBitcoinChainLoadedID, JNI_FALSE);
 
         // Delete C++ object
         delete daemon;
@@ -348,8 +351,8 @@ extern "C"
         pEnvironment->ReleaseStringUTFChars(pPath, newPath);
     }
 
-    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_load(JNIEnv *pEnvironment,
-                                                                              jobject pObject)
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_loadWallets(JNIEnv *pEnvironment,
+                                                                                     jobject pObject)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject, true);
         if(daemon == NULL)
@@ -359,24 +362,60 @@ extern "C"
 
         try
         {
-            if(daemon->load())
+            if(daemon->loadWallets())
             {
-                NextCash::Log::add(NextCash::Log::INFO, NEXTCASH_JNI_LOG_NAME, "Bitcoin is loaded");
+                NextCash::Log::add(NextCash::Log::INFO, NEXTCASH_JNI_LOG_NAME,
+                  "Bitcoin wallets are loaded");
                 result = JNI_TRUE;
             }
             else
                 NextCash::Log::add(NextCash::Log::WARNING, NEXTCASH_JNI_LOG_NAME,
-                  "Bitcoin failed to load");
+                  "Bitcoin failed to load wallets");
         }
         catch(std::bad_alloc pException)
         {
             NextCash::Log::addFormatted(NextCash::Log::WARNING, NEXTCASH_JNI_LOG_NAME,
-              "Bad allocation while loading : %s", pException.what());
+              "Bad allocation while loading wallets : %s", pException.what());
         }
         catch(std::exception pException)
         {
             NextCash::Log::addFormatted(NextCash::Log::WARNING, NEXTCASH_JNI_LOG_NAME,
-              "Exception while loading : %s", pException.what());
+              "Exception while loading wallets : %s", pException.what());
+        }
+
+        return result;
+    }
+
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_loadChain(JNIEnv *pEnvironment,
+                                                                                   jobject pObject)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject, true);
+        if(daemon == NULL)
+            return JNI_FALSE;
+
+        jboolean result = JNI_FALSE;
+
+        try
+        {
+            if(daemon->loadChain())
+            {
+                NextCash::Log::add(NextCash::Log::INFO, NEXTCASH_JNI_LOG_NAME,
+                  "Bitcoin chain is loaded");
+                result = JNI_TRUE;
+            }
+            else
+                NextCash::Log::add(NextCash::Log::WARNING, NEXTCASH_JNI_LOG_NAME,
+                  "Bitcoin failed to load chain");
+        }
+        catch(std::bad_alloc pException)
+        {
+            NextCash::Log::addFormatted(NextCash::Log::WARNING, NEXTCASH_JNI_LOG_NAME,
+              "Bad allocation while loading chain : %s", pException.what());
+        }
+        catch(std::exception pException)
+        {
+            NextCash::Log::addFormatted(NextCash::Log::WARNING, NEXTCASH_JNI_LOG_NAME,
+              "Exception while loading chain : %s", pException.what());
         }
 
         return result;
@@ -497,18 +536,20 @@ extern "C"
             default:
             case BitCoin::Daemon::INACTIVE:
                 return (jint)0;
-            case BitCoin::Daemon::LOADING:
+            case BitCoin::Daemon::LOADING_WALLETS:
                 return (jint)1;
-            case BitCoin::Daemon::FINDING_PEERS:
+            case BitCoin::Daemon::LOADING_CHAIN:
                 return (jint)2;
-            case BitCoin::Daemon::CONNECTING_TO_PEERS:
+            case BitCoin::Daemon::FINDING_PEERS:
                 return (jint)3;
-            case BitCoin::Daemon::SYNCHRONIZING:
+            case BitCoin::Daemon::CONNECTING_TO_PEERS:
                 return (jint)4;
-            case BitCoin::Daemon::SYNCHRONIZED:
+            case BitCoin::Daemon::SYNCHRONIZING:
                 return (jint)5;
-            case BitCoin::Daemon::FINDING_TRANSACTIONS:
+            case BitCoin::Daemon::SYNCHRONIZED:
                 return (jint)6;
+            case BitCoin::Daemon::FINDING_TRANSACTIONS:
+                return (jint)7;
         }
     }
 
@@ -788,7 +829,10 @@ extern "C"
           (jlong)pTransaction.amount());
 
         // Set count
-        if(pTransaction.blockHash.isEmpty())
+        if(!pDaemon->chainIsLoaded())
+            pEnvironment->SetIntField(result, sTransactionCountID,
+              (jint)-1);
+        else if(pTransaction.blockHash.isEmpty())
             pEnvironment->SetIntField(result, sTransactionCountID,
               (jint)pTransaction.nodesVerified);
         else
@@ -809,11 +853,16 @@ extern "C"
             return JNI_FALSE;
 
         // Loop through public chain keys getting transactions
-        jint blockHeight = (jint)daemon->chain()->height();
+        jint blockHeight;
         int64_t balance = 0;
         std::vector<BitCoin::Key *> *chainKeys =
           daemon->keyStore()->chainKeys((unsigned int)pOffset);
         std::vector<BitCoin::Monitor::RelatedTransactionData> transactions, keyTransactions;
+
+        if(daemon->chainIsLoaded())
+            blockHeight = (jint)daemon->chain()->height();
+        else
+            blockHeight = 0;
 
         if(chainKeys != NULL && chainKeys->size() != 0)
         {
@@ -1358,13 +1407,20 @@ extern "C"
         else
             pEnvironment->SetObjectField(pTransaction, sFullTransactionBlockID, NULL);
 
-        // Count
-        if(transaction.blockHash.isEmpty())
+        // Count and Date
+        if(!daemon->chainIsLoaded())
+        {
+            pEnvironment->SetIntField(pTransaction, sFullTransactionCountID,
+              (jint)-1);
+
+            pEnvironment->SetLongField(pTransaction, sFullTransactionDateID,
+              (jlong)0);
+        }
+        else if(transaction.blockHash.isEmpty())
         {
             pEnvironment->SetIntField(pTransaction, sFullTransactionCountID,
               (jint)transaction.nodesVerified);
 
-            // Set date
             pEnvironment->SetLongField(pTransaction, sFullTransactionDateID,
               (jlong)transaction.transaction.time());
         }
@@ -1374,7 +1430,6 @@ extern "C"
               (jint)(daemon->chain()->height() + 1 -
               daemon->chain()->blockHeight(transaction.blockHash)));
 
-            // Set date
             pEnvironment->SetLongField(pTransaction, sFullTransactionDateID,
               (jlong)daemon->chain()->time(
               (unsigned int)daemon->chain()->blockHeight(transaction.blockHash)));

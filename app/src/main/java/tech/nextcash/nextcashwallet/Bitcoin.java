@@ -23,7 +23,7 @@ public class Bitcoin
     public static final int QR_WIDTH = 200;
 
     private long mHandle; // Used by JNI
-    private boolean mLoaded;
+    private boolean mWalletsLoaded, mChainLoaded;
     private boolean mNeedsUpdate;
     private int mChangeID;
 
@@ -37,7 +37,8 @@ public class Bitcoin
         appIsOpen = false;
         walletsModified = true;
         mHandle = 0;
-        mLoaded = false;
+        mWalletsLoaded = false;
+        mChainLoaded = false;
         mNeedsUpdate = false;
         mChangeID = -1;
         mWallets = new Wallet[0];
@@ -133,9 +134,11 @@ public class Bitcoin
 
     public native void setPath(String pPath);
 
-    public native boolean load();
+    public native boolean loadWallets();
+    public native boolean loadChain();
 
-    public boolean isLoaded() { return mLoaded; }
+    public boolean walletsAreLoaded() { return mWalletsLoaded; }
+    public boolean chainIsLoaded() { return mChainLoaded; }
 
     public native boolean isRunning();
 
@@ -213,9 +216,16 @@ public class Bitcoin
     public native String encodePaymentCode(String pAddressHash, int pFormat, int pProtocol);
     public native PaymentRequest decodePaymentCode(String pPaymentCode);
 
-    public void onLoaded()
+    public void onWalletsLoaded()
     {
-        mLoaded = true;
+        mWalletsLoaded = true;
+        update(true); // Load wallets array
+    }
+
+    public void onChainLoaded()
+    {
+        mChainLoaded = true;
+        update(true); // Update chain related data in wallets
     }
 
     public synchronized int walletCount()
@@ -237,7 +247,7 @@ public class Bitcoin
 
     public synchronized boolean update(boolean pForce)
     {
-        if(!mLoaded)
+        if(!mWalletsLoaded)
             return false;
 
         int changeID = getChangeID();

@@ -93,8 +93,11 @@ public class BitcoinService extends Service
 
                 // Load daemon
                 mBitcoin.setPath(getFilesDir().getPath() + "/bitcoin");
-                mBitcoin.load();
-                onLoaded();
+                mBitcoin.loadWallets();
+                onWalletsLoaded();
+
+                mBitcoin.loadChain();
+                onChainLoaded();
 
                 // Run daemon
                 mBitcoin.run();
@@ -213,9 +216,19 @@ public class BitcoinService extends Service
 
     public interface CallBacks
     {
-        void onLoad();
+        // When enough data is loaded to display basic wallet information.
+        void onWalletsLoad();
+
+        // When full node/chain data is loaded.
+        void onChainLoad();
+
+        // New transaction or transaction state change
         boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction);
+
+        // When there is a node/chain update (i.e. new block)
         boolean onUpdate();
+
+        // When the node stops and everything should be cleaned up
         void onFinish();
     }
 
@@ -251,13 +264,21 @@ public class BitcoinService extends Service
         mCallBacks = newCallBacks;
     }
 
-    public void onLoaded()
+    public void onWalletsLoaded()
     {
-        mBitcoin.onLoaded();
+        mBitcoin.onWalletsLoaded();
+        mStartMerkleHeight = mBitcoin.merkleHeight();
+        for(CallBacks callBacks : mCallBacks)
+            callBacks.onWalletsLoad();
+    }
+
+    public void onChainLoaded()
+    {
+        mBitcoin.onChainLoaded();
         mStartMerkleHeight = mBitcoin.merkleHeight();
         mStartBlockHeight = mBitcoin.blockHeight();
         for(CallBacks callBacks : mCallBacks)
-            callBacks.onLoad();
+            callBacks.onChainLoad();
 
         // Start monitor thread
         if(mMonitorThread == null || !mMonitorThread.isAlive())
@@ -312,7 +333,7 @@ public class BitcoinService extends Service
         if(mIsStopped)
             return;
 
-        boolean isLoaded = mBitcoin.isLoaded();
+        boolean isChainLoaded = mBitcoin.chainIsLoaded();
         boolean isInSync = mBitcoin.isInSync();
         int merkleHeight = mBitcoin.merkleHeight();
         int blockHeight = mBitcoin.blockHeight();
@@ -344,7 +365,7 @@ public class BitcoinService extends Service
         int max = 0;
         int progress = 0;
         boolean indeterminate = false;
-        if(!isLoaded)
+        if(!isChainLoaded)
         {
             indeterminate = true;
             builder.setContentText(getString(R.string.loading_for_synchronize));

@@ -53,21 +53,28 @@ public class Transaction
         else
             amountText.setTextColor(pContext.getResources().getColor(R.color.colorNegative));
 
-        long diff = (System.currentTimeMillis() / 1000) - date;
-        if(diff < 60)
-            ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
-              "%d secs", diff));
-        else if(diff < 3600)
-            ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
-              "%d mins", diff / 60));
-        else if(diff < 86400)
-            ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
-              "%d hrs", diff / 3600));
+        if(count == -1)
+            ((TextView)pView.findViewById(R.id.time)).setText(pContext.getString(R.string.not_available_abbreviation));
         else
-            ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
-              "%1$tY-%1$tm-%1$td", date * 1000));
+        {
+            long diff = (System.currentTimeMillis() / 1000) - date;
+            if(diff < 60)
+                ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(), "%d secs",
+                  diff));
+            else if(diff < 3600)
+                ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(), "%d mins",
+                  diff / 60));
+            else if(diff < 86400)
+                ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(), "%d hrs",
+                  diff / 3600));
+            else
+                ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
+                  "%1$tY-%1$tm-%1$td", date * 1000));
+        }
 
-        if(block == null)
+        if(count == -1)
+            ((TextView)pView.findViewById(R.id.count)).setText(pContext.getString(R.string.not_available_abbreviation));
+        else if(block == null)
             ((TextView)pView.findViewById(R.id.count)).setText(String.format(Locale.getDefault(), "%d", count));
         else if(count > 9)
             ((TextView)pView.findViewById(R.id.count)).setText(pContext.getString(R.string.nine_plus));

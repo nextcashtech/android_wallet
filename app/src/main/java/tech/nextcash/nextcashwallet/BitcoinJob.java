@@ -34,7 +34,12 @@ public class BitcoinJob extends JobService
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
             @Override
-            public void onLoad()
+            public void onWalletsLoad()
+            {
+            }
+
+            @Override
+            public void onChainLoad()
             {
             }
 

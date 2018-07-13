@@ -74,9 +74,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification,
       mRequestExpiresUpdater;
-    private enum Mode { LOADING, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET, IMPORT_WALLET,
-      VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, ENTER_PAYMENT_CODE, ENTER_PAYMENT_DETAILS,
-      AUTHORIZE, INFO, SETTINGS }
+    private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
+      IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, ENTER_PAYMENT_CODE,
+      ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, SETTINGS }
     private Mode mMode, mPreviousMode;
     private boolean mWalletsLoaded;
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private String mKeyToLoad, mSeed;
     private int mSeedEntropyBytes;
     private boolean mSeedIsRecovered, mSeedIsBackedUp;
-    private int mCurrentWalletIndex;
+    private int mCurrentWalletIndex, mWalletViewOffset;
     private boolean mSeedBackupOnly;
     private int mDerivationPathMethodToLoad;
     private double mFiatRate;
@@ -103,6 +103,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private int mTransactionToShowWalletIndex, mHistoryToShowWalletIndex;
     private String mTransactionToShow;
     private FullTransaction mTransaction;
+    private int mTransactionWalletIndex;
 
 
     public class TransactionRunnable implements Runnable
@@ -151,12 +152,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 updateRequestExpires();
             }
         };
-        mMode = Mode.LOADING;
-        mPreviousMode = Mode.LOADING;
+        mMode = Mode.LOADING_WALLETS;
+        mPreviousMode = Mode.LOADING_WALLETS;
         mAuthorizedTask = AuthorizedTask.NONE;
         mFinishOnBack = false;
         mFiatRate = 0.0;
         mCurrentWalletIndex = -1;
+        mWalletViewOffset = 0;
         mWalletsLoaded = false;
         mDontUpdatePaymentAmount = false;
         mSeedEntropyBytes = 0;
@@ -166,7 +168,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
             @Override
-            public void onLoad()
+            public void onWalletsLoad()
             {
                 runOnUiThread(new Runnable()
                 {
@@ -174,6 +176,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     public void run()
                     {
                         updateWallets();
+                        displayWallets();
                         updateStatus();
                         if(mTransactionToShow != null)
                             openTransaction(mTransactionToShowWalletIndex, mTransactionToShow);
@@ -183,6 +186,22 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             mHistoryToShowWalletIndex = -1;
                             displayWalletHistory();
                         }
+                    }
+                });
+            }
+
+            @Override
+            public void onChainLoad()
+            {
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        updateWallets();
+                        updateStatus();
+                        if(mMode == Mode.TRANSACTION && mTransaction != null)
+                            openTransaction(mTransactionWalletIndex, mTransaction.hash); // Reload
                     }
                 });
             }
@@ -277,7 +296,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     break;
                 case ACTION_DISPLAY_WALLETS:
                     Log.i(logTag, "Display wallets action received");
-                    if(mMode != Mode.LOADING)
+                    if(mMode != Mode.LOADING_WALLETS)
                         displayWallets();
                     break;
                 case ACTION_DISPLAY_TRANSACTION:
@@ -319,7 +338,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 case ACTION_CLEAR_PAYMENT:
                     Log.i(logTag, "Clear payment action received");
                     mPaymentRequest = null;
-                    if(mMode != Mode.LOADING)
+                    if(mMode != Mode.LOADING_WALLETS)
                         displayWallets();
                     break;
                 }
@@ -376,8 +395,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(intent != null)
             handleIntent(intent);
 
-        if(mBitcoin.isLoaded())
-            mServiceCallBacks.onLoad();
+        if(mBitcoin.walletsAreLoaded())
+            mServiceCallBacks.onWalletsLoad();
+
+        if(mBitcoin.chainIsLoaded())
+            mServiceCallBacks.onChainLoad();
     }
 
     private void startBitcoinService()
@@ -468,7 +490,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(action != null && action.equals("Transaction") &&
           extras != null && extras.containsKey("Wallet") && extras.containsKey("Transaction"))
         {
-            if(mBitcoin.isLoaded())
+            if(mBitcoin.walletsAreLoaded())
                 openTransaction(extras.getInt("Wallet"), extras.getString("Transaction"));
             else
             {
@@ -494,7 +516,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         switch(mMode)
         {
-            case LOADING:
+            case LOADING_WALLETS:
+                break;
+            case LOADING_CHAIN:
                 break;
             case IN_PROGRESS:
                 break;
@@ -631,29 +655,32 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case 0: // Inactive
                 status.setText(R.string.inactive);
                 break;
-            case 1: // Loading
-                status.setText(R.string.loading);
-                if(mMode != Mode.LOADING && mMode != Mode.SETTINGS && mMode != Mode.INFO)
+            case 1: // Loading Wallets
+                status.setText(R.string.loading_wallets);
+                if(mMode != Mode.LOADING_WALLETS && mMode != Mode.SETTINGS && mMode != Mode.INFO)
                 {
                     findViewById(R.id.wallets).setVisibility(View.GONE);
                     findViewById(R.id.dialog).setVisibility(View.GONE);
                     findViewById(R.id.progress).setVisibility(View.VISIBLE);
-                    mMode = Mode.LOADING;
+                    mMode = Mode.LOADING_WALLETS;
                 }
                 break;
-            case 2: // Finding peers
+            case 2: // Loading Chain
+                status.setText(R.string.loading_chain);
+                break;
+            case 3: // Finding peers
                 status.setText(R.string.finding_peers);
                 break;
-            case 3: // Connecting to peers
+            case 4: // Connecting to peers
                 status.setText(R.string.connecting_to_peers);
                 break;
-            case 4: // Synchronizing
+            case 5: // Synchronizing
                 status.setText(R.string.looking_for_blocks);
                 break;
-            case 5: // Synchronized
+            case 6: // Synchronized
                 status.setText(R.string.synchronized_text);
                 break;
-            case 6: // Finding Transactions
+            case 7: // Finding Transactions
                 status.setText(R.string.looking_for_transactions);
                 break;
         }
@@ -667,14 +694,30 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         else
             exchangeRate.setText(String.format(Locale.getDefault(), "1 BCH = $%,d USD", (int)fiatRate));
 
-        boolean isLoaded = mBitcoin.isLoaded();
+        boolean areWalletsLoaded = mBitcoin.walletsAreLoaded();
+        boolean isChainLoaded = mBitcoin.chainIsLoaded();
         int merkleHeight = mBitcoin.merkleHeight();
         int blockHeight = mBitcoin.blockHeight();
         TextView merkleBlocks = findViewById(R.id.merkleBlockHeight);
         TextView blocks = findViewById(R.id.blockHeight);
         TextView peerCountField = findViewById(R.id.peerCount);
         TextView blocksLabel = findViewById(R.id.blocksLabel);
-        if(isLoaded)
+        if(!areWalletsLoaded)
+        {
+            merkleBlocks.setText(String.format(Locale.getDefault(), "%,d", merkleHeight));
+            merkleBlocks.setTextColor(getResources().getColor(R.color.textWarning));
+
+            blocks.setText("-");
+            blocks.setTextColor(Color.BLACK);
+            blocksLabel.setTextColor(Color.BLACK);
+
+            peerCountField.setText(String.format("- %s", getString(R.string.peers)));
+            peerCountField.setTextColor(Color.BLACK);
+
+            if(mMode == Mode.LOADING_WALLETS)
+                displayWallets();
+        }
+        else if(isChainLoaded)
         {
             merkleBlocks.setText(String.format(Locale.getDefault(), "%,d", merkleHeight));
 
@@ -705,9 +748,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 peerCountField.setTextColor(getResources().getColor(R.color.textWarning));
             else
                 peerCountField.setTextColor(getResources().getColor(R.color.textPositive));
-
-            if(mMode == Mode.LOADING)
-                displayWallets();
         }
         else
         {
@@ -718,13 +758,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             blocksLabel.setTextColor(Color.BLACK);
             peerCountField.setText(String.format("- %s", getString(R.string.peers)));
             peerCountField.setTextColor(Color.BLACK);
-            if(mMode != Mode.LOADING && mMode != Mode.SETTINGS && mMode != Mode.INFO)
-            {
-                findViewById(R.id.wallets).setVisibility(View.GONE);
-                findViewById(R.id.dialog).setVisibility(View.GONE);
-                findViewById(R.id.progress).setVisibility(View.VISIBLE);
-                mMode = Mode.LOADING;
-            }
         }
 
         if(mBitcoin.initialBlockDownloadIsComplete())
@@ -788,20 +821,40 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public synchronized void updateWallets()
     {
-        if(!mBitcoin.isLoaded())
+        if(!mBitcoin.walletsAreLoaded())
             return;
 
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup walletsView = findViewById(R.id.wallets), transactions;
+        View chainLoadingView = walletsView.findViewById(R.id.chainLoadingProgress);
+        View initialBlockDownloadView = walletsView.findViewById(R.id.initialBlockDownloadMessage);
         Wallet[] wallets;
         boolean rebuildNeeded;
         View walletView;
-        int index;
+        int walletIndex;
 
         synchronized(mBitcoin)
         {
             wallets = mBitcoin.wallets();
             rebuildNeeded = mBitcoin.walletsModified || !mWalletsLoaded;
+            if(!rebuildNeeded)
+            {
+                if(mBitcoin.chainIsLoaded())
+                {
+                    if(chainLoadingView != null)
+                        rebuildNeeded = true;
+                }
+                else if(chainLoadingView == null)
+                    rebuildNeeded = true;
+
+                if(mBitcoin.initialBlockDownloadIsComplete())
+                {
+                    if(initialBlockDownloadView != null)
+                        rebuildNeeded = true;
+                }
+                else if(initialBlockDownloadView == null)
+                    rebuildNeeded = true;
+            }
             mBitcoin.walletsModified = false;
         }
 
@@ -813,28 +866,35 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             // Rebuild all wallets
             walletsView.removeAllViews();
-
-            // Add a view for each wallet
-            for(index = 0; index < wallets.length; index++)
-            {
-                walletView = inflater.inflate(R.layout.wallet_item, walletsView, false);
-                walletView.setTag(index);
-                walletsView.addView(walletView);
-            }
-
+            if(!mBitcoin.chainIsLoaded())
+                inflater.inflate(R.layout.block_chain_loading, walletsView, true);
             if(!mBitcoin.initialBlockDownloadIsComplete())
                 inflater.inflate(R.layout.initial_block_download_message, walletsView, true);
+
+            // Add a view for each wallet
+            for(walletIndex = 0; walletIndex < wallets.length; walletIndex++)
+            {
+                walletView = inflater.inflate(R.layout.wallet_item, walletsView, false);
+                walletView.setTag(walletIndex);
+                walletsView.addView(walletView);
+            }
         }
 
         Log.i(logTag, String.format("Updating %d wallets", wallets.length));
 
-        index = 0;
+        walletIndex = 0;
+        mWalletViewOffset = 0;
+        if(!mBitcoin.chainIsLoaded())
+            mWalletViewOffset++;
+        if(!mBitcoin.initialBlockDownloadIsComplete())
+            mWalletViewOffset++;
+
         for(Wallet wallet : wallets)
         {
             if(wallet == null)
                 break;
 
-            walletView = walletsView.getChildAt(index);
+            walletView = walletsView.getChildAt(walletIndex + mWalletViewOffset);
             if(walletView == null)
                 break;
 
@@ -852,11 +912,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(!wallet.isPrivate)
             {
                 walletView.findViewById(R.id.walletLocked).setVisibility(View.VISIBLE);
-                walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
                 walletView.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
             }
 
-            if(!mBitcoin.initialBlockDownloadIsComplete())
+            if(wallet.isPrivate && mBitcoin.chainIsLoaded() && mBitcoin.initialBlockDownloadIsComplete())
+                walletView.findViewById(R.id.walletSend).setVisibility(View.VISIBLE);
+            else
                 walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
 
             if(!wallet.isSynchronized)
@@ -889,7 +950,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             alignTransactions(transactions);
 
-            index++;
+            if(mCurrentWalletIndex == walletIndex)
+            {
+                walletView.findViewById(R.id.walletDetails).setVisibility(View.VISIBLE);
+                ((ImageView)walletView.findViewById(R.id.walletExpand))
+                  .setImageResource(R.drawable.ic_expand_less_white_36dp);
+            }
+            else
+            {
+                walletView.findViewById(R.id.walletDetails).setVisibility(View.GONE);
+                ((ImageView)walletView.findViewById(R.id.walletExpand))
+                  .setImageResource(R.drawable.ic_expand_more_white_36dp);
+            }
+
+            walletIndex++;
         }
 
         if(rebuildNeeded)
@@ -1450,6 +1524,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         findViewById(R.id.progress).setVisibility(View.VISIBLE);
 
         mTransaction = new FullTransaction();
+        mTransactionWalletIndex = pWalletOffset;
         GetTransactionTask task = new GetTransactionTask(getApplicationContext(), mBitcoin, pWalletOffset,
           pTransactionHash, mTransaction);
         task.execute();
@@ -1485,17 +1560,25 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             ((TextView)transactionView.findViewById(R.id.statusHeading)).setText(R.string.confirmed_in_block);
             ((TextView)transactionView.findViewById(R.id.blockID)).setText(mTransaction.block);
-            ((TextView)transactionView.findViewById(R.id.transactionStatus))
-              .setText(String.format(Locale.getDefault(), "%,d %s (%3$tY-%3$tm-%3$td %3$tH:%3$tM)",
-                mTransaction.count, getString(R.string.confirmations), mTransaction.date * 1000));
+            if(mTransaction.count == -1)
+                ((TextView)transactionView.findViewById(R.id.transactionStatus))
+                  .setText(getString(R.string.not_available_abbreviation));
+            else
+                ((TextView)transactionView.findViewById(R.id.transactionStatus))
+                  .setText(String.format(Locale.getDefault(), "%,d %s (%3$tY-%3$tm-%3$td %3$tH:%3$tM)",
+                    mTransaction.count, getString(R.string.confirmations), mTransaction.date * 1000));
         }
         else
         {
             ((TextView)transactionView.findViewById(R.id.statusHeading)).setText(R.string.unconfirmed);
             transactionView.findViewById(R.id.blockIDScroll).setVisibility(View.GONE);
-            ((TextView)transactionView.findViewById(R.id.transactionStatus))
-              .setText(String.format(Locale.getDefault(), "%s %,d %s", getString(R.string.validated_by),
-                mTransaction.count, getString(R.string.peers_period)));
+            if(mTransaction.count == -1)
+                ((TextView)transactionView.findViewById(R.id.transactionStatus))
+                  .setText(getString(R.string.not_available_abbreviation));
+            else
+                ((TextView)transactionView.findViewById(R.id.transactionStatus))
+                  .setText(String.format(Locale.getDefault(), "%s %,d %s", getString(R.string.validated_by),
+                    mTransaction.count, getString(R.string.peers_period)));
         }
 
         ((TextView)transactionView.findViewById(R.id.id)).setText(mTransaction.hash);
@@ -2949,7 +3032,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.walletHeader: // Expand/Compress wallet
         {
-            ViewGroup walletView = (ViewGroup)pView.getParent();
+            ViewGroup walletView = (ViewGroup)pView.getParent(); // Wallet is parent of wallet header
             if(walletView != null)
             {
                 View walletDetails = walletView.findViewById(R.id.walletDetails);
@@ -2973,7 +3056,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             for(int index = 0; index < walletCount; ++index)
                                 if(mCurrentWalletIndex != index)
                                 {
-                                    View otherWalletView = wallets.getChildAt(index);
+                                    View otherWalletView = wallets.getChildAt(index + mWalletViewOffset);
                                     otherWalletView.findViewById(R.id.walletDetails).setVisibility(View.GONE);
                                     ((ImageView)otherWalletView.findViewById(R.id.walletExpand))
                                       .setImageResource(R.drawable.ic_expand_more_white_36dp);
@@ -2985,6 +3068,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         ((ImageView)pView.findViewById(R.id.walletExpand))
                           .setImageResource(R.drawable.ic_expand_more_white_36dp);
                         walletDetails.setVisibility(View.GONE);
+
+                        mCurrentWalletIndex = -1;
                     }
                 }
             }
@@ -3089,7 +3174,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         switch(mMode)
         {
-        case LOADING:
+        case LOADING_WALLETS:
+        case LOADING_CHAIN:
         case WALLETS:
             if(mFinishOnBack)
             {
