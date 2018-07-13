@@ -16,6 +16,8 @@
     <color name="rowShade">#feee</color>
     <color name="warningBackground">#fec1</color>
     <color name="warningText">#fc66</color>
+    <color name="messageBackground">#ffff</color>
+    <color name="messageText">#f000</color>
     <color name="highlight">#fffa</color>
     <color name="textNegative">#fa21</color>
     <color name="textNegativeLight">#f810</color>

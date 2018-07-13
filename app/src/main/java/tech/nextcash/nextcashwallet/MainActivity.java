@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static final String ACTIVITY_ACTION = "tech.nextcash.nextcashwallet.ACTIVITY_ACTION";
     public static final String ACTION_MESSAGE_ID_FIELD = "MESSAGE_ID";
     public static final String ACTION_MESSAGE_STRING_FIELD = "MESSAGE_STRING";
+    public static final String ACTION_MESSAGE_PERSISTENT_FIELD = "MESSAGE_PERSISTENT";
     public static final String ACTION_SHOW_MESSAGE = "SHOW_MESSAGE";
     public static final String ACTION_DISPLAY_WALLETS = "DISPLAY_WALLETS";
     public static final String ACTION_DISPLAY_TRANSACTION = "DISPLAY_TRANSACTION";
@@ -104,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private String mTransactionToShow;
     private FullTransaction mTransaction;
     private int mTransactionWalletIndex;
+    private ArrayList<String> mPersistentMessages;
 
 
     public class TransactionRunnable implements Runnable
@@ -164,6 +166,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mSeedEntropyBytes = 0;
         mTransactionToShowWalletIndex = -1;
         mHistoryToShowWalletIndex = -1;
+        mPersistentMessages = new ArrayList<String>();
 
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
@@ -282,8 +285,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                     if(message != null)
                     {
-                        Log.i(logTag, String.format("Message contained in action : %s", message));
-                        showMessage(message, 2000);
+                        if(pIntent.getExtras().containsKey(MainActivity.ACTION_MESSAGE_PERSISTENT_FIELD))
+                        {
+                            Log.i(logTag, String.format("Persistent message contained in action : %s", message));
+                            showPersistentMessage(message);
+                        }
+                        else
+                        {
+                            Log.i(logTag, String.format("Message contained in action : %s", message));
+                            showMessage(message, 2000);
+                        }
                     }
                 }
 
@@ -866,6 +877,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             // Rebuild all wallets
             walletsView.removeAllViews();
+
+            // Add all messages;
+            View messageView;
+            for(String message : mPersistentMessages)
+            {
+                messageView = inflater.inflate(R.layout.persistent_message, walletsView, false);
+                ((TextView)messageView.findViewById(R.id.messageText)).setText(message);
+                walletsView.addView(messageView, 0);
+            }
+
             if(!mBitcoin.chainIsLoaded())
                 inflater.inflate(R.layout.block_chain_loading, walletsView, true);
             if(!mBitcoin.initialBlockDownloadIsComplete())
@@ -882,7 +903,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         Log.i(logTag, String.format("Updating %d wallets", wallets.length));
 
-        walletIndex = 0;
+        walletIndex = mPersistentMessages.size();
         mWalletViewOffset = 0;
         if(!mBitcoin.chainIsLoaded())
             mWalletViewOffset++;
@@ -3157,6 +3178,28 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 startActivity(settingsIntent);
             }
         }
+        case R.id.closeMessage:
+            synchronized(this)
+            {
+                View messageView = (View)pView.getParent();
+                ViewGroup walletsView = findViewById(R.id.wallets);
+                if(messageView != null && walletsView != null)
+                {
+                    View otherMessageView;
+                    for(int index = 0; index < mPersistentMessages.size(); index++)
+                    {
+                        otherMessageView = walletsView.getChildAt(index);
+                        if(otherMessageView == messageView)
+                        {
+                            mPersistentMessages.remove(index);
+                            break;
+                        }
+                    }
+                    walletsView.removeView(messageView);
+                    mWalletViewOffset--;
+                }
+            }
+            break;
         default:
             break;
         }
@@ -3167,6 +3210,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ((TextView)findViewById(R.id.notificationText)).setText(pText);
         findViewById(R.id.notification).setVisibility(View.VISIBLE);
         mDelayHandler.postDelayed(mClearNotification, pDelay);
+    }
+
+    public synchronized void showPersistentMessage(String pText)
+    {
+        mPersistentMessages.add(pText);
+        ViewGroup walletsView = findViewById(R.id.wallets);
+        LayoutInflater inflater = getLayoutInflater();
+        View messageView = inflater.inflate(R.layout.persistent_message, walletsView, false);
+        ((TextView)messageView.findViewById(R.id.messageText)).setText(pText);
+        walletsView.addView(messageView, 0);
+        mWalletViewOffset++;
     }
 
     @Override

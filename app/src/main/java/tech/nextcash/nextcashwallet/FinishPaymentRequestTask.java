@@ -214,7 +214,10 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
     {
         Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
         if(mMessage != null)
+        {
             finishIntent.putExtra(MainActivity.ACTION_MESSAGE_STRING_FIELD, mMessage);
+            finishIntent.putExtra(MainActivity.ACTION_MESSAGE_PERSISTENT_FIELD, true);
+        }
         finishIntent.setAction(MainActivity.ACTION_CLEAR_PAYMENT);
 
         mContext.sendBroadcast(finishIntent);
