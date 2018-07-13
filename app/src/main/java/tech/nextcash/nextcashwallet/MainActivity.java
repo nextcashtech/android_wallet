@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static final String ACTION_SHOW_MESSAGE = "SHOW_MESSAGE";
     public static final String ACTION_DISPLAY_WALLETS = "DISPLAY_WALLETS";
     public static final String ACTION_DISPLAY_TRANSACTION = "DISPLAY_TRANSACTION";
+    public static final String ACTION_TRANSACTION_NOT_FOUND = "TRANSACTION_NOT_FOUND";
     public static final String ACTION_DISPLAY_DIALOG = "DISPLAY_DIALOG";
     public static final String ACTION_DISPLAY_SETTINGS = "DISPLAY_SETTINGS";
     public static final String ACTION_DISPLAY_INFO = "DISPLAY_INFO";
@@ -74,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification,
-      mRequestExpiresUpdater;
+      mRequestExpiresUpdater, mRequestTransactionRunnable;
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
       IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, ENTER_PAYMENT_CODE,
       ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, SETTINGS }
@@ -101,8 +102,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Bitmap mQRCode;
     private boolean mDontUpdatePaymentAmount;
     private TextWatcher mSeedWordWatcher, mAmountWatcher, mRequestAmountWatcher;
-    private int mTransactionToShowWalletIndex, mHistoryToShowWalletIndex;
-    private String mTransactionToShow;
+    private int mRequestedTransactionWalletIndex, mHistoryToShowWalletIndex;
+    private String mRequestedTransactionID;
+    private int mRequestedTransactionAttempts;
     private FullTransaction mTransaction;
     private int mTransactionWalletIndex;
     private ArrayList<String> mPersistentMessages;
@@ -154,6 +156,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 updateRequestExpires();
             }
         };
+        mRequestTransactionRunnable = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                openTransaction(mRequestedTransactionWalletIndex, mRequestedTransactionID);
+            }
+        };
         mMode = Mode.LOADING_WALLETS;
         mPreviousMode = Mode.LOADING_WALLETS;
         mAuthorizedTask = AuthorizedTask.NONE;
@@ -164,9 +174,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mWalletsLoaded = false;
         mDontUpdatePaymentAmount = false;
         mSeedEntropyBytes = 0;
-        mTransactionToShowWalletIndex = -1;
+        mRequestedTransactionWalletIndex = -1;
         mHistoryToShowWalletIndex = -1;
         mPersistentMessages = new ArrayList<String>();
+        mRequestedTransactionAttempts = 0;
 
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
@@ -181,8 +192,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         updateWallets();
                         displayWallets();
                         updateStatus();
-                        if(mTransactionToShow != null)
-                            openTransaction(mTransactionToShowWalletIndex, mTransactionToShow);
+                        if(mRequestedTransactionID != null)
+                            openTransaction(mRequestedTransactionWalletIndex, mRequestedTransactionID);
                         else if(mHistoryToShowWalletIndex != -1)
                         {
                             mCurrentWalletIndex = mHistoryToShowWalletIndex;
@@ -307,12 +318,29 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     break;
                 case ACTION_DISPLAY_WALLETS:
                     Log.i(logTag, "Display wallets action received");
-                    if(mMode != Mode.LOADING_WALLETS)
+                    if(mBitcoin.walletsAreLoaded())
                         displayWallets();
                     break;
                 case ACTION_DISPLAY_TRANSACTION:
                     Log.i(logTag, "Display transaction action received");
                     displayTransaction();
+                    break;
+                case ACTION_TRANSACTION_NOT_FOUND:
+                    Log.i(logTag, "Transaction not found action received");
+
+                    if(mRequestedTransactionAttempts > 10)
+                    {
+                        showMessage(getString(R.string.unable_to_find_transaction), 2000);
+                        if(mBitcoin.walletsAreLoaded())
+                            displayWallets();
+                    }
+                    else
+                    {
+                        mDelayHandler.removeCallbacks(mRequestTransactionRunnable);
+                        mDelayHandler.postDelayed(mRequestTransactionRunnable, 2000);
+                        mRequestedTransactionAttempts++;
+                    }
+
                     break;
                 case ACTION_DISPLAY_DIALOG:
                     Log.i(logTag, "Display dialog action received");
@@ -349,7 +377,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 case ACTION_CLEAR_PAYMENT:
                     Log.i(logTag, "Clear payment action received");
                     mPaymentRequest = null;
-                    if(mMode != Mode.LOADING_WALLETS)
+                    if(mBitcoin.walletsAreLoaded())
                         displayWallets();
                     break;
                 }
@@ -360,6 +388,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         filter.addAction(ACTION_SHOW_MESSAGE);
         filter.addAction(ACTION_DISPLAY_WALLETS);
         filter.addAction(ACTION_DISPLAY_TRANSACTION);
+        filter.addAction(ACTION_TRANSACTION_NOT_FOUND);
         filter.addAction(ACTION_DISPLAY_DIALOG);
         filter.addAction(ACTION_DISPLAY_SETTINGS);
         filter.addAction(ACTION_DISPLAY_INFO);
@@ -385,8 +414,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 case "Transaction":
                     if(pSavedInstanceState.containsKey("Transaction") && pSavedInstanceState.containsKey("Wallet"))
                     {
-                        mTransactionToShowWalletIndex = pSavedInstanceState.getInt("Wallet");
-                        mTransactionToShow = pSavedInstanceState.getString("Transaction");
+                        mRequestedTransactionWalletIndex = pSavedInstanceState.getInt("Wallet");
+                        mRequestedTransactionID = pSavedInstanceState.getString("Transaction");
                     }
                     break;
                 case "History":
@@ -493,7 +522,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
-    public void handleIntent(Intent pIntent)
+    public synchronized void handleIntent(Intent pIntent)
     {
         String action = pIntent.getAction();
         Bundle extras = pIntent.getExtras();
@@ -505,8 +534,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 openTransaction(extras.getInt("Wallet"), extras.getString("Transaction"));
             else
             {
-                mTransactionToShowWalletIndex = extras.getInt("Wallet");
-                mTransactionToShow = extras.getString("Transaction");
+                mRequestedTransactionWalletIndex = extras.getInt("Wallet");
+                mRequestedTransactionID = extras.getString("Transaction");
             }
         }
 
@@ -1290,15 +1319,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         if(mPaymentRequest.secureURL != null && mPaymentRequest.paymentScript == null)
         {
-            ProcessPaymentRequestTask processPaymentRequestTask = new ProcessPaymentRequestTask(this,
-              mPaymentRequest);
-            processPaymentRequestTask.execute();
-
             findViewById(R.id.wallets).setVisibility(View.GONE);
             findViewById(R.id.statusBar).setVisibility(View.GONE);
             findViewById(R.id.dialog).setVisibility(View.GONE);
             findViewById(R.id.progress).setVisibility(View.VISIBLE);
-            mMode = Mode.ENTER_PAYMENT_DETAILS;
+            mMode = Mode.IN_PROGRESS;
+
+            ProcessPaymentRequestTask processPaymentRequestTask = new ProcessPaymentRequestTask(this,
+              mPaymentRequest);
+            processPaymentRequestTask.execute();
             return;
         }
 
@@ -1536,19 +1565,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public synchronized void openTransaction(int pWalletOffset, String pTransactionHash)
     {
-        mTransactionToShowWalletIndex = 0;
-        mTransactionToShow = null;
+        if(mRequestedTransactionID != null && !mRequestedTransactionID.equals(pTransactionHash))
+            mRequestedTransactionAttempts = 0;
+        mRequestedTransactionWalletIndex = pWalletOffset;
+        mRequestedTransactionID = pTransactionHash;
 
         findViewById(R.id.wallets).setVisibility(View.GONE);
         findViewById(R.id.dialog).setVisibility(View.GONE);
         findViewById(R.id.statusBar).setVisibility(View.GONE);
         findViewById(R.id.progress).setVisibility(View.VISIBLE);
+        mMode = Mode.IN_PROGRESS;
 
         mTransaction = new FullTransaction();
         mTransactionWalletIndex = pWalletOffset;
         GetTransactionTask task = new GetTransactionTask(getApplicationContext(), mBitcoin, pWalletOffset,
           pTransactionHash, mTransaction);
         task.execute();
+
     }
 
     public synchronized void displayTransaction()

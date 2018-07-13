@@ -23,6 +23,7 @@
         The block chain is still loading.
         Some functions will be disabled until it finishes.
     </string>
+    <string name="unable_to_find_transaction">Unable to find transaction</string>
     <string name="synchronized_text">Synchronized</string>
     <string name="finding_peers">Finding Peers</string>
     <string name="connecting_to_peers">Connecting to Peers</string>

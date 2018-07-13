@@ -26,15 +26,20 @@ public class GetTransactionTask extends AsyncTask<String, Integer, Integer>
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        mBitcoin.getTransaction(mWalletOffset, mID, mTransaction);
-        return 0;
+        if(mBitcoin.getTransaction(mWalletOffset, mID, mTransaction))
+            return 0;
+        else
+            return 1;
     }
 
     @Override
     protected void onPostExecute(Integer pResult)
     {
         Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
-        finishIntent.setAction(MainActivity.ACTION_DISPLAY_TRANSACTION);
+        if(pResult == 0)
+            finishIntent.setAction(MainActivity.ACTION_DISPLAY_TRANSACTION);
+        else
+            finishIntent.setAction(MainActivity.ACTION_TRANSACTION_NOT_FOUND);
 
         mContext.sendBroadcast(finishIntent);
         super.onPostExecute(pResult);
