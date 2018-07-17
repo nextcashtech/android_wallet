@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -129,13 +130,75 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
         return result;
     }
 
+    private double getCoinLib()
+    {
+        URL url;
+        try
+        {
+            url = new URL("https://coinlib.io/api/v1/coin?key=a4c3d52c60dc7856&pref=USD&symbol=BCH");
+        }
+        catch(MalformedURLException pException)
+        {
+            Log.w(logTag, String.format("Exception on http request task : %s", pException.toString()));
+            return 0.0;
+        }
+
+        double result = 0.0;
+        HttpsURLConnection connection = null;
+
+        try
+        {
+            connection = (HttpsURLConnection)url.openConnection();
+            if(connection != null)
+            {
+                int responseCode = connection.getResponseCode();
+                if(responseCode < 300)
+                {
+                    BufferedReader response = new BufferedReader(new InputStreamReader(
+                      connection.getInputStream()));
+                    String inputLine, text = "";
+                    while ((inputLine = response.readLine()) != null)
+                        text += inputLine + '\n';
+
+                    JSONObject json = new JSONObject(text);
+                    result = json.getDouble("price");
+                    Log.i(logTag, String.format(Locale.getDefault(), "CoinLib rate found : %,.2f",
+                      result));
+                }
+            }
+        }
+        catch(IOException|JSONException pException)
+        {
+            Log.w(logTag, String.format("Exception on http request task : %s", pException.toString()));
+        }
+        finally
+        {
+            if(connection != null)
+                connection.disconnect();
+        }
+
+        return result;
+    }
+
     @Override
     protected Double doInBackground(String... pValues)
     {
         double coinMarketCap = getCoinMarketCap();
         double coinBase = getCoinBase();
+        double coinLib = getCoinLib();
 
-        if(coinMarketCap == 0.0 && coinBase == 0.0)
+        ArrayList<Double> prices = new ArrayList<>();
+
+        if(coinMarketCap != 0.0)
+            prices.add(coinMarketCap);
+
+        if(coinBase != 0.0)
+            prices.add(coinBase);
+
+        if(coinLib != 0.0)
+            prices.add(coinLib);
+
+        if(prices.size() == 0)
             return null;
 
         if(coinBase == 0.0)
@@ -144,10 +207,13 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
         if(coinMarketCap == 0.0)
             return coinBase;
 
-        if(Math.abs(coinMarketCap - coinBase) / coinBase > 0.1)
-            return 0.0;
+        // TODO Add statistical check to exclude outliers
 
-        return (coinBase + coinMarketCap) / 2.0;
+        double total = 0.0;
+        for(Double price : prices)
+            total += price;
+
+        return total / (double)prices.size();
     }
 
     @Override

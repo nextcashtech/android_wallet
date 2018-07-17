@@ -313,7 +313,20 @@
     <string name="information">Information</string>
     <string name="title_node_user_agent">Node User Agent</string>
     <string name="nextcash_link">https://nextcash.tech</string>
-    <string name="title_network_name">Network Name</string>
+    <string name="title_network">Network</string>
+    <string name="title_pricing">Pricing Sources</string>
+    <string name="pricing_description">
+        Prices (Exchange Rates) are averaged from the sources below.
+    </string>
+    <string name="pricing_coinbase">
+        CoinBase https://www.coinbase.com/charts
+    </string>
+    <string name="pricing_coinmarketcap">
+        CoinMarketCap https://coinmarketcap.com/
+    </string>
+    <string name="pricing_coinlib">
+        CoinLib https://coinlib.io/
+    </string>
     <string name="title_open_source">Open Source Licenses</string>
     <string name="secp256k1_library">
         Cryptographic Library - secp256k1 Copyright &#169; 2013 Pieter Wuille

@@ -20,7 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:text="@string/title_node_user_agent"
-        android:textStyle="bold"/>
+        style="@style/SubHeadingText"/>
 
     <TextView
         android:id="@+id/nodeUserAgentValue"
@@ -38,20 +38,72 @@
         android:layout_marginLeft="20dp"
         android:layout_marginRight="10dp"/>
 
-    <TextView
-        android:id="@+id/networkTitle"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:text="@string/title_network_name"
-        android:textStyle="bold"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/networkTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/title_network"
+            style="@style/SubHeadingText"/>
+
+        <TextView
+            android:id="@+id/networkValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="10dp"
+            android:text="MainNet"/>
+
+    </LinearLayout>
 
     <TextView
-        android:id="@+id/networkValue"
+        android:id="@+id/pricingTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/title_pricing"
+        style="@style/SubHeadingText"/>
+
+    <TextView
+        android:id="@+id/pricingDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pricing_description"/>
+
+    <TextView
+        android:id="@+id/pricingCoinBase"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pricing_coinbase"
+        android:autoLink="web"
         android:layout_marginLeft="20dp"
         android:layout_marginRight="10dp"/>
+
+    <TextView
+        android:id="@+id/pricingCoinMarketCap"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pricing_coinmarketcap"
+        android:autoLink="web"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="10dp"/>
+
+    <TextView
+        android:id="@+id/pricingCoinLib"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pricing_coinlib"
+        android:autoLink="web"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="10dp"/>
+
+
+
 
     <TextView
         android:id="@+id/openSourceTitle"
@@ -59,7 +111,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:text="@string/title_open_source"
-        android:textStyle="bold"/>
+        style="@style/SubHeadingText"/>
 
     <TextView
         android:id="@+id/openSourceLicense_1"
@@ -89,7 +141,8 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/primer_description"/>
+        android:text="@string/primer_description"
+        style="@style/SmallHeadingText"/>
 
     <TextView
         android:layout_width="match_parent"
