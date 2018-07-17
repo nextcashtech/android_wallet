@@ -103,6 +103,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private PaymentRequest mPaymentRequest;
     private Bitmap mQRCode;
     private boolean mDontUpdatePaymentAmount;
+    private boolean mDisplayPaymentView;
     private TextWatcher mSeedWordWatcher, mAmountWatcher, mRequestAmountWatcher;
     private int mRequestedTransactionWalletIndex, mHistoryToShowWalletIndex;
     private String mRequestedTransactionID;
@@ -174,6 +175,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mCurrentWalletIndex = -1;
         mWalletsNeedUpdated = false;
         mDontUpdatePaymentAmount = false;
+        mDisplayPaymentView = false;
         mSeedEntropyBytes = 0;
         mRequestedTransactionWalletIndex = -1;
         mHistoryToShowWalletIndex = -1;
@@ -432,12 +434,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             handleIntent(intent);
     }
 
-    private void startBitcoinService()
+    private synchronized void startBitcoinService()
     {
         if(!mServiceIsBound && !mServiceIsBinding)
         {
             Log.d(logTag, "Binding Bitcoin service");
             mServiceIsBinding = true;
+
+            // Go to loading wallets mode
+            findViewById(R.id.main).setVisibility(View.GONE);
+            findViewById(R.id.dialog).setVisibility(View.GONE);
+            findViewById(R.id.progress).setVisibility(View.VISIBLE);
+            findViewById(R.id.statusBar).setVisibility(View.VISIBLE);
+            mMode = Mode.LOADING_WALLETS;
+
             Intent intent = new Intent(this, BitcoinService.class);
             intent.putExtra("FinishMode", Bitcoin.FINISH_ON_REQUEST);
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -445,15 +455,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             else
                 startService(intent);
             bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-        }
-        else if(!mServiceIsBinding && !mBitcoin.isRunning())
-        {
-            Intent intent = new Intent(this, BitcoinService.class);
-            intent.putExtra("FinishMode", Bitcoin.FINISH_ON_REQUEST);
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                startForegroundService(intent);
-            else
-                startService(intent);
         }
         else
             mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
@@ -488,7 +489,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Update wallets
         mWalletsNeedUpdated = false; // Force rebuild of wallets
         updateWallets();
-        displayWallets();
         updateStatus();
         if(mRequestedTransactionID != null)
             openTransaction(mRequestedTransactionWalletIndex, mRequestedTransactionID);
@@ -497,6 +497,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mCurrentWalletIndex = mHistoryToShowWalletIndex;
             mHistoryToShowWalletIndex = -1;
             displayWalletHistory();
+        }
+        else if(mMode == Mode.LOADING_WALLETS)
+        {
+            if(mDisplayPaymentView)
+                displayEnterPaymentDetails();
+            else
+                displayWallets();
         }
 
         // Update footer
@@ -758,13 +765,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case 1: // Loading Wallets
                 status.setText(R.string.loading_wallets);
-                if(mMode != Mode.LOADING_WALLETS && mMode != Mode.SETTINGS && mMode != Mode.INFO)
-                {
-                    findViewById(R.id.main).setVisibility(View.GONE);
-                    findViewById(R.id.dialog).setVisibility(View.GONE);
-                    findViewById(R.id.progress).setVisibility(View.VISIBLE);
-                    mMode = Mode.LOADING_WALLETS;
-                }
                 break;
             case 2: // Loading Chain
                 status.setText(R.string.loading_chain);
@@ -786,14 +786,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
         }
 
-        double fiatRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
-        boolean exchangeRateUpdated = fiatRate != mExchangeRate;
         TextView exchangeRate = findViewById(R.id.exchangeRate);
-
-        if(fiatRate == 0.0)
+        if(mExchangeRate == 0.0)
             exchangeRate.setText("");
         else
-            exchangeRate.setText(String.format(Locale.getDefault(), "1 BCH = $%,d USD", (int)fiatRate));
+            exchangeRate.setText(String.format(Locale.getDefault(), "1 BCH = $%,d USD", (int)mExchangeRate));
 
         boolean areWalletsLoaded = mBitcoin.walletsAreLoaded();
         boolean isChainLoaded = mBitcoin.chainIsLoaded();
@@ -814,9 +811,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             peerCountField.setText(String.format("- %s", getString(R.string.peers)));
             peerCountField.setTextColor(Color.BLACK);
-
-            if(mMode == Mode.LOADING_WALLETS)
-                displayWallets();
         }
         else if(isChainLoaded)
         {
@@ -867,9 +861,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(ibdMessage != null)
                 ibdMessage.setVisibility(View.GONE);
         }
-
-        if(exchangeRateUpdated)
-            updateWallets();
 
         // Run again in 2 seconds
         mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
@@ -1229,14 +1220,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case IntentIntegrator.REQUEST_CODE:
                 if(pResultCode == RESULT_OK && pData != null)
                 {
+                    Log.i(logTag, String.format("Scan result received : %s", pData.getStringExtra("SCAN_RESULT")));
                     mPaymentRequest = mBitcoin.decodePaymentCode(pData.getStringExtra("SCAN_RESULT"));
                     if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
-                        displayEnterPaymentDetails();
+                        mDisplayPaymentView = true;
                     else
-                    {
                         showMessage(getString(R.string.failed_payment_code), 2000);
-                        displayWallets();
-                    }
                 }
                 break;
             default:
@@ -1328,6 +1317,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public synchronized void displayEnterPaymentDetails()
     {
+        mDisplayPaymentView = false;
+
         if(mPaymentRequest == null)
         {
             showMessage(getString(R.string.failed_payment_code), 2000);
@@ -2685,11 +2676,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(pendingCount > 0)
         {
             pView.findViewById(R.id.walletPendingTitle).setVisibility(View.VISIBLE);
+            pView.findViewById(R.id.walletPendingSubTitle).setVisibility(View.VISIBLE);
             pendingView.setVisibility(View.VISIBLE);
         }
         else
         {
             pView.findViewById(R.id.walletPendingTitle).setVisibility(View.GONE);
+            pView.findViewById(R.id.walletPendingSubTitle).setVisibility(View.GONE);
             pendingView.setVisibility(View.GONE);
         }
 
