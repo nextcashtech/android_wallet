@@ -1,5 +1,7 @@
 package tech.nextcash.nextcashwallet;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -21,11 +23,11 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
 {
     public static final String logTag = "FiatRateRequestTask";
 
-    private File mDirectory;
+    private Context mContext;
 
-    public FiatRateRequestTask(File pDirectory)
+    public FiatRateRequestTask(Context pContext)
     {
-        mDirectory = pDirectory;
+        mContext = pContext;
     }
 
     private double getCoinMarketCap()
@@ -152,7 +154,14 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
     protected void onPostExecute(Double pRate)
     {
         if(pRate != null && pRate != 0.0)
-            Settings.getInstance(mDirectory).setDoubleValue("usd_rate", pRate);
+        {
+            Settings.getInstance(mContext.getFilesDir()).setDoubleValue("usd_rate", pRate);
+
+            Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
+            finishIntent.setAction(MainActivity.ACTION_EXCHANGE_RATE_UPDATED);
+            finishIntent.putExtra(MainActivity.ACTION_EXCHANGE_RATE_FIELD, pRate);
+            mContext.sendBroadcast(finishIntent);
+        }
         super.onPostExecute(pRate);
     }
 }

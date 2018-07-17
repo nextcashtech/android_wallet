@@ -236,6 +236,12 @@ public class BitcoinService extends Service
 
     public void setCallBacks(CallBacks pCallBacks)
     {
+        if(mBitcoin.walletsAreLoaded())
+            pCallBacks.onWalletsLoad();
+
+        if(mBitcoin.chainIsLoaded())
+            pCallBacks.onChainLoad();
+
         CallBacks[] newCallBacks = new CallBacks[mCallBacks.length + 1];
         for(int offset = 0; offset < mCallBacks.length; offset++)
             newCallBacks[offset] = mCallBacks[offset];
@@ -264,7 +270,7 @@ public class BitcoinService extends Service
         mCallBacks = newCallBacks;
     }
 
-    public void onWalletsLoaded()
+    private synchronized void onWalletsLoaded()
     {
         mBitcoin.onWalletsLoaded();
         mStartMerkleHeight = mBitcoin.merkleHeight();
@@ -272,7 +278,7 @@ public class BitcoinService extends Service
             callBacks.onWalletsLoad();
     }
 
-    public void onChainLoaded()
+    private synchronized void onChainLoaded()
     {
         mBitcoin.onChainLoaded();
         mStartMerkleHeight = mBitcoin.merkleHeight();
@@ -289,7 +295,7 @@ public class BitcoinService extends Service
         }
     }
 
-    public void onFinished()
+    private void onFinished()
     {
         for(CallBacks callBacks : mCallBacks)
             callBacks.onFinish();
@@ -575,19 +581,11 @@ public class BitcoinService extends Service
     private void monitor()
     {
         String title;
-        int progressUpdate = 0;
 
         Log.i(logTag, "Starting monitoring.");
 
-        while(mBitcoin.isRunning())
+        while(!mIsStopped)
         {
-            progressUpdate++;
-            if(progressUpdate >= 5)
-            {
-                progressUpdate = 0;
-                updateProgressNotification();
-            }
-
             if(mBitcoin.update(false))
             {
                 int offset = 0;
@@ -646,6 +644,8 @@ public class BitcoinService extends Service
                     if(callBacks.onUpdate())
                         break;
             }
+
+            updateProgressNotification();
 
             try
             {
