@@ -110,12 +110,16 @@
         <item>SIMPLE</item>
     </string-array>
     <string name="expand_compress">Expand/Compress</string>
+    <string name="pending">Pending</string>
     <string name="send">Send</string>
     <string name="receive">Receive</string>
     <string name="add_amount">Add Amount</string>
     <string name="history">History</string>
     <string name="edit">Edit</string>
     <string name="pending_transactions">Unconfirmed Transactions</string>
+    <string name="pending_transactions_description">
+        These transactions are not in the block chain yet and are not reflected in your balance.
+    </string>
     <string name="recent_transactions">Recent Transactions</string>
     <string name="confirmed_transactions">Confirmed Transactions</string>
     <string name="no_transactions">No Transactions</string>

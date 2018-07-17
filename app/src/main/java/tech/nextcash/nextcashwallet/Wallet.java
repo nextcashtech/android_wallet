@@ -28,6 +28,14 @@ public class Wallet
         id = mNextID++;
     }
 
+    public boolean hasPending()
+    {
+        for(Transaction transaction : transactions)
+            if(transaction.block == null)
+                return true;
+        return false;
+    }
+
     private static native void setupJNI();
 
     static

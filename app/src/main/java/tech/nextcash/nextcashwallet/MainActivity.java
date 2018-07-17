@@ -723,19 +723,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             expires.setVisibility(View.VISIBLE);
 
             Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-            if(mPaymentRequest.protocolDetails.getExpires() <=
-              (calendar.getTimeInMillis() / 1000L) + 5)
+            if(mPaymentRequest.protocolDetails.getExpires() <= (calendar.getTimeInMillis() / 1000L) + 5)
             {
                 expires.setText(getString(R.string.request_expired));
                 expires.setTextColor(getResources().getColor(R.color.textNegative));
             }
             else
             {
-                int seconds = (int)(mPaymentRequest.protocolDetails.getExpires() - (calendar.getTimeInMillis() / 1000L) - 2L);
+                int seconds = (int)(mPaymentRequest.protocolDetails.getExpires() -
+                  (calendar.getTimeInMillis() / 1000L) - 2L);
                 int minutes = seconds / 60;
                 seconds -= minutes * 60;
-                expires.setText(String.format(Locale.getDefault(), "%s %02d:%02d", getString(R.string.expires_in),
-                  minutes, seconds));
+                expires.setText(String.format(Locale.getDefault(), "%s %02d:%02d",
+                  getString(R.string.expires_in), minutes, seconds));
                 expires.setTextColor(getResources().getColor(R.color.textWarning));
 
                 // Run again in 1 second
@@ -984,6 +984,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             ((TextView)walletView.findViewById(R.id.walletName)).setText(wallet.name);
+
+            if(wallet.hasPending())
+                walletView.findViewById(R.id.walletPendingIcon).setVisibility(View.VISIBLE);
+            else
+                walletView.findViewById(R.id.walletPendingIcon).setVisibility(View.GONE);
 
             if(!wallet.isPrivate)
             {
