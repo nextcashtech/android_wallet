@@ -141,6 +141,7 @@ public class Bitcoin
     public boolean chainIsLoaded() { return mChainLoaded; }
 
     public native boolean isRunning();
+    public native boolean isStopping();
 
     public native boolean initialBlockDownloadIsComplete();
 

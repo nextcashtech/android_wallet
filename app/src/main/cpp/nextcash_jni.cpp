@@ -431,6 +431,16 @@ extern "C"
         return (jboolean)daemon->isRunning();
     }
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isStopping(JNIEnv *pEnvironment,
+                                                                                    jobject pObject)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return JNI_FALSE;
+
+        return (jboolean)daemon->isStopping();
+    }
+
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_initialBlockDownloadIsComplete(JNIEnv *pEnvironment,
                                                                                                         jobject pObject)
     {
