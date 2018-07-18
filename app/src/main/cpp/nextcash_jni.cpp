@@ -769,29 +769,15 @@ extern "C"
         return (jint)daemon->keyStore()->size();
     }
 
-    int32_t transTime(BitCoin::Monitor::RelatedTransactionData &pTransaction, BitCoin::Daemon *pDaemon)
-    {
-        int32_t result = 0;
-
-        if(!pTransaction.blockHash.isEmpty())
-        {
-            // Use block time
-            int blockHeight = pDaemon->chain()->blockHeight(pTransaction.blockHash);
-
-            if(blockHeight >= 0)
-                result = pDaemon->chain()->time((unsigned int)blockHeight);
-        }
-
-        if(result == 0) // Use "announce" time
-            result = pTransaction.transaction.time();
-
-        return result;
-    }
-
     bool transGreater(BitCoin::Monitor::RelatedTransactionData &pLeft,
                       BitCoin::Monitor::RelatedTransactionData &pRight)
     {
-        return pLeft.transaction.time() > pRight.transaction.time();
+        if(pLeft.blockHeight > pRight.blockHeight)
+            return true;
+        else if(pLeft.blockHeight < pRight.blockHeight)
+            return false;
+        else
+            return pLeft.transaction.time() > pRight.transaction.time();
     }
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getChangeID(JNIEnv *pEnvironment,
@@ -806,7 +792,8 @@ extern "C"
 
     jobject createTransaction(JNIEnv *pEnvironment,
                               BitCoin::Daemon *pDaemon,
-                              BitCoin::Monitor::RelatedTransactionData &pTransaction)
+                              BitCoin::Monitor::RelatedTransactionData &pTransaction,
+                              bool pChainWasLoaded)
     {
         jobject result = pEnvironment->NewObject(sTransactionClass, sTransactionConstructor);
 
@@ -829,7 +816,7 @@ extern "C"
           (jlong)pTransaction.amount());
 
         // Set count
-        if(!pDaemon->chainIsLoaded())
+        if(!pChainWasLoaded)
             pEnvironment->SetIntField(result, sTransactionCountID,
               (jint)-1);
         else if(pTransaction.blockHash.isEmpty())
@@ -855,25 +842,22 @@ extern "C"
         // Loop through public chain keys getting transactions
         jint blockHeight;
         int64_t balance = 0;
+        bool chainWasLoaded = daemon->chainIsLoaded();
         std::vector<BitCoin::Key *> *chainKeys =
           daemon->keyStore()->chainKeys((unsigned int)pOffset);
-        std::vector<BitCoin::Monitor::RelatedTransactionData> transactions, keyTransactions;
+        std::vector<BitCoin::Monitor::RelatedTransactionData> transactions;
 
-        if(daemon->chainIsLoaded())
+        if(chainWasLoaded)
             blockHeight = (jint)daemon->chain()->height();
         else
             blockHeight = 0;
 
         if(chainKeys != NULL && chainKeys->size() != 0)
         {
-            keyTransactions.clear();
+            daemon->monitor()->getTransactions(chainKeys->begin(), chainKeys->end(),
+              transactions, true);
 
-            if(daemon->monitor()->getTransactions(chainKeys->begin(), chainKeys->end(),
-              keyTransactions, true))
-                transactions.insert(transactions.end(), keyTransactions.begin(),
-                  keyTransactions.end());
-
-            balance += daemon->monitor()->balance(chainKeys->begin(), chainKeys->end(), false);
+            balance = daemon->monitor()->balance(chainKeys->begin(), chainKeys->end(), false);
         }
 
         bool previousUpdate = pEnvironment->GetLongField(pWallet, sWalletLastUpdatedID) != 0;
@@ -910,9 +894,13 @@ extern "C"
             }
         }
 
-        for(std::vector<BitCoin::Monitor::RelatedTransactionData>::iterator transaction =
-          transactions.begin(); transaction != transactions.end(); ++transaction)
-            (*transaction).transaction.setTime(transTime(*transaction, daemon));
+        // Set transaction times based on block times
+        if(chainWasLoaded)
+            for(std::vector<BitCoin::Monitor::RelatedTransactionData>::iterator transaction =
+              transactions.begin(); transaction != transactions.end(); ++transaction)
+                if(transaction->blockHeight != -1)
+                    (*transaction).transaction
+                      .setTime(daemon->chain()->time(transaction->blockHeight));
 
         std::sort(transactions.begin(), transactions.end(), transGreater);
 
@@ -929,7 +917,7 @@ extern "C"
         {
             // Set value in array
             pEnvironment->SetObjectArrayElement(newTransactions, index,
-              createTransaction(pEnvironment, daemon, *transaction));
+              createTransaction(pEnvironment, daemon, *transaction, chainWasLoaded));
 
             if(previousUpdate)
             {
@@ -954,11 +942,11 @@ extern "C"
             index = 0;
             for(std::vector<BitCoin::Monitor::RelatedTransactionData>::iterator transaction =
               newUpdatedTransactions.begin(); transaction != newUpdatedTransactions.end();
-                 ++transaction, ++index)
+              ++transaction, ++index)
             {
                 // Set value in array
                 pEnvironment->SetObjectArrayElement(updatedTransactions, index,
-                  createTransaction(pEnvironment, daemon, *transaction));
+                  createTransaction(pEnvironment, daemon, *transaction, chainWasLoaded));
             }
 
             pEnvironment->SetObjectField(pWallet, sWalletUpdatedTransactionsID,
