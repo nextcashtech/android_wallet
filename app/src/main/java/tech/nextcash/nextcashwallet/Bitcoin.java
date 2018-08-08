@@ -16,11 +16,14 @@ import java.util.Locale;
 // Define Top Level Bitcoin JNI Interface Functions.
 public class Bitcoin
 {
+    public static final String LAST_SYNC_NAME = "last_sync"; // Time in seconds since epoch of last synchronization
+    public static final String SYNC_FREQUENCY_NAME = "sync_frequency"; // Frequency in minutes for background sync jobs
+    public static final int QR_WIDTH = 200;
+
     private static final String logTag = "Bitcoin";
     private static final int sSampleBlockHeight = 526256;
     private static final long sSampleTime = 1523978805;
     private static final long sSecondsPerBlock = 600;
-    public static final int QR_WIDTH = 200;
 
     private long mHandle; // Used by JNI
     private boolean mWalletsLoaded, mChainLoaded;
@@ -146,6 +149,7 @@ public class Bitcoin
     public native boolean initialBlockDownloadIsComplete();
 
     public native boolean isInSync();
+    public native boolean wasInSync();
 
     public static final int FINISH_ON_REQUEST = 0; // Continue running until stop is requested.
     public static final int FINISH_ON_SYNC = 1; // Finish when block chain is in sync.

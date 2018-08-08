@@ -43,12 +43,13 @@ public class BitcoinService extends Service
     private Bitcoin mBitcoin;
     private Thread mBitcoinThread, mMonitorThread;
     private Runnable mBitcoinRunnable, mMonitorRunnable;
-    private boolean mIsRegistered;
+    private boolean mIsRegistered, mForegroundStarted;
     private int mNextNotificationID;
     private Notification mProgressNotification;
     private int mStartBlockHeight, mStartMerkleHeight;
     private boolean mIsStopped, mRestart;
     private HashMap<String, Integer> mTransactionNotificationIDs;
+    private Bitmap mIcon;
 
 
     public class LocalBinder extends Binder
@@ -68,6 +69,7 @@ public class BitcoinService extends Service
         super.onCreate();
         mBitcoin = ((MainApp)getApplication()).bitcoin;
         mIsRegistered = false;
+        mForegroundStarted = false;
         mNextNotificationID = 2;
         mProgressNotification = null;
         mStartBlockHeight = 0;
@@ -78,6 +80,7 @@ public class BitcoinService extends Service
         mIsStopped = false;
         mRestart = false;
         mTransactionNotificationIDs = new HashMap<>();
+        mIcon = null;
 
         mBitcoinRunnable = new Runnable()
         {
@@ -88,9 +91,7 @@ public class BitcoinService extends Service
 
                 // Prepare notifications
                 mIsStopped = false;
-                register();
                 updateProgressNotification();
-                startForeground(sProgressNotificationID, mProgressNotification);
 
                 // Load daemon
                 mBitcoin.setPath(getFilesDir().getPath() + "/bitcoin");
@@ -105,6 +106,13 @@ public class BitcoinService extends Service
 
                     // Run daemon
                     mBitcoin.run();
+
+                    if(mBitcoin.wasInSync())
+                    {
+                        Log.i(logTag, "Last sync time set");
+                        Settings.getInstance(getFilesDir()).setLongValue(Bitcoin.LAST_SYNC_NAME,
+                          System.currentTimeMillis() / 1000);
+                    }
 
                     if(mRestart)
                         mRestart = false;
@@ -145,6 +153,7 @@ public class BitcoinService extends Service
         IntentFilter filter = new IntentFilter(SERVICE_ACTION);
         filter.addAction(STOP_ACTION);
         registerReceiver(mReceiver, filter);
+        updateProgressNotification();
     }
 
     public synchronized void start(Intent pIntent)
@@ -181,6 +190,8 @@ public class BitcoinService extends Service
             mBitcoinThread = new Thread(mBitcoinRunnable, "BitcoinDaemon");
             mBitcoinThread.start();
         }
+
+        updateProgressNotification();
     }
 
     @Override
@@ -193,6 +204,7 @@ public class BitcoinService extends Service
     @Override
     public void onDestroy()
     {
+        clearProgress();
         unregisterReceiver(mReceiver);
         mBitcoin.destroy();
         super.onDestroy();
@@ -352,10 +364,12 @@ public class BitcoinService extends Service
         mIsRegistered = true;
     }
 
-    private void updateProgressNotification()
+    private synchronized void updateProgressNotification()
     {
         if(mIsStopped)
             return;
+
+        register();
 
         boolean isChainLoaded = mBitcoin.chainIsLoaded();
         boolean isInSync = mBitcoin.isInSync();
@@ -367,12 +381,15 @@ public class BitcoinService extends Service
             return;
         }
 
+        if(mIcon == null)
+            mIcon = BitmapFactory.decodeResource(getResources(), R.drawable.icon);
+
         // Setup intent to open activity
         Intent openIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingOpenIntent = PendingIntent.getActivity(this, 0, openIntent, 0);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, sProgressNotificationChannel)
           .setSmallIcon(R.drawable.icon_notification)
-          .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.icon))
+          .setLargeIcon(mIcon)
           .setContentTitle(getString(R.string.progress_title))
           .setContentIntent(pendingOpenIntent)
           .setPriority(NotificationCompat.PRIORITY_LOW);
@@ -424,6 +441,12 @@ public class BitcoinService extends Service
         // notificationId is a unique int for each notification that you must define
         mProgressNotification = builder.build();
         notificationManager.notify(sProgressNotificationID, mProgressNotification);
+
+        if(!mForegroundStarted)
+        {
+            startForeground(sProgressNotificationID, mProgressNotification);
+            mForegroundStarted = true;
+        }
     }
 
     private void notify(String pTitle, String pText, int pWalletOffset, String pTransactionHash)
@@ -442,12 +465,14 @@ public class BitcoinService extends Service
         intent.putExtra("Wallet", pWalletOffset);
         intent.putExtra("Transaction", pTransactionHash);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-        Bitmap iconBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.icon);
+
+        if(mIcon == null)
+            mIcon = BitmapFactory.decodeResource(getResources(), R.drawable.icon);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
           sTransactionsNotificationChannel)
           .setSmallIcon(R.drawable.icon_notification)
-          .setLargeIcon(iconBitmap)
+          .setLargeIcon(mIcon)
           .setContentTitle(pTitle)
           .setContentText(pText)
           .setContentIntent(pendingIntent)
@@ -474,7 +499,11 @@ public class BitcoinService extends Service
     {
         NotificationManagerCompat.from(this).cancel(sProgressNotificationID);
         mProgressNotification = null;
-        stopForeground(true);
+        if(mForegroundStarted)
+        {
+            stopForeground(true);
+            mForegroundStarted = false;
+        }
     }
 
     // Returns true if hash was added to the file.

@@ -148,6 +148,42 @@ public class Settings
         write();
     }
 
+    public long longValue(String pName)
+    {
+        try
+        {
+            if(mValues != null && mValues.containsKey(pName))
+                return mValues.getLong(pName);
+        }
+        catch(ParseEntity.NameException|ParseEntity.TypeException pException)
+        {
+            Log.e(logTag, "Invalid settings value : " + pException.toString());
+        }
+
+        return 0;
+    }
+
+    public void setLongValue(String pName, long pValue)
+    {
+        if(mValues == null)
+            return;
+
+        try
+        {
+            if(mValues.containsKey(pName))
+                mValues.getParseEntity(pName).setValue(pValue);
+            else
+                mValues.putLong(pName, pValue);
+        }
+        catch(ParseEntity.NameException pException)
+        {
+            Log.e(logTag, "Name not found to update : " + pException.toString());
+            mValues.putLong(pName, pValue);
+        }
+
+        write();
+    }
+
     public double doubleValue(String pName)
     {
         try

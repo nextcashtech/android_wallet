@@ -9,22 +9,22 @@
     android:padding="10dp"
     android:background="@color/warningBackground">
 
-    <TextView
-        android:layout_alignParentStart="true"
-        android:layout_toStartOf="@id/chainLoadingProgress"
-        android:padding="10dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/chain_still_loading"/>
-
     <ProgressBar
         android:id="@+id/chainLoadingProgress"
-        android:layout_alignParentEnd="true"
+        android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:indeterminateTint="@color/colorProgress"
         android:indeterminateTintMode="src_atop"
         style="@android:style/Widget.ProgressBar.Inverse"/>
+
+    <TextView
+        android:layout_alignParentEnd="true"
+        android:layout_toEndOf="@id/chainLoadingProgress"
+        android:padding="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/chain_still_loading"/>
 
 </RelativeLayout>

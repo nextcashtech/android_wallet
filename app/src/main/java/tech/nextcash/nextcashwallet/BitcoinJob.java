@@ -10,6 +10,8 @@ import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
+import java.util.Locale;
+
 
 // This is the periodic job for synchronizing the Bitcoin SPV node.
 public class BitcoinJob extends JobService
@@ -137,13 +139,41 @@ public class BitcoinJob extends JobService
     @Override
     public boolean onStartJob(JobParameters pParams)
     {
+        Settings settings = Settings.getInstance(getFilesDir());
+        long syncFrequency = settings.intValue(Bitcoin.SYNC_FREQUENCY_NAME);
+        if(syncFrequency == 0)
+            syncFrequency = 360; // Default to 6 hours
+        if(syncFrequency == -1)
+        {
+            Log.w(logTag, "Background sync disabled");
+            return false;
+        }
+
+        if(settings.containsValue(Bitcoin.LAST_SYNC_NAME))
+        {
+            long currentTime = System.currentTimeMillis() / 1000;
+            long syncThreshold = currentTime - (long)(((float)syncFrequency * 60) * 0.5);
+            long lastSync = settings.longValue(Bitcoin.LAST_SYNC_NAME);
+            if(currentTime - lastSync > syncThreshold)
+            {
+                if(currentTime - lastSync > 3600) // More than an hour
+                    Log.w(logTag, String.format(Locale.US, "Aborting job start.Last synchronization was %.1f hours ago",
+                      (float)(currentTime - lastSync) / 3600.0));
+                else
+                    Log.w(logTag, String.format(Locale.US,
+                      "Aborting job start.Last synchronization was %d minutes ago",
+                      (currentTime - lastSync) / 60));
+                return false;
+            }
+        }
+
         Log.i(logTag, "Starting job");
         mJobParameters = pParams;
         mFinished = false;
 
         if(!startBitcoinService())
         {
-            Log.i(logTag, "Aborting job start");
+            Log.w(logTag, "Aborting job start");
             return false;
         }
 

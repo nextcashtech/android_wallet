@@ -585,7 +585,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Log.e(logTag, "Failed to get Job Scheduler Service");
         else
         {
-            int syncFrequency = Settings.getInstance(getFilesDir()).intValue("sync_frequency");
+            int syncFrequency = Settings.getInstance(getFilesDir()).intValue(Bitcoin.SYNC_FREQUENCY_NAME);
             if(syncFrequency == -1)
                 jobScheduler.cancel(BitcoinJob.SYNC_JOB_ID);
             else
@@ -878,7 +878,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             if(count == 0)
                 peerCountField.setTextColor(getResources().getColor(R.color.textNegative));
-            else if(count < 3)
+            else if(count < 4)
                 peerCountField.setTextColor(getResources().getColor(R.color.textWarning));
             else
                 peerCountField.setTextColor(getResources().getColor(R.color.textPositive));
@@ -1144,7 +1144,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         Settings settings = Settings.getInstance(getFilesDir());
 
         // Configure sync frequency options
-        int currentFrequency = settings.intValue("sync_frequency");
+        int currentFrequency = settings.intValue(Bitcoin.SYNC_FREQUENCY_NAME);
         if(currentFrequency == 0)
             currentFrequency = 360; // Default to 6 hours
 
@@ -2274,7 +2274,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 Log.e(logTag, String.format("Invalid sync frequency position selected : %d", pPosition));
             else
             {
-                Settings.getInstance(getFilesDir()).setIntValue("sync_frequency", frequencyValues[pPosition]);
+                Settings.getInstance(getFilesDir()).setIntValue(Bitcoin.SYNC_FREQUENCY_NAME, frequencyValues[pPosition]);
                 setResult(1);
                 if(frequencyValues[pPosition] == -1)
                     Log.i(logTag, "Sync frequency set to never.");
