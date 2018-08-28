@@ -375,20 +375,20 @@ public class BitcoinService extends Service
         boolean isInSync = mBitcoin.isInSync();
         int merkleHeight = mBitcoin.merkleHeight();
         int blockHeight = mBitcoin.headerHeight();
-        if(isInSync && merkleHeight == blockHeight)
+        if(isInSync && (mBitcoin.walletCount() == 0 || merkleHeight == blockHeight))
         {
             clearProgress();
             return;
         }
 
         if(mIcon == null)
-            mIcon = BitmapFactory.decodeResource(getResources(), R.drawable.icon);
+            mIcon = BitmapFactory.decodeResource(getResources(), R.drawable.icon_notification_large);
 
         // Setup intent to open activity
         Intent openIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingOpenIntent = PendingIntent.getActivity(this, 0, openIntent, 0);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, sProgressNotificationChannel)
-          .setSmallIcon(R.drawable.icon_notification)
+          .setSmallIcon(R.drawable.icon_notification_small)
           .setLargeIcon(mIcon)
           .setContentTitle(getString(R.string.progress_title))
           .setContentIntent(pendingOpenIntent)
@@ -467,11 +467,11 @@ public class BitcoinService extends Service
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
         if(mIcon == null)
-            mIcon = BitmapFactory.decodeResource(getResources(), R.drawable.icon);
+            mIcon = BitmapFactory.decodeResource(getResources(), R.drawable.icon_notification_large);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
           sTransactionsNotificationChannel)
-          .setSmallIcon(R.drawable.icon_notification)
+          .setSmallIcon(R.drawable.icon_notification_small)
           .setLargeIcon(mIcon)
           .setContentTitle(pTitle)
           .setContentText(pText)
