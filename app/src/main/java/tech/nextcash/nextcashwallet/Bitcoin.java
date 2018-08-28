@@ -96,9 +96,9 @@ public class Bitcoin
         return String.format(Locale.getDefault(), "%d %02d %03d %03d", bitcoins, sub1, sub2, sub3);
     }
 
-    public int estimatedBlockHeight()
+    public int estimatedHeight()
     {
-        int height = blockHeight();
+        int height = headerHeight();
         if(height < sSampleBlockHeight)
             return sSampleBlockHeight + (int)(((System.currentTimeMillis() / 1000) - sSampleTime) / sSecondsPerBlock);
         else
@@ -174,7 +174,7 @@ public class Bitcoin
     public native int status();
 
     // Block height of block chain.
-    public native int blockHeight();
+    public native int headerHeight();
 
     public native Block getBlockFromHeight(int pHeight);
     public native Block getBlockFromHash(String pHash);

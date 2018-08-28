@@ -573,14 +573,14 @@ extern "C"
         }
     }
 
-    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_blockHeight(JNIEnv *pEnvironment,
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_headerHeight(JNIEnv *pEnvironment,
                                                                                  jobject pObject)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL)
             return (jint)0;
 
-        return daemon->chain()->height();
+        return daemon->chain()->headerHeight();
     }
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_merkleHeight(JNIEnv *pEnvironment,
@@ -623,7 +623,7 @@ extern "C"
         setupBlockClass(pEnvironment);
 
         NextCash::Hash hash;
-        if(!daemon->chain()->getBlockHash((unsigned int)pHeight, hash))
+        if(!daemon->chain()->getHash((unsigned int)pHeight, hash))
             return NULL;
 
         return createBlock(pEnvironment, pHeight, pEnvironment->NewStringUTF(hash.hex().text()),
@@ -642,7 +642,7 @@ extern "C"
 
         const char *hashHex = pEnvironment->GetStringUTFChars(pHash, NULL);
         NextCash::Hash hash(hashHex);
-        int height = daemon->chain()->blockHeight(hash);
+        int height = daemon->chain()->hashHeight(hash);
         pEnvironment->ReleaseStringUTFChars(pHash, hashHex);
 
         return createBlock(pEnvironment, height, pHash,
@@ -844,8 +844,8 @@ extern "C"
               (jint)pTransaction.nodesVerified);
         else
             pEnvironment->SetIntField(result, sTransactionCountID,
-              (jint)(pDaemon->chain()->height() + 1 -
-              pDaemon->chain()->blockHeight(pTransaction.blockHash)));
+              (jint)(pDaemon->chain()->headerHeight() + 1 -
+              pDaemon->chain()->hashHeight(pTransaction.blockHash)));
 
         return result;
     }
@@ -860,7 +860,7 @@ extern "C"
             return JNI_FALSE;
 
         // Loop through public chain keys getting transactions
-        jint blockHeight;
+        jint headerHeight;
         int64_t balance = 0;
         bool chainWasLoaded = daemon->chainIsLoaded();
         std::vector<BitCoin::Key *> *chainKeys =
@@ -868,9 +868,9 @@ extern "C"
         std::vector<BitCoin::Monitor::RelatedTransactionData> transactions;
 
         if(chainWasLoaded)
-            blockHeight = (jint)daemon->chain()->height();
+            headerHeight = (jint)daemon->chain()->headerHeight();
         else
-            blockHeight = 0;
+            headerHeight = 0;
 
         if(chainKeys != NULL && chainKeys->size() != 0)
         {
@@ -982,7 +982,7 @@ extern "C"
         pEnvironment->SetBooleanField(pWallet, sWalletIsBackedUpID,
           (jboolean)daemon->keyStore()->isBackedUp((unsigned int)pOffset));
         pEnvironment->SetLongField(pWallet, sWalletBalanceID, (jlong)balance);
-        pEnvironment->SetIntField(pWallet, sWalletBlockHeightID, blockHeight);
+        pEnvironment->SetIntField(pWallet, sWalletBlockHeightID, headerHeight);
         pEnvironment->SetLongField(pWallet, sWalletLastUpdatedID, (jlong)BitCoin::getTime());
         return JNI_TRUE;
     }
@@ -1435,12 +1435,12 @@ extern "C"
         else
         {
             pEnvironment->SetIntField(pTransaction, sFullTransactionCountID,
-              (jint)(daemon->chain()->height() + 1 -
-              daemon->chain()->blockHeight(transaction.blockHash)));
+              (jint)(daemon->chain()->headerHeight() + 1 -
+              daemon->chain()->hashHeight(transaction.blockHash)));
 
             pEnvironment->SetLongField(pTransaction, sFullTransactionDateID,
               (jlong)daemon->chain()->time(
-              (unsigned int)daemon->chain()->blockHeight(transaction.blockHash)));
+              (unsigned int)daemon->chain()->hashHeight(transaction.blockHash)));
         }
 
         // Size
@@ -1473,7 +1473,7 @@ extern "C"
             // Script
             pEnvironment->SetObjectField(inputObject, sInputScriptID,
               pEnvironment->NewStringUTF(BitCoin::ScriptInterpreter::scriptText(input->script,
-                daemon->chain()->forks())));
+                daemon->chain()->forks(), daemon->chain()->headerHeight())));
 
             // Sequence
             pEnvironment->SetIntField(inputObject, sInputSequenceID, (jint)input->sequence);
@@ -1511,7 +1511,7 @@ extern "C"
             // Script
             pEnvironment->SetObjectField(outputObject, sOutputScriptID,
               pEnvironment->NewStringUTF(BitCoin::ScriptInterpreter::scriptText(output->script,
-                daemon->chain()->forks())));
+                daemon->chain()->forks(), daemon->chain()->headerHeight())));
 
             // Address
             if(!transaction.outputAddresses[offset].isEmpty())
@@ -1707,7 +1707,7 @@ extern "C"
         pOutput.script.setReadOffset(0);
         pEnvironment->SetObjectField(result, sOutputScriptID,
           pEnvironment->NewStringUTF(BitCoin::ScriptInterpreter::scriptText(pOutput.script,
-            pDaemon->chain()->forks())));
+            pDaemon->chain()->forks(), pDaemon->chain()->headerHeight())));
 
         // Set address
         NextCash::HashList payAddresses;
@@ -1750,7 +1750,8 @@ extern "C"
               pDaemon->monitor()->confirmBlockHash(pOutpoint.transactionID);
             jint confirms = 0;
             if(!confirmBlock.isEmpty())
-                confirms = pDaemon->chain()->height() - pDaemon->chain()->blockHeight(confirmBlock);
+                confirms = pDaemon->chain()->headerHeight() -
+                  pDaemon->chain()->hashHeight(confirmBlock);
             pEnvironment->SetIntField(result, sOutpointConfirmationsID, confirms);
         }
 

@@ -312,7 +312,7 @@ public class BitcoinService extends Service
     {
         mBitcoin.onChainLoaded();
         mStartMerkleHeight = mBitcoin.merkleHeight();
-        mStartBlockHeight = mBitcoin.blockHeight();
+        mStartBlockHeight = mBitcoin.headerHeight();
         for(CallBacks callBacks : mCallBacks)
             callBacks.onChainLoad();
 
@@ -374,7 +374,7 @@ public class BitcoinService extends Service
         boolean isChainLoaded = mBitcoin.chainIsLoaded();
         boolean isInSync = mBitcoin.isInSync();
         int merkleHeight = mBitcoin.merkleHeight();
-        int blockHeight = mBitcoin.blockHeight();
+        int blockHeight = mBitcoin.headerHeight();
         if(isInSync && merkleHeight == blockHeight)
         {
             clearProgress();
@@ -421,7 +421,7 @@ public class BitcoinService extends Service
         }
         else
         {
-            int estimatedHeight = mBitcoin.estimatedBlockHeight();
+            int estimatedHeight = mBitcoin.estimatedHeight();
             max = estimatedHeight - mStartBlockHeight;
             progress = blockHeight - mStartBlockHeight;
             builder.setContentText(getString(R.string.looking_for_blocks));

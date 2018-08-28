@@ -834,7 +834,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         boolean areWalletsLoaded = mBitcoin.walletsAreLoaded();
         boolean isChainLoaded = mBitcoin.chainIsLoaded();
         int merkleHeight = mBitcoin.merkleHeight();
-        int blockHeight = mBitcoin.blockHeight();
+        int blockHeight = mBitcoin.headerHeight();
         TextView merkleBlocks = findViewById(R.id.merkleBlockHeight);
         TextView blocks = findViewById(R.id.blockHeight);
         TextView peerCountField = findViewById(R.id.peerCount);

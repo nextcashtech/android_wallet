@@ -139,6 +139,8 @@ public class BitcoinJob extends JobService
     @Override
     public boolean onStartJob(JobParameters pParams)
     {
+        Log.i(logTag, "Starting job");
+
         Settings settings = Settings.getInstance(getFilesDir());
         long syncFrequency = settings.intValue(Bitcoin.SYNC_FREQUENCY_NAME);
         if(syncFrequency == 0)
@@ -152,22 +154,22 @@ public class BitcoinJob extends JobService
         if(settings.containsValue(Bitcoin.LAST_SYNC_NAME))
         {
             long currentTime = System.currentTimeMillis() / 1000;
-            long syncThreshold = currentTime - (long)(((float)syncFrequency * 60) * 0.5);
+            long syncThreshold = currentTime - (long)(((double)syncFrequency * 60) * 0.5);
             long lastSync = settings.longValue(Bitcoin.LAST_SYNC_NAME);
-            if(currentTime - lastSync > syncThreshold)
+            if(lastSync > syncThreshold)
             {
                 if(currentTime - lastSync > 3600) // More than an hour
-                    Log.w(logTag, String.format(Locale.US, "Aborting job start.Last synchronization was %.1f hours ago",
-                      (float)(currentTime - lastSync) / 3600.0));
+                    Log.w(logTag, String.format(Locale.US,
+                      "Aborting job start. Last synchronization was %.1f hours ago",
+                      (double)(currentTime - lastSync) / 3600.0));
                 else
                     Log.w(logTag, String.format(Locale.US,
-                      "Aborting job start.Last synchronization was %d minutes ago",
+                      "Aborting job start. Last synchronization was %d minutes ago",
                       (currentTime - lastSync) / 60));
                 return false;
             }
         }
 
-        Log.i(logTag, "Starting job");
         mJobParameters = pParams;
         mFinished = false;
 
