@@ -400,8 +400,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         findViewById(R.id.statusBar).setVisibility(View.VISIBLE);
         mMode = Mode.LOADING_WALLETS;
 
-        startBitcoinService();
-
         scheduleJobs();
 
         if(pSavedInstanceState != null && pSavedInstanceState.containsKey("State"))
@@ -2685,7 +2683,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     // Add header line
                     transactionView = inflater.inflate(R.layout.wallet_transaction_header, transactionViewGroup,
                       false);
-                    ((TextView)transactionView.findViewById(R.id.count)).setText(R.string.peers_title);
+                    ((TextView)transactionView.findViewById(R.id.count)).setText(R.string.peers);
                     transactionViewGroup.addView(transactionView);
                 }
             }
@@ -3053,6 +3051,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.seedWordButton:
         {
             ViewGroup wordButtons = (ViewGroup)pView.getParent();
+            if(wordButtons == null)
+                break;
 
             // Add word to seed
             TextView seed = findViewById(R.id.seed);
@@ -3313,7 +3313,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case WALLETS:
             if(mFinishOnBack)
             {
+                Log.d(logTag, "Stopping because of back button");
                 mBitcoin.stop();
+                mService.clearProgress();
                 super.onBackPressed();
             }
             else

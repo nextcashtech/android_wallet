@@ -191,6 +191,7 @@ public class BitcoinJob extends JobService
         if(!mBitcoin.appIsOpen)
         {
             mBitcoin.stop();
+            mService.clearProgress();
             Log.i(logTag, "Stopping bitcoin because app is not open");
         }
         else

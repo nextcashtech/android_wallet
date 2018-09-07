@@ -98,28 +98,37 @@ public class BitcoinService extends Service
 
                 while(true)
                 {
-                    if(!mBitcoin.loadWallets())
+                    if(!mBitcoin.isStopping())
                     {
-                        Log.w(logTag, "Failed to load wallets");
-                        break;
+                        if(!mBitcoin.loadWallets())
+                        {
+                            Log.w(logTag, "Failed to load wallets");
+                            break;
+                        }
+                        onWalletsLoaded();
                     }
-                    onWalletsLoaded();
 
-                    if(!mBitcoin.loadChain())
+                    if(!mBitcoin.isStopping())
                     {
-                        Log.w(logTag, "Failed to load chain");
-                        break;
+                        if(!mBitcoin.loadChain())
+                        {
+                            Log.w(logTag, "Failed to load chain");
+                            break;
+                        }
+                        onChainLoaded();
                     }
-                    onChainLoaded();
 
                     // Run daemon
-                    mBitcoin.run();
-
-                    if(mBitcoin.wasInSync())
+                    if(!mBitcoin.isStopping())
                     {
-                        Log.i(logTag, "Last sync time set");
-                        Settings.getInstance(getFilesDir()).setLongValue(Bitcoin.LAST_SYNC_NAME,
-                          System.currentTimeMillis() / 1000);
+                        mBitcoin.run();
+
+                        if(mBitcoin.wasInSync())
+                        {
+                            Log.i(logTag, "Last sync time set");
+                            Settings.getInstance(getFilesDir()).setLongValue(Bitcoin.LAST_SYNC_NAME,
+                              System.currentTimeMillis() / 1000);
+                        }
                     }
 
                     if(mRestart)
@@ -154,6 +163,7 @@ public class BitcoinService extends Service
                 {
                     Log.i(logTag, "Stop action received");
                     mBitcoin.stop();
+                    clearProgress();
                 }
             }
         };
@@ -374,7 +384,7 @@ public class BitcoinService extends Service
 
     private synchronized void updateProgressNotification(boolean pRequired)
     {
-        if(!pRequired && mIsStopped)
+        if(!pRequired && (mIsStopped || mBitcoin.isStopping()))
             return;
 
         register();
@@ -503,7 +513,7 @@ public class BitcoinService extends Service
         notificationManager.notify(notificationID, builder.build());
     }
 
-    private void clearProgress()
+    public void clearProgress()
     {
         NotificationManagerCompat.from(this).cancel(sProgressNotificationID);
         mProgressNotification = null;
