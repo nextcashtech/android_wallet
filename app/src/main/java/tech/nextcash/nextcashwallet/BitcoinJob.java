@@ -190,8 +190,7 @@ public class BitcoinJob extends JobService
         Log.i(logTag, "Stopping job from stop job request");
         if(!mBitcoin.appIsOpen)
         {
-            mBitcoin.stop();
-            mService.clearProgress();
+            mService.stop();
             Log.i(logTag, "Stopping bitcoin because app is not open");
         }
         else

@@ -3314,8 +3314,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(mFinishOnBack)
             {
                 Log.d(logTag, "Stopping because of back button");
-                mBitcoin.stop();
-                mService.clearProgress();
+                mService.stop();
                 super.onBackPressed();
             }
             else
