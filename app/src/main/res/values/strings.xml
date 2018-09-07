@@ -8,7 +8,7 @@
     <string name="initial_block_download_message">
         The initial block download is not yet complete.
         It might take an hour or more.
-        Sometimes it may take a few minutes just to find some initial peers.
+        It may take a few minutes to find some initial nodes.
         You will not be able to send or confirm transactions until it is complete.
         You can request payments, you just won\'t be able to validate confirms.
     </string>
@@ -20,13 +20,13 @@
     <string name="loading_wallets">Loading Wallets</string>
     <string name="loading_chain">Loading Block Chain</string>
     <string name="chain_still_loading">
-        The block chain is still loading.
+        The block chain data is loading.
         Some functions will be disabled until it finishes.
     </string>
     <string name="unable_to_find_transaction">Unable to find transaction</string>
     <string name="synchronized_text">Synchronized</string>
-    <string name="finding_peers">Finding Peers</string>
-    <string name="connecting_to_peers">Connecting to Peers</string>
+    <string name="finding_peers">Finding Nodes</string>
+    <string name="connecting_to_peers">Connecting to Nodes</string>
     <string name="looking_for_blocks">Looking for blocks</string>
     <string name="looking_for_transactions">Looking for transactions</string>
 
@@ -130,16 +130,15 @@
     <string name="confirmed_in_block">Confirmed in Block</string>
     <string name="unconfirmed">Unconfirmed</string>
     <string name="validated_by">Validated by</string>
-    <string name="peers_period"> peers.</string>
+    <string name="peers_period"> nodes.</string>
     <string name="time_title">Time</string>
     <string name="confirms_title">Confirms</string>
     <string name="confirmations">Confirmations</string>
-    <string name="peers_title">Peers</string>
     <string name="not_available_abbreviation">N/A</string>
     <string name="nine_plus">9+</string>
     <string name="hash_title">Hash</string>
-    <string name="peer">Peer</string>
-    <string name="peers">Peers</string>
+    <string name="peer">Node</string>
+    <string name="peers">Nodes</string>
     <string name="confirm">Confirm</string>
     <string name="confirms">Confirms</string>
     <string name="name">Name</string>
