@@ -408,9 +408,13 @@ public class BitcoinService extends Service
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, sProgressNotificationChannel)
           .setSmallIcon(R.drawable.icon_notification_small)
           .setLargeIcon(mIcon)
-          .setContentTitle(getString(R.string.progress_title))
           .setContentIntent(pendingOpenIntent)
           .setPriority(NotificationCompat.PRIORITY_LOW);
+
+        if(mIsStopped || mBitcoin.isStopping())
+            builder.setContentTitle(getString(R.string.stopping));
+        else
+            builder.setContentTitle(getString(R.string.synchronizing));
 
         if(!mIsStopped && !mBitcoin.isStopping() && mBitcoin.finishMode() != Bitcoin.FINISH_ON_REQUEST)
         {
@@ -425,14 +429,11 @@ public class BitcoinService extends Service
         int progress = 0;
         boolean indeterminate = false;
         if(mIsStopped || mBitcoin.isStopping())
-        {
             indeterminate = true;
-            builder.setContentText(getString(R.string.stopping));
-        }
         else if(!isChainLoaded)
         {
             indeterminate = true;
-            builder.setContentText(getString(R.string.loading_for_synchronize));
+            builder.setContentText(getString(R.string.loading));
         }
         else if(isInSync)
         {

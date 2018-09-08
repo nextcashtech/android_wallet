@@ -153,7 +153,6 @@
         Progress of synchronization with block chain.
     </string>
     <string name="loading_for_synchronize">Loading for synchronize</string>
-    <string name="progress_title">Synchronizing</string>
     <string name="synchronize">Synchronize</string>
     <string name="stop">Stop</string>
     <string name="stopping">Stopping</string>
