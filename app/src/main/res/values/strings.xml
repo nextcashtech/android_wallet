@@ -27,8 +27,9 @@
     <string name="synchronized_text">Synchronized</string>
     <string name="finding_peers">Finding Nodes</string>
     <string name="connecting_to_peers">Connecting to Nodes</string>
-    <string name="looking_for_blocks">Looking for blocks</string>
-    <string name="looking_for_transactions">Looking for transactions</string>
+    <string name="requesting_blocks">Looking for blocks</string>
+    <string name="requesting_transactions">Requesting transactions</string>
+    <string name="watching_for_transactions">Watching for transactions</string>
 
     <string name="blocks">Blocks</string>
 
@@ -152,7 +153,7 @@
     <string name="channel_progress_description">
         Progress of synchronization with block chain.
     </string>
-    <string name="loading_for_synchronize">Loading for synchronize</string>
+    <string name="monitoring">Monitoring</string>
     <string name="synchronize">Synchronize</string>
     <string name="stop">Stop</string>
     <string name="stopping">Stopping</string>

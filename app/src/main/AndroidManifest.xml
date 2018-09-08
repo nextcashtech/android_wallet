@@ -4,6 +4,7 @@
     package="tech.nextcash.nextcashwallet">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:name=".MainApp"
@@ -16,8 +17,7 @@
 
         <service
             android:name=".BitcoinJob"
-            android:permission="android.permission.BIND_JOB_SERVICE">
-        </service>
+            android:permission="android.permission.BIND_JOB_SERVICE"/>
 
         <service android:name=".BitcoinService" />
 

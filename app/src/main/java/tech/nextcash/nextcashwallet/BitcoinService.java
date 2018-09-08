@@ -96,6 +96,14 @@ public class BitcoinService extends Service
                 // Load daemon
                 mBitcoin.setPath(getFilesDir().getPath() + "/bitcoin");
 
+                // Start monitor thread
+                if(mMonitorThread == null || !mMonitorThread.isAlive())
+                {
+                    Log.i(logTag, "Starting monitor thread.");
+                    mMonitorThread = new Thread(mMonitorRunnable, "BitcoinMonitor");
+                    mMonitorThread.start();
+                }
+
                 while(true)
                 {
                     if(!mBitcoin.isStopping())
@@ -338,14 +346,6 @@ public class BitcoinService extends Service
         mStartBlockHeight = mBitcoin.headerHeight();
         for(CallBacks callBacks : mCallBacks)
             callBacks.onChainLoad();
-
-        // Start monitor thread
-        if(mMonitorThread == null || !mMonitorThread.isAlive())
-        {
-            Log.i(logTag, "Starting monitor thread.");
-            mMonitorThread = new Thread(mMonitorRunnable, "BitcoinMonitor");
-            mMonitorThread.start();
-        }
     }
 
     private void onFinished()
@@ -411,11 +411,6 @@ public class BitcoinService extends Service
           .setContentIntent(pendingOpenIntent)
           .setPriority(NotificationCompat.PRIORITY_LOW);
 
-        if(mIsStopped || mBitcoin.isStopping())
-            builder.setContentTitle(getString(R.string.stopping));
-        else
-            builder.setContentTitle(getString(R.string.synchronizing));
-
         if(!mIsStopped && !mBitcoin.isStopping() && mBitcoin.finishMode() != Bitcoin.FINISH_ON_REQUEST)
         {
             // Setup an intent to stop synchronization
@@ -429,26 +424,40 @@ public class BitcoinService extends Service
         int progress = 0;
         boolean indeterminate = false;
         if(mIsStopped || mBitcoin.isStopping())
+        {
             indeterminate = true;
+            builder.setContentTitle(getString(R.string.stopping));
+        }
         else if(!isChainLoaded)
         {
             indeterminate = true;
-            builder.setContentText(getString(R.string.loading));
+            builder.setContentTitle(getString(R.string.loading));
         }
         else if(isInSync)
         {
-            if(mStartMerkleHeight > merkleHeight)
-                mStartMerkleHeight = merkleHeight;
-            max = blockHeight - mStartMerkleHeight;
-            progress = merkleHeight - mStartMerkleHeight;
-            builder.setContentText(getString(R.string.looking_for_transactions));
+            if(merkleHeight == blockHeight)
+            {
+                indeterminate = true;
+                builder.setContentTitle(getString(R.string.monitoring));
+                builder.setContentText(getString(R.string.watching_for_transactions));
+            }
+            else
+            {
+                if(mStartMerkleHeight > merkleHeight)
+                    mStartMerkleHeight = merkleHeight;
+                max = blockHeight - mStartMerkleHeight;
+                progress = merkleHeight - mStartMerkleHeight;
+                builder.setContentTitle(getString(R.string.synchronizing));
+                builder.setContentText(getString(R.string.requesting_transactions));
+            }
         }
         else
         {
             int estimatedHeight = mBitcoin.estimatedHeight();
             max = estimatedHeight - mStartBlockHeight;
             progress = blockHeight - mStartBlockHeight;
-            builder.setContentText(getString(R.string.looking_for_blocks));
+            builder.setContentTitle(getString(R.string.synchronizing));
+            builder.setContentText(getString(R.string.requesting_blocks));
         }
 
         if(!indeterminate && (max <= 1 || progress < 1 || max - progress < 2))
@@ -521,10 +530,12 @@ public class BitcoinService extends Service
 
     private synchronized void clearProgress()
     {
+        Log.d(logTag, "Canceling progress notification");
         NotificationManagerCompat.from(this).cancel(sProgressNotificationID);
         mProgressNotification = null;
         if(mForegroundStarted)
         {
+            Log.d(logTag, "Stopping foreground");
             stopForeground(true);
             mForegroundStarted = false;
         }

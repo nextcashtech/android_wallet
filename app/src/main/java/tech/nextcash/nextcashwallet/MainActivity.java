@@ -813,13 +813,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 status.setText(R.string.connecting_to_peers);
                 break;
             case 5: // Synchronizing
-                status.setText(R.string.looking_for_blocks);
+                status.setText(R.string.requesting_blocks);
                 break;
             case 6: // Synchronized
-                status.setText(R.string.synchronized_text);
+                status.setText(R.string.monitoring);
                 break;
             case 7: // Finding Transactions
-                status.setText(R.string.looking_for_transactions);
+                status.setText(R.string.requesting_transactions);
                 break;
         }
 
@@ -827,7 +827,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(mExchangeRate == 0.0)
             exchangeRate.setText("");
         else
-            exchangeRate.setText(String.format(Locale.getDefault(), "1 BCH = $%,d USD", (int)mExchangeRate));
+            exchangeRate.setText(String.format(Locale.getDefault(), "%d BCH = $%,d USD", 1, (int)mExchangeRate));
 
         boolean areWalletsLoaded = mBitcoin.walletsAreLoaded();
         boolean isChainLoaded = mBitcoin.chainIsLoaded();
