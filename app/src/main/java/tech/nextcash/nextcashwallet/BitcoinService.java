@@ -389,7 +389,7 @@ public class BitcoinService extends Service
 
     private synchronized void updateProgressNotification()
     {
-        if(!mIsStopped)
+        if(mIsStopped)
             return;
 
         register();
