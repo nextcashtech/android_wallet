@@ -35,6 +35,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -87,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private AuthorizedTask mAuthorizedTask;
     private String mKeyToLoad, mSeed;
     private int mSeedEntropyBytes;
+    private long mRecoverDate;
     private boolean mSeedIsRecovered, mSeedIsBackedUp;
     private int mCurrentWalletIndex;
     private boolean mSeedBackupOnly;
@@ -175,6 +177,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mWalletsNeedUpdated = false;
         mDontUpdatePaymentAmount = false;
         mSeedEntropyBytes = 0;
+        mRecoverDate = 0;
         mRequestedTransactionWalletIndex = -1;
         mHistoryToShowWalletIndex = -1;
         mPersistentMessages = new ArrayList<String>();
@@ -2112,6 +2115,38 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         findViewById(R.id.progress).setVisibility(View.GONE);
         findViewById(R.id.statusBar).setVisibility(View.GONE);
 
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(null);
+            actionBar.setTitle(" " + getResources().getString(R.string.import_text));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        inflater.inflate(R.layout.select_recover_date, dialogView, true);
+
+        // Done button
+        View button = inflater.inflate(R.layout.button, dialogView, false);
+        button.setTag(R.id.enterImportKey);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.okay);
+        dialogView.addView(button);
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+        mMode = Mode.IMPORT_WALLET;
+    }
+
+    public synchronized void displayEnterImportKey()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.main).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+
         inflater.inflate(R.layout.import_bip32_key, dialogView, true);
 
         Spinner derivationMethod = findViewById(R.id.derivationMethodSpinner);
@@ -2339,6 +2374,38 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     public synchronized void displayRecoverWallet()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.main).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(null);
+            actionBar.setTitle(" " + getResources().getString(R.string.recover_wallet));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        inflater.inflate(R.layout.select_recover_date, dialogView, true);
+
+        // Done button
+        View button = inflater.inflate(R.layout.button, dialogView, false);
+        button.setTag(R.id.enterRecoverSeed);
+        ((TextView)button.findViewById(R.id.text)).setText(R.string.okay);
+        dialogView.addView(button);
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+        mMode = Mode.RECOVER_WALLET;
+    }
+
+    public synchronized void displayEnterRecoverSeed()
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup dialogView = findViewById(R.id.dialog);
@@ -2845,6 +2912,33 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.recoverWallet:
             displayRecoverWallet();
             break;
+        case R.id.enterRecoverSeed:
+        {
+            // Get recover seed date
+            DatePicker picker = findViewById(R.id.date);
+            if(picker == null)
+            {
+                showMessage(getString(R.string.failed_to_get_recover_date), 2000);
+                displayWallets();
+                break;
+            }
+
+            Calendar date;
+            if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+            {
+                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
+                  picker.getDayOfMonth()).build();
+            }
+            else
+            {
+                date = Calendar.getInstance();
+                date.set(picker.getYear(), picker.getMonth(), picker.getDayOfMonth());
+            }
+
+            mRecoverDate = date.getTimeInMillis() / 1000L;
+            displayEnterRecoverSeed();
+            break;
+        }
         case R.id.importSeed:
         {
             mSeed = ((TextView)findViewById(R.id.seed)).getText().toString();
@@ -2864,6 +2958,31 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.importWallet:
             displayImportWallet();
+            break;
+        case R.id.enterImportKey:
+            // Get recover seed date
+            DatePicker picker = findViewById(R.id.date);
+            if(picker == null)
+            {
+                showMessage(getString(R.string.failed_to_get_recover_date), 2000);
+                displayWallets();
+                break;
+            }
+
+            Calendar date;
+            if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+            {
+                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
+                  picker.getDayOfMonth()).setTimeOfDay(0, 0, 0).build();
+            }
+            else
+            {
+                date = Calendar.getInstance();
+                date.set(picker.getYear(), picker.getMonth(), picker.getDayOfMonth(), 0, 0, 0);
+            }
+
+            mRecoverDate = date.getTimeInMillis() / 1000L;
+            displayEnterImportKey();
             break;
         case R.id.loadKey: // Import BIP-0032 encoded key
         {
@@ -2982,14 +3101,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     if(mKeyToLoad != null)
                     {
                         ImportKeyTask task = new ImportKeyTask(getApplicationContext(), mBitcoin, passcode, mKeyToLoad,
-                          mDerivationPathMethodToLoad);
+                          mDerivationPathMethodToLoad, mRecoverDate);
                         task.execute();
                         mKeyToLoad = null;
                     }
                     else
                     {
                         CreateKeyTask task = new CreateKeyTask(getApplicationContext(), mBitcoin, passcode, mSeed,
-                          mDerivationPathMethodToLoad, mSeedIsRecovered, mSeedIsBackedUp);
+                          mDerivationPathMethodToLoad, mSeedIsRecovered, mSeedIsBackedUp, mRecoverDate);
                         task.execute();
                         mSeed = null;
                     }

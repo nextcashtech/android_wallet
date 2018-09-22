@@ -110,6 +110,14 @@
         <item>BIP-0032</item>
         <item>SIMPLE</item>
     </string-array>
+    <string name="recover_date">
+        Select a date before the wallet(key) was originally created.
+        It will take half an hour per year, or longer, to query all blocks for transactions from
+        that time until now.
+        It is often more convenient, when switching devices, to send the entire balance to a new
+        wallet on the new device.
+    </string>
+    <string name="failed_to_get_recover_date">Failed to get recover date.</string>
     <string name="expand_compress">Expand/Compress</string>
     <string name="pending">Pending</string>
     <string name="send">Send</string>

@@ -87,7 +87,8 @@ extern "C"
                                                                              jstring pPassCode,
                                                                              jstring pKey,
                                                                              jint pDerivationMethod,
-                                                                             jstring pName);
+                                                                             jstring pName,
+                                                                             jlong pRecoverTime);
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_keyCount(JNIEnv *pEnvironment,
                                                                               jobject pObject);
@@ -117,7 +118,8 @@ extern "C"
                                                                              jint pDerivationMethod,
                                                                              jstring pName,
                                                                              jboolean pStartNewPass,
-                                                                             jboolean pIsBackedUp);
+                                                                             jboolean pIsBackedUp,
+                                                                             jlong pRecoverTime);
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_removeKey(JNIEnv *pEnvironment,
                                                                                jobject pObject,

@@ -310,13 +310,14 @@ public class Bitcoin
     public static final int SIMPLE_DERIVATION  = 2;
 
     // Load a key from BIP-0032 encoded text.
-    public native int loadKey(String pPassCode, String pEncodedKey, int pDerivationPath, String pName);
+    public native int loadKey(String pPassCode, String pEncodedKey, int pDerivationPath, String pName,
+      long pRecoverTime);
 
     public native String[] getMnemonicWords(String pStartingWith);
 
     // Add a key from a mnemonic seed.
     public native int addSeed(String pPassCode, String pMnemonicSeed, int pDerivationPath, String pName,
-      boolean pStartNewPass, boolean pIsBackedUp);
+      boolean pStartNewPass, boolean pIsBackedUp, long pRecoverTime);
 
     public native int removeKey(String pPassCode, int pOffset);
 

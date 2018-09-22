@@ -14,14 +14,17 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
     private String mPasscode;
     private String mKey;
     private int mDerivationMethod;
+    private long mRecoverDate;
 
-    public ImportKeyTask(Context pContext, Bitcoin pBitcoin, String pPasscode, String pKey, int pDerivationMethod)
+    public ImportKeyTask(Context pContext, Bitcoin pBitcoin, String pPasscode, String pKey, int pDerivationMethod,
+      long pRecoverDate)
     {
         mContext = pContext;
         mBitcoin = pBitcoin;
         mPasscode = pPasscode;
         mKey = pKey;
         mDerivationMethod = pDerivationMethod;
+        mRecoverDate = pRecoverDate;
     }
 
     @Override
@@ -29,7 +32,7 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
     {
         String name = String.format(Locale.getDefault(), "%s %d", mContext.getString(R.string.wallet),
           mBitcoin.walletCount() + 1);
-        return mBitcoin.loadKey(mPasscode, mKey, mDerivationMethod, name);
+        return mBitcoin.loadKey(mPasscode, mKey, mDerivationMethod, name, mRecoverDate);
     }
 
     @Override

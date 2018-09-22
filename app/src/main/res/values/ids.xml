@@ -6,6 +6,7 @@
     <item type="id" name="createWallet" />
     <item type="id" name="recoverWallet" />
     <item type="id" name="importWallet" />
+    <item type="id" name="enterImportKey" />
     <item type="id" name="loadKey" />
     <item type="id" name="updateWalletName" />
     <item type="id" name="backupWallet" />
@@ -17,5 +18,6 @@
     <item type="id" name="openScanner" />
     <item type="id" name="enterPaymentDetails" />
     <item type="id" name="importSeed" />
+    <item type="id" name="enterRecoverSeed" />
     <item type="id" name="updateRequestPaymentCode" />
 </resources>

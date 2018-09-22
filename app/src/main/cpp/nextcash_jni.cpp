@@ -729,7 +729,8 @@ extern "C"
                                                                              jstring pPassCode,
                                                                              jstring pKey,
                                                                              jint pDerivationMethod,
-                                                                             jstring pName)
+                                                                             jstring pName,
+                                                                             jlong pRecoverTime)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL)
@@ -768,7 +769,8 @@ extern "C"
 
             if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
             {
-                daemon->monitor()->setKeyStore(daemon->keyStore(), daemon->chain(), true);
+                daemon->monitor()->setKeyStore(daemon->keyStore(), daemon->chain(), true,
+                  pRecoverTime);
                 daemon->saveMonitor();
             }
             else
@@ -1040,7 +1042,8 @@ extern "C"
                                                                              jint pDerivationMethod,
                                                                              jstring pName,
                                                                              jboolean pStartNewPass,
-                                                                             jboolean pIsBackedUp)
+                                                                             jboolean pIsBackedUp,
+                                                                             jlong pRecoverTime)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL)
@@ -1086,7 +1089,8 @@ extern "C"
 
         if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
         {
-            daemon->monitor()->setKeyStore(daemon->keyStore(), daemon->chain(), pStartNewPass);
+            daemon->monitor()->setKeyStore(daemon->keyStore(), daemon->chain(), pStartNewPass,
+              pRecoverTime);
             daemon->saveMonitor();
             daemon->keyStore()->unloadPrivate();
             return (jint)0;
@@ -1396,7 +1400,7 @@ extern "C"
         pEnvironment->ReleaseStringUTFChars(pID, id);
 
         NextCash::Buffer buffer;
-        transaction.transaction.write(&buffer, false);
+        transaction.transaction.write(&buffer);
         NextCash::String hex = buffer.readHexString(buffer.length());
 
         if(!success)
