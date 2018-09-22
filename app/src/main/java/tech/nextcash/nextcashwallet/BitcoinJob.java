@@ -27,6 +27,7 @@ public class BitcoinJob extends JobService
     private ServiceConnection mServiceConnection;
     private boolean mFinished;
     private JobParameters mJobParameters;
+    private boolean mStopRequested;
 
     @Override
     public void onCreate()
@@ -68,6 +69,7 @@ public class BitcoinJob extends JobService
             }
         };
 
+        mStopRequested = false;
         mServiceIsBound = false;
         mServiceIsBinding = false;
         mService = null;
@@ -81,6 +83,17 @@ public class BitcoinJob extends JobService
                 mService.setCallBacks(mServiceCallBacks);
                 mServiceIsBound = true;
                 mServiceIsBinding = false;
+                if(mStopRequested)
+                {
+                    if(mBitcoin.appIsOpen)
+                        Log.i(logTag, "Stop previously requested, but app is now open");
+                    else
+                    {
+                        Log.i(logTag, "Stopping service because of previous request");
+                        mService.stop();
+                    }
+                    mStopRequested = false;
+                }
             }
 
             @Override
@@ -124,6 +137,7 @@ public class BitcoinJob extends JobService
         {
             Log.d(logTag, "Binding Bitcoin service");
             mServiceIsBinding = true;
+            mStopRequested = false;
             Intent intent = new Intent(this, BitcoinService.class);
             intent.putExtra("FinishMode", Bitcoin.FINISH_ON_SYNC);
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -190,7 +204,10 @@ public class BitcoinJob extends JobService
         Log.i(logTag, "Stopping job from stop job request");
         if(!mBitcoin.appIsOpen)
         {
-            mService.stop();
+            if(mService == null)
+                mStopRequested = true; // Possibly still binding
+            else
+                mService.stop();
             Log.i(logTag, "Stopping bitcoin because app is not open");
         }
         else
