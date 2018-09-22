@@ -13,7 +13,7 @@ set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions -fstack-protector" 
 #set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address" )
 
 # Set preprocessor values to configure code
-add_definitions( "-DANDROID -DLOW_MEM" )
+add_definitions( "-DANDROID -DLOW_MEM -DDISABLE_ADDRESSES" )
 
 # Disable multi-threading
 #add_definitions( "-DSINGLE_THREAD" )
