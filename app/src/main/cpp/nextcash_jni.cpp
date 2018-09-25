@@ -1024,6 +1024,7 @@ extern "C"
             return JNI_FALSE;
 
         daemon->keyStore()->setBackedUp((unsigned int)pOffset);
+        daemon->monitor()->incrementChange();
 
         return (jboolean)savePublicKeys(daemon);
     }
@@ -1032,7 +1033,8 @@ extern "C"
                                                                                              jobject pObject,
                                                                                              jint pEntropy)
     {
-        return pEnvironment->NewStringUTF(BitCoin::Key::generateMnemonicSeed(BitCoin::Mnemonic::English, pEntropy).text());
+        return pEnvironment->NewStringUTF(
+          BitCoin::Key::generateMnemonicSeed(BitCoin::Mnemonic::English, pEntropy).text());
     }
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_addSeed(JNIEnv *pEnvironment,
@@ -1053,7 +1055,6 @@ extern "C"
             return (jint)5; // Invalid pass code
 
         BitCoin::Key::DerivationPathMethod method;
-
         switch(pDerivationMethod)
         {
             default:
@@ -1071,7 +1072,6 @@ extern "C"
         const char *seed = pEnvironment->GetStringUTFChars(pSeed, NULL);
         int result = daemon->keyStore()->addSeed(seed, method);
         pEnvironment->ReleaseStringUTFChars(pSeed, seed);
-
         if(result != 0)
         {
             daemon->keyStore()->unloadPrivate();
