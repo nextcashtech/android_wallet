@@ -112,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private FullTransaction mTransaction;
     private int mTransactionWalletIndex;
     private ArrayList<String> mPersistentMessages;
+    private boolean mInitialBlockDownloadWasComplete;
 
 
     public class TransactionRunnable implements Runnable
@@ -140,6 +141,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         mBitcoin = ((MainApp)getApplication()).bitcoin;
         mBitcoin.appIsOpen = true;
+        mInitialBlockDownloadWasComplete = false;
         mDelayHandler = new Handler();
         mStatusUpdateRunnable = new Runnable() { @Override public void run() { updateStatus(); } };
         mRateUpdateRunnable = new Runnable() { @Override public void run() { startUpdateRates(); } };
@@ -496,19 +498,32 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         else if(mMode == Mode.LOADING_WALLETS)
             displayWallets();
 
-        // Update footer
-        ViewGroup footerView = findViewById(R.id.footer);
-        footerView.removeAllViews();
+        updateFooter();
+    }
 
-        View addWalletButton = inflater.inflate(R.layout.button, footerView, false);
-        addWalletButton.setTag(R.id.addWallet);
-        ((TextView)addWalletButton.findViewById(R.id.text)).setText(R.string.add_wallet);
-        footerView.addView(addWalletButton);
+    private synchronized void updateFooter()
+    {
+        if(mInitialBlockDownloadWasComplete != mBitcoin.initialBlockDownloadIsComplete())
+        {
+            mInitialBlockDownloadWasComplete = !mInitialBlockDownloadWasComplete;
 
-        View buyBitcoinButton = inflater.inflate(R.layout.button, footerView, false);
-        buyBitcoinButton.setTag(R.id.buyFromCoinbase);
-        ((TextView)buyBitcoinButton.findViewById(R.id.text)).setText(R.string.buy_bitcoin_cash);
-        footerView.addView(buyBitcoinButton);
+            LayoutInflater inflater = getLayoutInflater();
+            ViewGroup footerView = findViewById(R.id.footer);
+            footerView.removeAllViews();
+
+            if(mInitialBlockDownloadWasComplete)
+            {
+                View addWalletButton = inflater.inflate(R.layout.button, footerView, false);
+                addWalletButton.setTag(R.id.addWallet);
+                ((TextView)addWalletButton.findViewById(R.id.text)).setText(R.string.add_wallet);
+                footerView.addView(addWalletButton);
+
+                View buyBitcoinButton = inflater.inflate(R.layout.button, footerView, false);
+                buyBitcoinButton.setTag(R.id.buyFromCoinbase);
+                ((TextView)buyBitcoinButton.findViewById(R.id.text)).setText(R.string.buy_bitcoin_cash);
+                footerView.addView(buyBitcoinButton);
+            }
+        }
     }
 
     private void onChainLoad()
@@ -901,6 +916,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(ibdMessage != null)
                 ibdMessage.setVisibility(View.GONE);
         }
+
+        updateFooter();
 
         // Run again in 2 seconds
         mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
