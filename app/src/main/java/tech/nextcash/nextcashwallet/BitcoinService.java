@@ -181,6 +181,7 @@ public class BitcoinService extends Service
         IntentFilter filter = new IntentFilter(SERVICE_ACTION);
         filter.addAction(STOP_ACTION);
         registerReceiver(mReceiver, filter);
+        register();
         updateProgressNotification();
     }
 
@@ -370,23 +371,28 @@ public class BitcoinService extends Service
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
         {
-            NotificationChannel channel = new NotificationChannel(sTransactionsNotificationChannel,
-              getString(R.string.channel_transactions_name), NotificationManager.IMPORTANCE_HIGH);
-            channel.setDescription(getString(R.string.channel_transactions_description));
-
-            // Register the channel with the system
+            // Register channels.
             NotificationManager notificationManager =
               (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+            NotificationChannel channel;
+
             if(notificationManager != null)
+            {
+                channel = new NotificationChannel(sProgressNotificationChannel,
+                  getString(R.string.channel_progress_name), NotificationManager.IMPORTANCE_LOW);
+                channel.setDescription(getString(R.string.channel_progress_description));
                 notificationManager.createNotificationChannel(channel);
 
-            channel = new NotificationChannel(sProgressNotificationChannel,
-              getString(R.string.channel_progress_name), NotificationManager.IMPORTANCE_LOW);
-            channel.setDescription(getString(R.string.channel_progress_description));
-
-            // Register the channel with the system
-            if(notificationManager != null)
+                channel = new NotificationChannel(sStatusNotificationChannel,
+                  getString(R.string.channel_status_name), NotificationManager.IMPORTANCE_HIGH);
+                channel.setDescription(getString(R.string.channel_status_description));
                 notificationManager.createNotificationChannel(channel);
+
+                channel = new NotificationChannel(sTransactionsNotificationChannel,
+                  getString(R.string.channel_transactions_name), NotificationManager.IMPORTANCE_HIGH);
+                channel.setDescription(getString(R.string.channel_transactions_description));
+                notificationManager.createNotificationChannel(channel);
+            }
         }
 
         mIsRegistered = true;
@@ -396,8 +402,6 @@ public class BitcoinService extends Service
     {
         if(mIsStopped)
             return;
-
-        register();
 
         boolean isChainLoaded = mBitcoin.chainIsLoaded();
         boolean isInSync = mBitcoin.isInSync();
