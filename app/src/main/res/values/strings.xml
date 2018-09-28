@@ -2,15 +2,6 @@
     <string name="app_name">NextCash Wallet</string>
     <string name="action_settings">Settings</string>
     <string name="action_add_wallet">Add Wallet</string>
-
-    <string name="main_channel_name">Main</string>
-
-    <string name="initial_block_download_complete_title">
-        Initial Block Download Complete
-    </string>
-    <string name="initial_block_download_complete_message">
-        You can now confirm transactions.
-    </string>
     <string name="initial_block_download_message">
         The initial block download is not yet complete.
         It might take an hour or more.
@@ -26,7 +17,7 @@
     <string name="loading_wallets">Loading Wallets</string>
     <string name="loading_chain">Loading Block Chain</string>
     <string name="chain_still_loading">
-        The block chain data is loading.
+        Block chain data is loading.
         Some functions will be disabled until it finishes.
     </string>
     <string name="unable_to_find_transaction">Unable to find transaction</string>
@@ -117,11 +108,10 @@
         <item>SIMPLE</item>
     </string-array>
     <string name="recover_date">
-        Select a date before the wallet(key) was originally created.
+        Select a date before the wallet(key) was originally created to specify which blocks to query
+        for related transactions.
         It will take half an hour per year, or longer, to query all blocks for transactions from
         that time until now.
-        It is often more convenient, when switching devices, to send the entire balance to a new
-        wallet on the new device.
     </string>
     <string name="failed_to_get_recover_date">Failed to get recover date.</string>
     <string name="expand_compress">Expand/Compress</string>
@@ -163,9 +153,20 @@
     <string name="send_confirmed">Send Confirmed</string>
     <string name="double_tap_back">Double tap back to exit.</string>
 
+
+    <string name="channel_status_name">Status</string>
+    <string name="channel_status_description">
+        Status related notifications.
+    </string>
+    <string name="initial_block_download_complete_title">
+        Initial Block Download Complete
+    </string>
+    <string name="initial_block_download_complete_message">
+        You can now confirm transactions.
+    </string>
     <string name="channel_progress_name">Progress</string>
     <string name="channel_progress_description">
-        Progress of synchronization with block chain.
+        Progress of block chain synchronization.
     </string>
     <string name="monitoring">Monitoring</string>
     <string name="synchronize">Synchronize</string>
