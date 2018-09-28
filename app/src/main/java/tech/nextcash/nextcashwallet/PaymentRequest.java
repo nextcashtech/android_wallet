@@ -124,36 +124,36 @@ public class PaymentRequest
         return encode();
     }
 
-    public boolean decode(String pPaymentCode)
-    {
-        clear();
-
-        Uri theURI = Uri.parse(pPaymentCode);
-        try
-        {
-            String amountString = theURI.getQueryParameter("amount");
-            amount = Bitcoin.satoshisFromBitcoins(Double.parseDouble(amountString));
-        }
-        catch(Exception pException)
-        {
-            clear();
-            return false;
-        }
-        label = theURI.getQueryParameter("label");
-        message = theURI.getQueryParameter("message");
-        secureURL = theURI.getQueryParameter("r");
-        uri = pPaymentCode;
-
-        for(String key : theURI.getQueryParameterNames())
-            if(key.startsWith("req-"))
-            {
-                // Unknown required parameter
-                clear();
-                return false;
-            }
-
-        return true;
-    }
+//    public boolean decode(String pPaymentCode)
+//    {
+//        clear();
+//
+//        Uri theURI = Uri.parse(pPaymentCode);
+//        try
+//        {
+//            String amountString = theURI.getQueryParameter("amount");
+//            amount = Bitcoin.satoshisFromBitcoins(Double.parseDouble(amountString));
+//        }
+//        catch(Exception pException)
+//        {
+//            clear();
+//            return false;
+//        }
+//        label = theURI.getQueryParameter("label");
+//        message = theURI.getQueryParameter("message");
+//        secureURL = theURI.getQueryParameter("r");
+//        uri = pPaymentCode;
+//
+//        for(String key : theURI.getQueryParameterNames())
+//            if(key.startsWith("req-"))
+//            {
+//                // Unknown required parameter
+//                clear();
+//                return false;
+//            }
+//
+//        return true;
+//    }
 
     public boolean encode()
     {

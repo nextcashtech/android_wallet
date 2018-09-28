@@ -350,7 +350,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     break;
                 case ACTION_ACKNOWLEDGE_PAYMENT:
                     Log.i(logTag, "Acknowledge payment action received");
-                    if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasPaymentUrl())
+                    if(mPaymentRequest != null && mPaymentRequest.protocolDetails != null &&
+                      mPaymentRequest.protocolDetails.hasPaymentUrl())
                     {
                         FinishPaymentRequestTask finishPaymentRequestTask =
                           new FinishPaymentRequestTask(getApplicationContext(), mBitcoin, mCurrentWalletIndex,
@@ -508,6 +509,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         buyBitcoinButton.setTag(R.id.buyFromCoinbase);
         ((TextView)buyBitcoinButton.findViewById(R.id.text)).setText(R.string.buy_bitcoin_cash);
         footerView.addView(buyBitcoinButton);
+
+        View supportButton = inflater.inflate(R.layout.button, footerView, false);
+        supportButton.setTag(R.id.support_us);
+        ((TextView)supportButton.findViewById(R.id.text)).setText(R.string.support_us);
+        footerView.addView(supportButton);
     }
 
     private void onChainLoad()
@@ -764,7 +770,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(expires == null)
             return;
 
-        if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
+        if(mPaymentRequest != null && mPaymentRequest.protocolDetails != null &&
+          mPaymentRequest.protocolDetails.hasExpires())
         {
             expires.setVisibility(View.VISIBLE);
 
@@ -1114,7 +1121,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 Log.i(logTag, "Transaction notifications turned off");
             break;
         case R.id.usePendingToggle:
-            mPaymentRequest.usePending = ((Switch)findViewById(R.id.usePendingToggle)).isChecked();
+            if(mPaymentRequest != null)
+                mPaymentRequest.usePending = ((Switch)findViewById(R.id.usePendingToggle)).isChecked();
             updateFee(); // Update "insufficient funds" message
             break;
         }
@@ -1275,6 +1283,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public void updateFee()
     {
+        if(mPaymentRequest == null)
+            return;
+
         TextView sendFee = findViewById(R.id.sendFee);
         TextView satoshiFee = findViewById(R.id.satoshiFee);
         Spinner units = findViewById(R.id.units);
@@ -2253,45 +2264,51 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 amountField = findViewById(R.id.requestAmount);
             }
 
-            if(mPaymentRequest.amount == 0)
-                amountField.setText("");
-            else
-                switch(pPosition)
-                {
-                    case 0: // USD
-                        amountField.setText(String.format(Locale.getDefault(), "%.2f",
-                          Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount) * mExchangeRate));
-                        break;
-                    case 1: // bits
-                        amountField.setText(String.format(Locale.getDefault(), "%.6f",
-                          Bitcoin.bitsFromBitcoins(Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount))));
-                        break;
-                    case 2: // bitcoins
-                        amountField.setText(String.format(Locale.getDefault(), "%.8f",
-                          Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount)));
-                        break;
-                    default:
-                        amountField.setText("");
-                        break;
-                }
+            if(mPaymentRequest != null)
+            {
+                if(mPaymentRequest.amount == 0)
+                    amountField.setText("");
+                else
+                    switch(pPosition)
+                    {
+                        case 0: // USD
+                            amountField.setText(String.format(Locale.getDefault(), "%.2f",
+                              Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount) * mExchangeRate));
+                            break;
+                        case 1: // bits
+                            amountField.setText(String.format(Locale.getDefault(), "%.6f",
+                              Bitcoin.bitsFromBitcoins(Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount))));
+                            break;
+                        case 2: // bitcoins
+                            amountField.setText(String.format(Locale.getDefault(), "%.8f",
+                              Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount)));
+                            break;
+                        default:
+                            amountField.setText("");
+                            break;
+                    }
+            }
 
             if(!isRequest)
                 updateFee();
         }
         else if(pParent.getId() == R.id.feeRates)
         {
-            switch(pPosition)
+            if(mPaymentRequest != null)
             {
-                case 0: // Priority
-                    mPaymentRequest.feeRate = 5.0;
-                    break;
-                default:
-                case 1: // Normal
-                    mPaymentRequest.feeRate = 2.0;
-                    break;
-                case 2: // Low
-                    mPaymentRequest.feeRate = 1.0;
-                    break;
+                switch(pPosition)
+                {
+                    case 0: // Priority
+                        mPaymentRequest.feeRate = 5.0;
+                        break;
+                    default:
+                    case 1: // Normal
+                        mPaymentRequest.feeRate = 2.0;
+                        break;
+                    case 2: // Low
+                        mPaymentRequest.feeRate = 1.0;
+                        break;
+                }
             }
 
             updateFee();
@@ -2885,6 +2902,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             startActivity(coinbaseIntent);
             break;
         }
+        case R.id.support_us:
+        {
+            ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+            if(manager != null)
+            {
+                String paymentCode =
+                  "bitcoincash:qzy2cndws0c0cy8pvkxh6fmg5kzx0v47jq9gg6vczc?message=Support%20NextCash";
+                mPaymentRequest = mBitcoin.decodePaymentCode(paymentCode);
+                ClipData clip = ClipData.newPlainText("Bitcoin Cash Payment Code", paymentCode);
+                manager.setPrimaryClip(clip);
+                showMessage(getString(R.string.support_address_in_clipboard), 2000);
+            }
+            break;
+        }
         case R.id.createWallet:
             displayCreateWallet();
             break;
@@ -3043,13 +3074,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             String label = ((EditText)findViewById(R.id.label)).getText().toString();
             String message = ((EditText)findViewById(R.id.message)).getText().toString();
-            mPaymentRequest.setLabel(label);
-            mPaymentRequest.setMessage(message);
-            if(mQRCode == null)
-                mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
-            CreatePaymentRequestTask task = new CreatePaymentRequestTask(getApplicationContext(), mBitcoin,
-              mPaymentRequest, mQRCode);
-            task.execute();
+            if(mPaymentRequest != null)
+            {
+                mPaymentRequest.setLabel(label);
+                mPaymentRequest.setMessage(message);
+                if(mQRCode == null)
+                    mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
+                CreatePaymentRequestTask task = new CreatePaymentRequestTask(getApplicationContext(), mBitcoin,
+                  mPaymentRequest, mQRCode);
+                task.execute();
+            }
             break;
         }
         case R.id.openScanner:
@@ -3059,7 +3093,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
 
-            if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
+            if(mPaymentRequest != null && mPaymentRequest.protocolDetails != null &&
+              mPaymentRequest.protocolDetails.hasExpires())
             {
                 Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
                 if(mPaymentRequest.protocolDetails.getExpires() <=
@@ -3131,7 +3166,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
                 case SIGN_TRANSACTION:
                 {
-                    if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
+                    if(mPaymentRequest != null && mPaymentRequest.protocolDetails != null &&
+                      mPaymentRequest.protocolDetails.hasExpires())
                     {
                         if(mPaymentRequest.protocolDetails.getExpires() <=
                           (System.currentTimeMillis() / 1000L) + 5)
@@ -3354,7 +3390,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.sendMax:
         {
-            if(!mPaymentRequest.amountSpecified)
+            if(mPaymentRequest != null && !mPaymentRequest.amountSpecified)
             {
                 mPaymentRequest.sendMax = true;
                 findViewById(R.id.sendAmount).setEnabled(false);

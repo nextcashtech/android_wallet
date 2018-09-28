@@ -3,6 +3,7 @@
     <item type="id" name="addWallet" />
     <item type="id" name="editWallet" />
     <item type="id" name="buyFromCoinbase" />
+    <item type="id" name="support_us" />
     <item type="id" name="createWallet" />
     <item type="id" name="recoverWallet" />
     <item type="id" name="importWallet" />
