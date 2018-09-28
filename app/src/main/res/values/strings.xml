@@ -5,6 +5,12 @@
 
     <string name="main_channel_name">Main</string>
 
+    <string name="initial_block_download_complete_title">
+        Initial Block Download Complete
+    </string>
+    <string name="initial_block_download_complete_message">
+        You can now confirm transactions.
+    </string>
     <string name="initial_block_download_message">
         The initial block download is not yet complete.
         It might take an hour or more.

@@ -1,10 +1,8 @@
 package tech.nextcash.nextcashwallet;
 
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.support.v4.content.LocalBroadcastManager;
 
 import java.util.Locale;
 
@@ -16,19 +14,17 @@ public class CreateKeyTask extends AsyncTask<String, Integer, Integer>
     private String mPasscode;
     private String mSeed;
     private int mDerivationMethod;
-    private boolean mStartNewPass;
     private boolean mIsBackedUp;
     private long mRecoverDate;
 
     public CreateKeyTask(Context pContext, Bitcoin pBitcoin, String pPasscode, String pSeed,
-      int pDerivationMethod, boolean pStartNewPass, boolean pIsBackedUp, long pRecoverDate)
+      int pDerivationMethod, boolean pIsBackedUp, long pRecoverDate)
     {
         mContext = pContext;
         mBitcoin = pBitcoin;
         mPasscode = pPasscode;
         mSeed = pSeed;
         mDerivationMethod = pDerivationMethod;
-        mStartNewPass = pStartNewPass;
         mIsBackedUp = pIsBackedUp;
         mRecoverDate = pRecoverDate;
     }
@@ -38,7 +34,7 @@ public class CreateKeyTask extends AsyncTask<String, Integer, Integer>
     {
         String name = String.format(Locale.getDefault(), "%s %d", mContext.getString(R.string.wallet),
           mBitcoin.walletCount() + 1);
-        return mBitcoin.addSeed(mPasscode, mSeed, mDerivationMethod, name, mStartNewPass, mIsBackedUp, mRecoverDate);
+        return mBitcoin.addSeed(mPasscode, mSeed, mDerivationMethod, name, mIsBackedUp, mRecoverDate);
     }
 
     @Override

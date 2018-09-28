@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private String mKeyToLoad, mSeed;
     private int mSeedEntropyBytes;
     private long mRecoverDate;
-    private boolean mSeedIsRecovered, mSeedIsBackedUp;
+    private boolean mSeedIsBackedUp;
     private int mCurrentWalletIndex;
     private boolean mSeedBackupOnly;
     private int mDerivationPathMethodToLoad;
@@ -112,7 +112,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private FullTransaction mTransaction;
     private int mTransactionWalletIndex;
     private ArrayList<String> mPersistentMessages;
-    private boolean mInitialBlockDownloadWasComplete;
 
 
     public class TransactionRunnable implements Runnable
@@ -141,7 +140,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         mBitcoin = ((MainApp)getApplication()).bitcoin;
         mBitcoin.appIsOpen = true;
-        mInitialBlockDownloadWasComplete = false;
         mDelayHandler = new Handler();
         mStatusUpdateRunnable = new Runnable() { @Override public void run() { updateStatus(); } };
         mRateUpdateRunnable = new Runnable() { @Override public void run() { startUpdateRates(); } };
@@ -179,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mWalletsNeedUpdated = false;
         mDontUpdatePaymentAmount = false;
         mSeedEntropyBytes = 0;
-        mRecoverDate = 0;
+        mRecoverDate = 0L;
         mRequestedTransactionWalletIndex = -1;
         mHistoryToShowWalletIndex = -1;
         mPersistentMessages = new ArrayList<String>();
@@ -498,32 +496,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         else if(mMode == Mode.LOADING_WALLETS)
             displayWallets();
 
-        updateFooter();
-    }
+        ViewGroup footerView = findViewById(R.id.footer);
+        footerView.removeAllViews();
 
-    private synchronized void updateFooter()
-    {
-        if(mInitialBlockDownloadWasComplete != mBitcoin.initialBlockDownloadIsComplete())
-        {
-            mInitialBlockDownloadWasComplete = !mInitialBlockDownloadWasComplete;
+        View addWalletButton = inflater.inflate(R.layout.button, footerView, false);
+        addWalletButton.setTag(R.id.addWallet);
+        ((TextView)addWalletButton.findViewById(R.id.text)).setText(R.string.add_wallet);
+        footerView.addView(addWalletButton);
 
-            LayoutInflater inflater = getLayoutInflater();
-            ViewGroup footerView = findViewById(R.id.footer);
-            footerView.removeAllViews();
-
-            if(mInitialBlockDownloadWasComplete)
-            {
-                View addWalletButton = inflater.inflate(R.layout.button, footerView, false);
-                addWalletButton.setTag(R.id.addWallet);
-                ((TextView)addWalletButton.findViewById(R.id.text)).setText(R.string.add_wallet);
-                footerView.addView(addWalletButton);
-
-                View buyBitcoinButton = inflater.inflate(R.layout.button, footerView, false);
-                buyBitcoinButton.setTag(R.id.buyFromCoinbase);
-                ((TextView)buyBitcoinButton.findViewById(R.id.text)).setText(R.string.buy_bitcoin_cash);
-                footerView.addView(buyBitcoinButton);
-            }
-        }
+        View buyBitcoinButton = inflater.inflate(R.layout.button, footerView, false);
+        buyBitcoinButton.setTag(R.id.buyFromCoinbase);
+        ((TextView)buyBitcoinButton.findViewById(R.id.text)).setText(R.string.buy_bitcoin_cash);
+        footerView.addView(buyBitcoinButton);
     }
 
     private void onChainLoad()
@@ -916,8 +900,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(ibdMessage != null)
                 ibdMessage.setVisibility(View.GONE);
         }
-
-        updateFooter();
 
         // Run again in 2 seconds
         mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
@@ -2206,7 +2188,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         dialogView.addView(createWallet);
 
         mSeedIsBackedUp = false;
-        mSeedIsRecovered = false;
         mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION;
         mSeedBackupOnly = false;
 
@@ -2257,7 +2238,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 {
                     mSeedEntropyBytes = values[pPosition];
                     mSeed = mBitcoin.generateMnemonicSeed(mSeedEntropyBytes);
-                    mSeedIsRecovered = false;
                     mSeedIsBackedUp = false;
                 }
                 ((TextView)findViewById(R.id.seed)).setText(mSeed);
@@ -2505,7 +2485,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         dialogView.addView(button);
 
         focusOnText(seedWordEntry);
-        mSeedIsRecovered = true;
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.RECOVER_WALLET;
@@ -2538,7 +2517,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayWallets();
             return;
         }
-        mSeedIsRecovered = false;
         mSeedIsBackedUp = false;
         mSeedBackupOnly = true;
         ((TextView)viewSeed.findViewById(R.id.seed)).setText(mSeed);
@@ -2923,6 +2901,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 mAuthorizedTask = AuthorizedTask.ADD_KEY;
                 mKeyToLoad = null;
+                mRecoverDate = System.currentTimeMillis() / 1000L;
                 displayAuthorize();
             }
             break;
@@ -3125,7 +3104,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     else
                     {
                         CreateKeyTask task = new CreateKeyTask(getApplicationContext(), mBitcoin, passcode, mSeed,
-                          mDerivationPathMethodToLoad, mSeedIsRecovered, mSeedIsBackedUp, mRecoverDate);
+                          mDerivationPathMethodToLoad, mSeedIsBackedUp, mRecoverDate);
                         task.execute();
                         mSeed = null;
                     }
@@ -3154,9 +3133,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 {
                     if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
                     {
-                        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
                         if(mPaymentRequest.protocolDetails.getExpires() <=
-                          (calendar.getTimeInMillis() / 1000L) + 5)
+                          (System.currentTimeMillis() / 1000L) + 5)
                         {
                             showMessage(getString(R.string.request_expired), 2000);
                             mPaymentRequest = null;
@@ -3231,6 +3209,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             mAuthorizedTask = AuthorizedTask.ADD_KEY;
                             mKeyToLoad = null;
                             mSeedIsBackedUp = true;
+                            mRecoverDate = System.currentTimeMillis() / 1000L;
                             displayAuthorize();
                         }
                     }
@@ -3465,6 +3444,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case ADD_WALLET:
             mSeed = null;
             mKeyToLoad = null;
+            mRecoverDate = 0L;
             mSeedEntropyBytes = 0;
             break;
         case CREATE_WALLET:
@@ -3472,6 +3452,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case IMPORT_WALLET:
             mSeed = null;
             mKeyToLoad = null;
+            mRecoverDate = 0L;
             mSeedEntropyBytes = 0;
             displayAddOptions();
             return;
@@ -3503,6 +3484,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case NONE:
                 mSeed = null;
                 mKeyToLoad = null;
+                mRecoverDate = 0L;
                 mSeedEntropyBytes = 0;
                 break;
             case ADD_KEY:

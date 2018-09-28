@@ -167,7 +167,7 @@ public class BitcoinJob extends JobService
 
         if(settings.containsValue(Bitcoin.LAST_SYNC_NAME))
         {
-            long currentTime = System.currentTimeMillis() / 1000;
+            long currentTime = System.currentTimeMillis() / 1000L;
             long syncThreshold = currentTime - (long)(((double)syncFrequency * 60) * 0.5);
             long lastSync = settings.longValue(Bitcoin.LAST_SYNC_NAME);
             if(lastSync > syncThreshold)

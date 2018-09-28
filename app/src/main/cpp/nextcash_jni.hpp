@@ -9,16 +9,16 @@ extern "C"
 {
     // NextCash
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_NextCash_test(JNIEnv *pEnvironment,
-                                                                               jobject pObject);
+                                                                               jclass pObject);
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_NextCash_destroy(JNIEnv *pEnvironment,
-                                                                              jobject pObject);
+                                                                              jclass pObject);
 
     // Base
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_userAgent(JNIEnv *pEnvironment,
-                                                                                  jobject pObject);
+                                                                                  jclass pObject);
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_networkName(JNIEnv *pEnvironment,
-                                                                                    jobject pObject);
+                                                                                    jclass pObject);
 
     // Info
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setPath(JNIEnv *pEnvironment,
@@ -27,11 +27,11 @@ extern "C"
 
     // Initialization
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setupJNI(JNIEnv *pEnvironment,
-                                                                              jobject pObject);
+                                                                              jclass pObject);
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Wallet_setupJNI(JNIEnv *pEnvironment,
-                                                                             jobject pObject);
+                                                                             jclass pObject);
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Transaction_setupJNI(JNIEnv *pEnvironment,
-                                                                                  jobject pObject);
+                                                                                  jclass pObject);
 
     // Daemon
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_loadWallets(JNIEnv *pEnvironment,
@@ -117,7 +117,6 @@ extern "C"
                                                                              jstring pSeed,
                                                                              jint pDerivationMethod,
                                                                              jstring pName,
-                                                                             jboolean pStartNewPass,
                                                                              jboolean pIsBackedUp,
                                                                              jlong pRecoverTime);
 

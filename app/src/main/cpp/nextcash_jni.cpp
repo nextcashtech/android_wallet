@@ -107,25 +107,25 @@ extern "C"
 
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_NextCash_test(JNIEnv *pEnvironment,
-                                                                               jobject pObject)
+                                                                               jclass pObject)
     {
         return (jboolean)NextCash::test();
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_NextCash_destroy(JNIEnv *pEnvironment,
-                                                                              jobject pObject)
+                                                                              jclass pObject)
     {
         NextCash::Log::destroy();
     }
 
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_userAgent(JNIEnv *pEnvironment,
-                                                                                  jobject pObject)
+                                                                                  jclass pObject)
     {
         return pEnvironment->NewStringUTF(BITCOIN_USER_AGENT);
     }
 
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_networkName(JNIEnv *pEnvironment,
-                                                                                    jobject pObject)
+                                                                                    jclass pObject)
     {
         switch(BitCoin::network())
         {
@@ -251,7 +251,7 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setupJNI(JNIEnv *pEnvironment,
-                                                                              jobject pObject)
+                                                                              jclass pObject)
     {
         // Bitcoin
         sBitcoinClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Bitcoin");
@@ -263,7 +263,7 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Wallet_setupJNI(JNIEnv *pEnvironment,
-                                                                             jobject pObject)
+                                                                             jclass pObject)
     {
         sWalletClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Wallet");
         sWalletLastUpdatedID = pEnvironment->GetFieldID(sWalletClass, "lastUpdated", "J");
@@ -280,7 +280,7 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Transaction_setupJNI(JNIEnv *pEnvironment,
-                                                                                  jobject pObject)
+                                                                                  jclass pObject)
     {
         // This function gets called, but seems to be "unloaded" or invalidated somehow before any
         //   transactions are created with NewObject JNI function.
@@ -755,7 +755,7 @@ extern "C"
         }
 
         const char *key = pEnvironment->GetStringUTFChars(pKey, NULL);
-        int result = daemon->keyStore()->loadKey(key, method);
+        int result = daemon->keyStore()->loadKey(key, method, (int32_t)pRecoverTime);
         pEnvironment->ReleaseStringUTFChars(pKey, key);
 
         if(result == 0)
@@ -766,11 +766,11 @@ extern "C"
             pEnvironment->ReleaseStringUTFChars(pName, name);
 
             daemon->keyStore()->setBackedUp(offset);
+            daemon->monitor()->refreshKeyStore();
+            daemon->monitor()->updatePasses(daemon->chain());
 
             if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
             {
-                daemon->monitor()->setKeyStore(daemon->keyStore(), daemon->chain(), true,
-                  pRecoverTime);
                 daemon->saveMonitor();
             }
             else
@@ -1010,6 +1010,7 @@ extern "C"
               sBitcoinWalletsID);
             jobject wallet = pEnvironment->GetObjectArrayElement(wallets, pOffset);
             pEnvironment->SetObjectField(wallet, sWalletNameID, pName);
+            daemon->monitor()->incrementChange();
         }
 
         return result;
@@ -1043,7 +1044,6 @@ extern "C"
                                                                              jstring pSeed,
                                                                              jint pDerivationMethod,
                                                                              jstring pName,
-                                                                             jboolean pStartNewPass,
                                                                              jboolean pIsBackedUp,
                                                                              jlong pRecoverTime)
     {
@@ -1070,7 +1070,7 @@ extern "C"
         }
 
         const char *seed = pEnvironment->GetStringUTFChars(pSeed, NULL);
-        int result = daemon->keyStore()->addSeed(seed, method);
+        int result = daemon->keyStore()->addSeed(seed, method, (int32_t)pRecoverTime);
         pEnvironment->ReleaseStringUTFChars(pSeed, seed);
         if(result != 0)
         {
@@ -1083,15 +1083,14 @@ extern "C"
         daemon->keyStore()->setName(offset, name);
         if(pIsBackedUp)
             daemon->keyStore()->setBackedUp(offset);
-        if(!pStartNewPass)
-            daemon->keyStore()->setSynchronized(offset);
         pEnvironment->ReleaseStringUTFChars(pName, name);
+
+        daemon->monitor()->refreshKeyStore();
+        daemon->monitor()->updatePasses(daemon->chain());
+        daemon->saveMonitor();
 
         if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
         {
-            daemon->monitor()->setKeyStore(daemon->keyStore(), daemon->chain(), pStartNewPass,
-              pRecoverTime);
-            daemon->saveMonitor();
             daemon->keyStore()->unloadPrivate();
             return (jint)0;
         }

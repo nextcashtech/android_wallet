@@ -57,7 +57,7 @@ public class Transaction
             ((TextView)pView.findViewById(R.id.time)).setText(pContext.getString(R.string.not_available_abbreviation));
         else
         {
-            long diff = (System.currentTimeMillis() / 1000) - date;
+            long diff = (System.currentTimeMillis() / 1000L) - date;
             if(diff < 60)
                 ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(), "%d secs",
                   diff));
@@ -69,7 +69,7 @@ public class Transaction
                   diff / 3600));
             else
                 ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
-                  "%1$tY-%1$tm-%1$td", date * 1000));
+                  "%1$tY-%1$tm-%1$td", date * 1000L));
         }
 
         if(count == -1)

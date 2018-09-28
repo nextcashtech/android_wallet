@@ -100,11 +100,11 @@ public class Bitcoin
     {
         int height = headerHeight();
         if(height < sSampleBlockHeight)
-            return sSampleBlockHeight + (int)(((System.currentTimeMillis() / 1000) - sSampleTime) / sSecondsPerBlock);
+            return sSampleBlockHeight + (int)(((System.currentTimeMillis() / 1000L) - sSampleTime) / sSecondsPerBlock);
         else
         {
             Block block = getBlockFromHeight(height);
-            return height + (int)(((System.currentTimeMillis() / 1000) - block.time) / sSecondsPerBlock);
+            return height + (int)(((System.currentTimeMillis() / 1000L) - block.time) / sSecondsPerBlock);
         }
     }
 
@@ -317,7 +317,7 @@ public class Bitcoin
 
     // Add a key from a mnemonic seed.
     public native int addSeed(String pPassCode, String pMnemonicSeed, int pDerivationPath, String pName,
-      boolean pStartNewPass, boolean pIsBackedUp, long pRecoverTime);
+      boolean pIsBackedUp, long pRecoverTime);
 
     public native int removeKey(String pPassCode, int pOffset);
 
