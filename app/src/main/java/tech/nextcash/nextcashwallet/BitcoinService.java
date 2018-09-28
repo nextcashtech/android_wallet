@@ -36,6 +36,7 @@ public class BitcoinService extends Service
     private static final String logTag = "BitcoinService";
 
     private static final int sProgressNotificationID = 1;
+    private static final int sIBDNotificationID = 2;
 
     public static final String SERVICE_ACTION = "tech.nextcash.nextcashwallet.SERVICE_ACTION";
     public static final String STOP_ACTION = "STOP";
@@ -46,6 +47,7 @@ public class BitcoinService extends Service
     private boolean mIsRegistered, mForegroundStarted;
     private int mNextNotificationID;
     private Notification mProgressNotification;
+    private boolean mInitialBlockDownloadIsComplete;
     private int mStartBlockHeight, mStartMerkleHeight;
     private boolean mIsStopped, mRestart;
     private HashMap<String, Integer> mTransactionNotificationIDs;
@@ -70,7 +72,7 @@ public class BitcoinService extends Service
         mBitcoin = ((MainApp)getApplication()).bitcoin;
         mIsRegistered = false;
         mForegroundStarted = false;
-        mNextNotificationID = 2;
+        mNextNotificationID = 3;
         mProgressNotification = null;
         mStartBlockHeight = 0;
         mStartMerkleHeight = 0;
@@ -81,6 +83,7 @@ public class BitcoinService extends Service
         mRestart = false;
         mTransactionNotificationIDs = new HashMap<>();
         mIcon = null;
+        mInitialBlockDownloadIsComplete = false;
 
         mBitcoinRunnable = new Runnable()
         {
@@ -135,7 +138,7 @@ public class BitcoinService extends Service
                         {
                             Log.i(logTag, "Last sync time set");
                             Settings.getInstance(getFilesDir()).setLongValue(Bitcoin.LAST_SYNC_NAME,
-                              System.currentTimeMillis() / 1000);
+                              System.currentTimeMillis() / 1000L);
                         }
                     }
 
@@ -335,6 +338,7 @@ public class BitcoinService extends Service
     {
         mBitcoin.onWalletsLoaded();
         mStartMerkleHeight = mBitcoin.merkleHeight();
+        mInitialBlockDownloadIsComplete = mBitcoin.initialBlockDownloadIsComplete();
         for(CallBacks callBacks : mCallBacks)
             callBacks.onWalletsLoad();
     }
@@ -356,6 +360,7 @@ public class BitcoinService extends Service
     }
 
     private static final String sProgressNotificationChannel = "Progress";
+    private static final String sStatusNotificationChannel = "Status";
     private static final String sTransactionsNotificationChannel = "Transactions";
 
     private void register()
@@ -670,6 +675,30 @@ public class BitcoinService extends Service
         {
             if(mBitcoin.update(false))
             {
+                if(!mInitialBlockDownloadIsComplete && mBitcoin.initialBlockDownloadIsComplete())
+                {
+                    // Display initial block download complete notification
+                    Intent intent = new Intent(this, MainActivity.class);
+                    PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+
+                    if(mIcon == null)
+                        mIcon = BitmapFactory.decodeResource(getResources(), R.drawable.icon_notification_large);
+
+                    NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
+                      sStatusNotificationChannel)
+                      .setSmallIcon(R.drawable.icon_notification_small)
+                      .setLargeIcon(mIcon)
+                      .setContentTitle(getString(R.string.initial_block_download_complete_title))
+                      .setContentText(getString(R.string.initial_block_download_complete_message))
+                      .setContentIntent(pendingIntent)
+                      .setPriority(NotificationCompat.PRIORITY_HIGH)
+                      .setAutoCancel(true);
+
+                    NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+                    notificationManager.notify(sIBDNotificationID, builder.build());
+                    mInitialBlockDownloadIsComplete = true;
+                }
+
                 int offset = 0;
                 Wallet[] wallets = mBitcoin.wallets();
                 if(wallets != null)
