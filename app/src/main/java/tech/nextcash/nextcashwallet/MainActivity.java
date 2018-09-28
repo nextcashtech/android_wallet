@@ -1012,7 +1012,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(walletView == null)
                 break;
 
-            ((TextView)walletView.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance, mExchangeRate));
+            ((TextView)walletView.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance,
+              mExchangeRate));
 
             if(mExchangeRate != 0.0)
             {
@@ -1033,7 +1034,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 walletView.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
             }
 
-            if(wallet.isPrivate && mBitcoin.chainIsLoaded() && mBitcoin.initialBlockDownloadIsComplete())
+            if(wallet.isPrivate && wallet.isSynchronized && mBitcoin.chainIsLoaded() &&
+              mBitcoin.initialBlockDownloadIsComplete())
                 walletView.findViewById(R.id.walletSend).setVisibility(View.VISIBLE);
             else
                 walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
