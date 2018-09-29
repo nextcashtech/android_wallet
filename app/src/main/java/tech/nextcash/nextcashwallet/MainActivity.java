@@ -3408,9 +3408,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             if(mPaymentRequest != null && !mPaymentRequest.amountSpecified)
             {
+                if(mBitcoin.wallet(mCurrentWalletIndex).hasPending())
+                {
+                    Switch pendingToggle = findViewById(R.id.usePendingToggle);
+                    if(pendingToggle != null)
+                    {
+                        pendingToggle.setVisibility(View.VISIBLE);
+                        if(!pendingToggle.isChecked())
+                            pendingToggle.toggle();
+                    }
+                    mPaymentRequest.usePending = true;
+                }
                 mPaymentRequest.sendMax = true;
-                findViewById(R.id.sendAmount).setEnabled(false);
-                findViewById(R.id.sendAmount).setFocusable(false);
+                EditText sendAmount = findViewById(R.id.sendAmount);
+                sendAmount.setEnabled(false);
+                sendAmount.setFocusable(false);
 
                 mPaymentRequest.amount = mPaymentRequest.amountAvailable() - mPaymentRequest.estimatedFee();
                 updateFee();
