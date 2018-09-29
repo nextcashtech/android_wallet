@@ -110,6 +110,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private BroadcastReceiver mReceiver;
     private IntentIntegrator mQRScanner;
     private PaymentRequest mPaymentRequest;
+    private boolean mDisplayOptionalReceive;
     private Bitmap mQRCode;
     private boolean mDontUpdatePaymentAmount;
     private TextWatcher mSeedWordWatcher, mAmountWatcher, mRequestAmountWatcher;
@@ -189,6 +190,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mHistoryToShowWalletIndex = -1;
         mPersistentMessages = new ArrayList<String>();
         mRequestedTransactionAttempts = 0;
+        mDisplayOptionalReceive = true;
 
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
@@ -1946,154 +1948,154 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ((TextView)receiveView.findViewById(R.id.paymentCode)).setText(mPaymentRequest.uri);
             dialogView.addView(receiveView);
 
-            // Set amount
-            EditText amount = receiveView.findViewById(R.id.requestAmount);
-            TextView satoshiAmount = receiveView.findViewById(R.id.satoshiAmount);
-            if(mPaymentRequest.amount != 0)
-            {
-                amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mExchangeRate));
-                satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
-            }
+            EditText amount = null;
+
+            if(!mDisplayOptionalReceive)
+                receiveView.findViewById(R.id.optionalReceive).setVisibility(View.GONE);
             else
             {
-                amount.setText("");
-                satoshiAmount.setText(Bitcoin.satoshiText(0));
-            }
+                receiveView.findViewById(R.id.optionalReceive).setVisibility(View.VISIBLE);
 
-            if(mRequestAmountWatcher == null)
-            {
-                mRequestAmountWatcher = new TextWatcher()
+                // Set amount
+                amount = receiveView.findViewById(R.id.requestAmount);
+                TextView satoshiAmount = receiveView.findViewById(R.id.satoshiAmount);
+                if(mPaymentRequest.amount != 0)
+                {
+                    amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mExchangeRate));
+                    satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
+                }
+                else
+                {
+                    amount.setText("");
+                    satoshiAmount.setText(Bitcoin.satoshiText(0));
+                }
+
+                if(mRequestAmountWatcher == null)
+                {
+                    mRequestAmountWatcher = new TextWatcher()
+                    {
+                        @Override
+                        public void beforeTextChanged(CharSequence pString, int pStart, int pCount, int pAfter)
+                        {
+
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
+                        {
+                            Spinner units = findViewById(R.id.units);
+                            EditText amountField = findViewById(R.id.requestAmount);
+                            TextView satoshiAmount = findViewById(R.id.satoshiAmount);
+                            double amount;
+
+                            if(units == null || amountField == null || satoshiAmount == null)
+                                return;
+
+                            try
+                            {
+                                amount = Double.parseDouble(amountField.getText().toString());
+                            }
+                            catch(Exception pException)
+                            {
+                                amount = 0.0;
+                            }
+
+                            switch(units.getSelectedItemPosition())
+                            {
+                                case 0: // USD
+                                    mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount / mExchangeRate);
+                                    break;
+                                case 1: // bits
+                                    mPaymentRequest.amount = Bitcoin.satoshisFromBits(amount);
+                                    break;
+                                case 2: // bitcoins
+                                    mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount);
+                                    break;
+                                default:
+                                    mPaymentRequest.amount = 0;
+                                    break;
+                            }
+
+                            satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable pString)
+                        {
+
+                        }
+                    };
+                }
+                amount.addTextChangedListener(mRequestAmountWatcher);
+                TextView.OnEditorActionListener amountActionListener = new TextView.OnEditorActionListener()
                 {
                     @Override
-                    public void beforeTextChanged(CharSequence pString, int pStart, int pCount, int pAfter)
+                    public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
                     {
-
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
-                    {
-                        Spinner units = findViewById(R.id.units);
-                        EditText amountField = findViewById(R.id.requestAmount);
-                        TextView satoshiAmount = findViewById(R.id.satoshiAmount);
-                        double amount;
-
-                        if(units == null || amountField == null || satoshiAmount == null)
-                            return;
-
-                        try
+                        if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE || pActionId == EditorInfo.IME_ACTION_SEND || (pEvent != null && pEvent.getAction() == KeyEvent.ACTION_DOWN && pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
                         {
-                            amount = Double.parseDouble(amountField.getText().toString());
+                            processClick(pView, R.id.updateRequestPaymentCode);
+                            return true;
                         }
-                        catch(Exception pException)
-                        {
-                            amount = 0.0;
-                        }
-
-                        switch(units.getSelectedItemPosition())
-                        {
-                            case 0: // USD
-                                mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount / mExchangeRate);
-                                break;
-                            case 1: // bits
-                                mPaymentRequest.amount = Bitcoin.satoshisFromBits(amount);
-                                break;
-                            case 2: // bitcoins
-                                mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount);
-                                break;
-                            default:
-                                mPaymentRequest.amount = 0;
-                                break;
-                        }
-
-                        satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable pString)
-                    {
-
+                        return false;
                     }
                 };
+                amount.setOnEditorActionListener(amountActionListener);
+
+                Spinner units = receiveView.findViewById(R.id.units);
+                ArrayAdapter<CharSequence> unitAdapter = ArrayAdapter.createFromResource(this, R.array.amount_units, android.R.layout.simple_spinner_item);
+                unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                units.setAdapter(unitAdapter);
+                units.setOnItemSelectedListener(this);
+
+                // Label
+                if(mPaymentRequest.label != null && mPaymentRequest.label.length() > 0)
+                    ((EditText)receiveView.findViewById(R.id.label)).setText(mPaymentRequest.label);
+                TextView.OnEditorActionListener labelActionListener = new TextView.OnEditorActionListener()
+                {
+                    @Override
+                    public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
+                    {
+                        if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE || pActionId == EditorInfo.IME_ACTION_SEND || (pEvent != null && pEvent.getAction() == KeyEvent.ACTION_DOWN && pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
+                        {
+                            processClick(pView, R.id.updateRequestPaymentCode);
+                            return true;
+                        }
+                        return false;
+                    }
+                };
+                ((EditText)receiveView.findViewById(R.id.label)).setOnEditorActionListener(labelActionListener);
+
+                // Message
+                if(mPaymentRequest.message != null && mPaymentRequest.message.length() > 0)
+                    ((EditText)receiveView.findViewById(R.id.message)).setText(mPaymentRequest.message);
+                TextView.OnEditorActionListener messageActionListener = new TextView.OnEditorActionListener()
+                {
+                    @Override
+                    public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
+                    {
+                        if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE || pActionId == EditorInfo.IME_ACTION_SEND || (pEvent != null && pEvent.getAction() == KeyEvent.ACTION_DOWN && pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
+                        {
+                            processClick(pView, R.id.updateRequestPaymentCode);
+                            return true;
+                        }
+                        return false;
+                    }
+                };
+                ((EditText)receiveView.findViewById(R.id.message)).setOnEditorActionListener(messageActionListener);
+
+                // Add update button
+                View button = inflater.inflate(R.layout.button, dialogView, false);
+                button.setTag(R.id.updateRequestPaymentCode);
+                ((TextView)button.findViewById(R.id.text)).setText(R.string.update);
+                dialogView.addView(button);
             }
-            amount.addTextChangedListener(mRequestAmountWatcher);
-            TextView.OnEditorActionListener amountActionListener = new TextView.OnEditorActionListener()
-            {
-                @Override
-                public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
-                {
-                    if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE ||
-                      pActionId == EditorInfo.IME_ACTION_SEND ||
-                      (pEvent != null && pEvent.getAction() == KeyEvent.ACTION_DOWN &&
-                        pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
-                    {
-                        processClick(pView, R.id.updateRequestPaymentCode);
-                        return true;
-                    }
-                    return false;
-                }
-            };
-            amount.setOnEditorActionListener(amountActionListener);
-
-            Spinner units = receiveView.findViewById(R.id.units);
-            ArrayAdapter<CharSequence> unitAdapter = ArrayAdapter.createFromResource(this, R.array.amount_units,
-              android.R.layout.simple_spinner_item);
-            unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            units.setAdapter(unitAdapter);
-            units.setOnItemSelectedListener(this);
-
-            // Label
-            if(mPaymentRequest.label != null && mPaymentRequest.label.length() > 0)
-                ((EditText)receiveView.findViewById(R.id.label)).setText(mPaymentRequest.label);
-            TextView.OnEditorActionListener labelActionListener = new TextView.OnEditorActionListener()
-            {
-                @Override
-                public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
-                {
-                    if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE ||
-                      pActionId == EditorInfo.IME_ACTION_SEND ||
-                      (pEvent != null && pEvent.getAction() == KeyEvent.ACTION_DOWN &&
-                        pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
-                    {
-                        processClick(pView, R.id.updateRequestPaymentCode);
-                        return true;
-                    }
-                    return false;
-                }
-            };
-            ((EditText)receiveView.findViewById(R.id.label)).setOnEditorActionListener(labelActionListener);
-
-            // Message
-            if(mPaymentRequest.message != null && mPaymentRequest.message.length() > 0)
-                ((EditText)receiveView.findViewById(R.id.message)).setText(mPaymentRequest.message);
-            TextView.OnEditorActionListener messageActionListener = new TextView.OnEditorActionListener()
-            {
-                @Override
-                public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
-                {
-                    if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE ||
-                      pActionId == EditorInfo.IME_ACTION_SEND ||
-                      (pEvent != null && pEvent.getAction() == KeyEvent.ACTION_DOWN &&
-                        pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
-                    {
-                        processClick(pView, R.id.updateRequestPaymentCode);
-                        return true;
-                    }
-                    return false;
-                }
-            };
-            ((EditText)receiveView.findViewById(R.id.message)).setOnEditorActionListener(messageActionListener);
-
-            // Add update button
-            View button = inflater.inflate(R.layout.button, dialogView, false);
-            button.setTag(R.id.updateRequestPaymentCode);
-            ((TextView)button.findViewById(R.id.text)).setText(R.string.update);
-            dialogView.addView(button);
 
             dialogView.setVisibility(View.VISIBLE);
             findViewById(R.id.mainScroll).setScrollY(0);
 
-            amount.selectAll();
+            if(amount != null)
+                amount.selectAll();
 
             mMode = Mode.RECEIVE;
         }
@@ -2920,16 +2922,22 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.support_us:
         {
-            ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
-            if(manager != null)
+            synchronized(this)
             {
-                String paymentCode =
-                  "bitcoincash:qzy2cndws0c0cy8pvkxh6fmg5kzx0v47jq9gg6vczc?message=Support%20NextCash";
-                mPaymentRequest = mBitcoin.decodePaymentCode(paymentCode);
-                ClipData clip = ClipData.newPlainText("Bitcoin Cash Payment Code", paymentCode);
-                manager.setPrimaryClip(clip);
-                showMessage(getString(R.string.support_address_in_clipboard), 2000);
+                findViewById(R.id.main).setVisibility(View.GONE);
+                findViewById(R.id.progress).setVisibility(View.VISIBLE);
+                mPreviousMode = mMode;
+                mMode = Mode.IN_PROGRESS;
             }
+
+            mPaymentRequest = mBitcoin.decodePaymentCode(
+              "bitcoincash:qzy2cndws0c0cy8pvkxh6fmg5kzx0v47jq9gg6vczc?message=Support%20NextCash");
+            if(mQRCode == null)
+                mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
+            mDisplayOptionalReceive = false;
+            CreateAddressTask task = new CreateAddressTask(getApplicationContext(), mBitcoin, mPaymentRequest,
+              mQRCode);
+            task.execute();
             break;
         }
         case R.id.createWallet:
@@ -3367,11 +3375,27 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
             mCurrentWalletIndex = (int)walletView.getTag();
             mPaymentRequest = new PaymentRequest();
-            if(mQRCode == null)
-                mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
-            CreateAddressTask task = new CreateAddressTask(getApplicationContext(), mBitcoin, mCurrentWalletIndex,
-              0, mPaymentRequest, mQRCode);
-            task.execute();
+            String address = mBitcoin.getNextReceiveAddress(mCurrentWalletIndex, 0);
+            if(address == null)
+            {
+                showMessage(getString(R.string.failed_generate_address), 2000);
+                displayWallets();
+            }
+            else if(!mPaymentRequest.setAddress(address))
+            {
+                showMessage(getString(R.string.failed_generate_payment_code), 2000);
+                displayWallets();
+                break;
+            }
+            else
+            {
+                if(mQRCode == null)
+                    mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
+                mDisplayOptionalReceive = true;
+                CreateAddressTask task = new CreateAddressTask(getApplicationContext(), mBitcoin, mPaymentRequest,
+                  mQRCode);
+                task.execute();
+            }
             break;
         }
         case R.id.walletHistory:

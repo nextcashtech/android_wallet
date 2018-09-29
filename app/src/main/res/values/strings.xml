@@ -69,9 +69,6 @@
     <string name="add_wallet">Add Wallet</string>
     <string name="buy_bitcoin_cash">Buy Bitcoin Cash</string>
     <string name="support_us">Support NextCash</string>
-    <string name="support_address_in_clipboard">
-        A support address has been copied to the clipboard.
-    </string>
     <string name="create_new_key">Create New Wallet</string>
     <string name="recover_wallet">Recover Wallet</string>
     <string name="update_name">Update Name</string>
@@ -91,6 +88,7 @@
     <string name="failed_remove_wallet">Failed to remove wallet</string>
     <string name="failed_generate_address">Failed to generate address</string>
     <string name="failed_generate_payment_code">Failed to generate payment code</string>
+    <string name="failed_generate_qr">Failed to generate QR code</string>
     <string name="sent_payment">Sent Payment</string>
     <string name="failed_send_payment">Failed to send payment</string>
     <string name="failed_insufficient_funds">Insufficient Funds</string>

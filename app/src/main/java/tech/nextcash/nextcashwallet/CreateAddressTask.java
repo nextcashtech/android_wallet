@@ -17,17 +17,13 @@ public class CreateAddressTask extends AsyncTask<String, Integer, Integer>
 {
     private Context mContext;
     private Bitcoin mBitcoin;
-    private int mWalletOffset, mChainIndex;
     private PaymentRequest mPaymentRequest;
     private Bitmap mQRCode;
 
-    public CreateAddressTask(Context pContext, Bitcoin pBitcoin, int pWalletOffset, int pChainIndex,
-      PaymentRequest pPaymentRequest, Bitmap pQRCode)
+    public CreateAddressTask(Context pContext, Bitcoin pBitcoin, PaymentRequest pPaymentRequest, Bitmap pQRCode)
     {
         mContext = pContext;
         mBitcoin = pBitcoin;
-        mWalletOffset = pWalletOffset;
-        mChainIndex = pChainIndex;
         mPaymentRequest = pPaymentRequest;
         mQRCode = pQRCode;
 
@@ -37,13 +33,6 @@ public class CreateAddressTask extends AsyncTask<String, Integer, Integer>
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        String address = mBitcoin.getNextReceiveAddress(mWalletOffset, mChainIndex);
-        if(address == null)
-            return 1;
-
-        if(!mPaymentRequest.setAddress(address))
-            return 1;
-
         if(!mBitcoin.generateQRCode(mPaymentRequest.uri, mQRCode))
             return 1;
 
@@ -64,7 +53,7 @@ public class CreateAddressTask extends AsyncTask<String, Integer, Integer>
             default:
             case 1: // Unknown error
                 finishIntent.setAction(MainActivity.ACTION_DISPLAY_WALLETS); // Return from "in progress"
-                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_generate_address);
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_generate_qr);
                 break;
         }
 
