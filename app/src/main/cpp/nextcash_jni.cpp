@@ -41,6 +41,7 @@ extern "C"
     jfieldID sWalletIsSynchronizedID = NULL;
     jfieldID sWalletIsBackedUpID = NULL;
     jfieldID sWalletBalanceID = NULL;
+    jfieldID sWalletPendingBalanceID = NULL;
     jfieldID sWalletBlockHeightID = NULL;
 
     // Transaction
@@ -283,6 +284,7 @@ extern "C"
         sWalletIsSynchronizedID = pEnvironment->GetFieldID(sWalletClass, "isSynchronized", "Z");
         sWalletIsBackedUpID = pEnvironment->GetFieldID(sWalletClass, "isBackedUp", "Z");
         sWalletBalanceID = pEnvironment->GetFieldID(sWalletClass, "balance", "J");
+        sWalletPendingBalanceID = pEnvironment->GetFieldID(sWalletClass, "pendingBalance", "J");
         sWalletBlockHeightID = pEnvironment->GetFieldID(sWalletClass, "blockHeight", "I");
     }
 
@@ -870,7 +872,7 @@ extern "C"
 
         // Loop through public chain keys getting transactions
         jint headerHeight;
-        int64_t balance = 0;
+        int64_t balance = 0, pendingBalance = 0;
         bool chainWasLoaded = daemon->chainIsLoaded();
         std::vector<BitCoin::Key *> *chainKeys =
           daemon->keyStore()->chainKeys((unsigned int)pOffset);
@@ -891,6 +893,7 @@ extern "C"
 
         bool previousUpdate = pEnvironment->GetLongField(pWallet, sWalletLastUpdatedID) != 0;
         NextCash::HashList previousHashList, previousConfirmedHashList;
+        bool hasPending = false;
 
         // Check for updated transactions since previous update
         if(previousUpdate)
@@ -927,7 +930,7 @@ extern "C"
         if(chainWasLoaded)
             for(std::vector<BitCoin::Monitor::RelatedTransactionData>::iterator transaction =
               transactions.begin(); transaction != transactions.end(); ++transaction)
-                if(transaction->blockHeight != -1)
+                if(transaction->blockHeight != 0xffffffff)
                     (*transaction).transaction
                       .setTime(daemon->chain()->time(transaction->blockHeight));
 
@@ -947,6 +950,9 @@ extern "C"
             // Set value in array
             pEnvironment->SetObjectArrayElement(newTransactions, index,
               createTransaction(pEnvironment, daemon, *transaction, chainWasLoaded));
+
+            if(transaction->blockHash.isEmpty())
+                hasPending = true;
 
             if(previousUpdate)
             {
@@ -982,6 +988,11 @@ extern "C"
               updatedTransactions);
         }
 
+        if(hasPending)
+            pendingBalance = daemon->monitor()->balance(chainKeys->begin(), chainKeys->end(), true);
+        else
+            pendingBalance = balance;
+
         pEnvironment->SetObjectField(pWallet, sWalletNameID,
           pEnvironment->NewStringUTF(daemon->keyStore()->name((unsigned int)pOffset).text()));
         pEnvironment->SetBooleanField(pWallet, sWalletIsPrivateID,
@@ -991,6 +1002,7 @@ extern "C"
         pEnvironment->SetBooleanField(pWallet, sWalletIsBackedUpID,
           (jboolean)daemon->keyStore()->isBackedUp((unsigned int)pOffset));
         pEnvironment->SetLongField(pWallet, sWalletBalanceID, (jlong)balance);
+        pEnvironment->SetLongField(pWallet, sWalletPendingBalanceID, (jlong)pendingBalance);
         pEnvironment->SetIntField(pWallet, sWalletBlockHeightID, headerHeight);
         pEnvironment->SetLongField(pWallet, sWalletLastUpdatedID, (jlong)BitCoin::getTime());
         return JNI_TRUE;

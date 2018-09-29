@@ -66,14 +66,13 @@ public class Transaction
         {
             long diff = (System.currentTimeMillis() / 1000L) - date;
             if(diff < 60)
-                ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(), "%d secs",
-                  diff));
+                ((TextView)pView.findViewById(R.id.time)).setText(pContext.getString(R.string.just_now));
             else if(diff < 3600)
-                ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(), "%d mins",
-                  diff / 60));
+                ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(), "%d %s",
+                  diff / 60, pContext.getString(R.string.minutes_abbreviation)));
             else if(diff < 86400)
-                ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(), "%d hrs",
-                  diff / 3600));
+                ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(), "%d %s",
+                  diff / 3600, pContext.getString(R.string.hours_abbreviation)));
             else
                 ((TextView)pView.findViewById(R.id.time)).setText(String.format(Locale.getDefault(),
                   "%1$tY-%1$tm-%1$td", date * 1000L));

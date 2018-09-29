@@ -14,7 +14,7 @@ public class Wallet
     public boolean isPrivate;
     public boolean isSynchronized;
     public boolean isBackedUp;
-    public long balance;
+    public long balance, pendingBalance;
     public Transaction[] transactions, updatedTransactions;
     public long lastUpdated;
     public int blockHeight;

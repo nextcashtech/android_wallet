@@ -23,37 +23,45 @@
             android:paddingEnd="10dp">
 
             <LinearLayout
-                android:id="@+id/walletPendingTitle"
+                android:id="@+id/walletPendingGroup"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                <ImageView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingEnd="5dp"
-                    android:src="@drawable/baseline_timer_black_36dp"
-                    android:contentDescription="@string/pending"/>
-                <TextView
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/walletPendingTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/pending_transactions"
-                    style="@style/HeadingText"/>
-            </LinearLayout>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingEnd="5dp"
+                        android:src="@drawable/baseline_timer_black_36dp"
+                        android:contentDescription="@string/pending"/>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/pending_transactions"
+                        style="@style/HeadingText"/>
+                </LinearLayout>
 
-            <TextView
-                android:id="@+id/walletPendingSubTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/pending_transactions_description"
-                style="@style/SmallHeadingText"/>
+                <TextView
+                    android:id="@+id/walletPendingSubTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/pending_transactions_description"
+                    style="@style/SmallHeadingText"/>
 
-            <LinearLayout
-                android:id="@+id/walletPending"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingBottom="20dp"
-                android:orientation="vertical">
+                <LinearLayout
+                    android:id="@+id/walletPending"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="20dp"
+                    android:orientation="vertical">
+
+                </LinearLayout>
 
             </LinearLayout>
 

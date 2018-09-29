@@ -1031,9 +1031,24 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ((TextView)walletView.findViewById(R.id.walletName)).setText(wallet.name);
 
             if(wallet.hasPending())
+            {
                 walletView.findViewById(R.id.walletPendingIcon).setVisibility(View.VISIBLE);
+                walletView.findViewById(R.id.walletPendingGroup).setVisibility(View.VISIBLE);
+
+                ((TextView)walletView.findViewById(R.id.walletPendingBalance)).setText(Bitcoin.amountText(
+                  wallet.pendingBalance, mExchangeRate));
+
+                if(mExchangeRate != 0.0)
+                {
+                    ((TextView)walletView.findViewById(R.id.walletBitcoinPendingBalance)).setText(String.format(
+                      Locale.getDefault(), "%,.5f BCH", Bitcoin.bitcoinsFromSatoshis(wallet.pendingBalance)));
+                }
+            }
             else
+            {
                 walletView.findViewById(R.id.walletPendingIcon).setVisibility(View.GONE);
+                walletView.findViewById(R.id.walletPendingGroup).setVisibility(View.GONE);
+            }
 
             if(!wallet.isPrivate)
             {
@@ -2802,19 +2817,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             transactionViewGroup.addView(transactionView);
         }
 
-        if(pendingCount > 0)
-        {
-            pView.findViewById(R.id.walletPendingTitle).setVisibility(View.VISIBLE);
-            pView.findViewById(R.id.walletPendingSubTitle).setVisibility(View.VISIBLE);
-            pendingView.setVisibility(View.VISIBLE);
-        }
-        else
-        {
-            pView.findViewById(R.id.walletPendingTitle).setVisibility(View.GONE);
-            pView.findViewById(R.id.walletPendingSubTitle).setVisibility(View.GONE);
-            pendingView.setVisibility(View.GONE);
-        }
-
         if(recentCount > 0)
         {
             pView.findViewById(R.id.walletRecentTitle).setVisibility(View.VISIBLE);
@@ -2857,6 +2859,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         ViewGroup historyView = (ViewGroup)inflater.inflate(R.layout.wallet_history, dialogView, false);
         ((TextView)historyView.findViewById(R.id.title)).setText(wallet.name);
+
+        if(wallet.hasPending())
+            historyView.findViewById(R.id.walletPendingGroup).setVisibility(View.VISIBLE);
+        else
+            historyView.findViewById(R.id.walletPendingGroup).setVisibility(View.GONE);
 
         ViewGroup transactions = historyView.findViewById(R.id.walletTransactions);
         populateTransactions(transactions, wallet.transactions,

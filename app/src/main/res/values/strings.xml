@@ -120,6 +120,7 @@
     <string name="failed_to_get_recover_date">Failed to get recover date.</string>
     <string name="expand_compress">Expand/Compress</string>
     <string name="pending">Pending</string>
+    <string name="pending_balance">Unconfirmed Balance</string>
     <string name="send">Send</string>
     <string name="receive">Receive</string>
     <string name="add_amount">Add Amount</string>
@@ -141,6 +142,9 @@
     <string name="validated_by">Validated by</string>
     <string name="peers_period"> nodes.</string>
     <string name="time_title">Time</string>
+    <string name="just_now">just now</string>
+    <string name="minutes_abbreviation">mins</string>
+    <string name="hours_abbreviation">hrs</string>
     <string name="confirms_title">Confirms</string>
     <string name="confirmations">Confirmations</string>
     <string name="not_available_abbreviation">N/A</string>
