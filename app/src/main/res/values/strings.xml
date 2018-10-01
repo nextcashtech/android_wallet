@@ -12,6 +12,10 @@
     <string name="synchronizing">Synchronizing</string>
     <string name="needs_backed_up">Needs Backed Up</string>
 
+    <string name="add_wallet_message">
+        Use the \"+\" button in the lower right to add a wallet to begin using Bitcoin Cash.
+    </string>
+
     <string name="beta_message">
         This is a Beta release.
         That means there is the potential to lose any Bitcoin Cash you put into the wallet.

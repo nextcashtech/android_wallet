@@ -204,6 +204,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             settings.setLongValue("beta_message", System.currentTimeMillis() / 1000);
         }
 
+        if(!settings.containsValue("add_wallet_message"))
+        {
+            addPersistentMessage(getString(R.string.add_wallet_message));
+            settings.setLongValue("add_wallet_message", System.currentTimeMillis() / 1000);
+        }
+
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
             @Override
