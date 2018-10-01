@@ -49,11 +49,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"/>
-                <LinearLayout
-                    android:id="@+id/footer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"/>
             </LinearLayout>
             <LinearLayout
                 android:id="@+id/dialog"
@@ -62,6 +57,60 @@
                 android:orientation="vertical"/>
         </LinearLayout>
     </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/controls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_above="@id/statusBar"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="20dp">
+
+        <ImageView
+            android:id="@+id/giveFeedBack"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginBottom="10dp"
+            android:padding="5dp"
+            android:background="@drawable/control_button_background"
+            android:src="@drawable/baseline_bug_report_white_36dp"
+            android:tooltipText="@string/give_feedback"
+            android:onClick="onClick"/>
+
+        <ImageView
+            android:id="@+id/supportNextCash"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginBottom="10dp"
+            android:padding="8dp"
+            android:background="@drawable/control_button_background"
+            android:src="@drawable/baseline_favorite_white_36dp"
+            android:tooltipText="@string/support_nextcash"
+            android:onClick="onClick"/>
+
+        <ImageView
+            android:id="@+id/buyFromCoinbase"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginBottom="10dp"
+            android:padding="5dp"
+            android:background="@drawable/control_button_background"
+            android:src="@drawable/baseline_attach_money_white_36dp"
+            android:tooltipText="@string/buy_bitcoin_cash"
+            android:onClick="onClick"/>
+
+        <ImageView
+            android:id="@+id/addWallet"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:padding="5dp"
+            android:background="@drawable/control_button_background"
+            android:src="@drawable/baseline_add_white_36dp"
+            android:tooltipText="@string/add_wallet"
+            android:onClick="onClick"/>
+
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/statusBar"

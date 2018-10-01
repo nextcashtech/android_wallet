@@ -16,7 +16,7 @@
         This is a Beta release.
         That means there is the potential to lose any Bitcoin Cash you put into the wallet.
         Please only put small amounts in your wallet until Beta testing is complete.
-        Please use for small regular transactions and provide feedback.
+        Please use for small regular transactions and provide feedback with the \"bug\" button.
     </string>
 
     <string name="inactive">Inactive</string>
@@ -75,11 +75,13 @@
     <string name="title_wallet_history">Wallet History</string>
     <string name="add_wallet">Add Wallet</string>
     <string name="buy_bitcoin_cash">Buy Bitcoin Cash</string>
+    <string name="opening_coinbase_website">Opening Coinbase Website</string>
     <string name="support_nextcash">Support NextCash</string>
     <string name="support_nextcash_description">
         Send Bitcoin Cash to this address to support NextCash development.
     </string>
     <string name="give_feedback">Give Feedback</string>
+    <string name="opening_email">Opening Email</string>
     <string name="create_new_key">Create New Wallet</string>
     <string name="recover_wallet">Recover Wallet</string>
     <string name="update_name">Update Name</string>
