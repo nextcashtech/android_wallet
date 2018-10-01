@@ -2920,10 +2920,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public synchronized void displayProgress()
     {
-//        ViewGroup dialogView = findViewById(R.id.dialog);
-//        dialogView.removeAllViews();
+        // ViewGroup dialogView = findViewById(R.id.dialog);
+        // dialogView.removeAllViews();
 
-        displayProgress();
+        findViewById(R.id.main).setVisibility(View.GONE);
+        findViewById(R.id.dialog).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+        findViewById(R.id.controls).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.VISIBLE);
+        mMode = Mode.IN_PROGRESS;
     }
 
     public void processClick(View pView, int pID)
