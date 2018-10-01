@@ -1026,8 +1026,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             if(mExchangeRate != 0.0)
             {
-                ((TextView)walletView.findViewById(R.id.walletBitcoinBalance)).setText(String.format(Locale.getDefault(),
-                  "%,.5f BCH", Bitcoin.bitcoinsFromSatoshis(wallet.balance)));
+                ((TextView)walletView.findViewById(R.id.walletBitcoinBalance)).setText(
+                  Bitcoin.satoshiText(wallet.balance));
             }
 
             ((TextView)walletView.findViewById(R.id.walletName)).setText(wallet.name);
@@ -1041,10 +1041,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                   wallet.pendingBalance, mExchangeRate));
 
                 if(mExchangeRate != 0.0)
-                {
-                    ((TextView)walletView.findViewById(R.id.walletBitcoinPendingBalance)).setText(String.format(
-                      Locale.getDefault(), "%,.5f BCH", Bitcoin.bitcoinsFromSatoshis(wallet.pendingBalance)));
-                }
+                    ((TextView)walletView.findViewById(R.id.walletBitcoinPendingBalance)).setText(
+                      Bitcoin.satoshiText(wallet.pendingBalance));
             }
             else
             {
@@ -2712,7 +2710,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         ViewGroup row;
         int rowCount = pView.getChildCount();
-        TextView entry;
+        View entry;
         int widest[] = new int[pColumnCount];
         int width;
         boolean shade = false;
@@ -2721,10 +2719,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         for(int rowOffset = 0; rowOffset < rowCount; rowOffset++)
         {
             row = (ViewGroup)pView.getChildAt(rowOffset);
-
             for(int columnOffset = 0; columnOffset < pColumnCount; columnOffset++)
             {
-                entry = (TextView)row.getChildAt(columnOffset);
+                entry = row.getChildAt(columnOffset);
                 entry.measure(0, 0);
                 width = entry.getMeasuredWidth();
                 if(width > widest[columnOffset])
@@ -2736,11 +2733,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         for(int rowOffset = 0; rowOffset < rowCount; rowOffset++)
         {
             row = (ViewGroup)pView.getChildAt(rowOffset);
-
             for(int columnOffset = 0; columnOffset < pColumnCount; columnOffset++)
             {
-                entry = (TextView)row.getChildAt(columnOffset);
-                entry.setWidth(widest[columnOffset]);
+                entry = row.getChildAt(columnOffset);
+                entry.setMinimumWidth(widest[columnOffset]);
+                //TODO entry.setWidth(widest[columnOffset]);
             }
 
             if(shade)
