@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private BroadcastReceiver mReceiver;
     private IntentIntegrator mQRScanner;
     private PaymentRequest mPaymentRequest;
-    private boolean mDisplayOptionalReceive;
+    private boolean mIsSupportURI;
     private Bitmap mQRCode;
     private boolean mDontUpdatePaymentAmount;
     private TextWatcher mSeedWordWatcher, mAmountWatcher, mRequestAmountWatcher;
@@ -193,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mHistoryToShowWalletIndex = -1;
         mPersistentMessages = new ArrayList<String>();
         mRequestedTransactionAttempts = 0;
-        mDisplayOptionalReceive = true;
+        mIsSupportURI = false;
         mMessages = new Messages();
         mMessages.load(getApplicationContext());
         refreshPersistentMessages();
@@ -532,9 +532,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         footerView.addView(buyBitcoinButton);
 
         View supportButton = inflater.inflate(R.layout.button, footerView, false);
-        supportButton.setTag(R.id.support_us);
-        ((TextView)supportButton.findViewById(R.id.text)).setText(R.string.support_us);
+        supportButton.setTag(R.id.supportNextCash);
+        ((TextView)supportButton.findViewById(R.id.text)).setText(R.string.support_nextcash);
         footerView.addView(supportButton);
+
+        View feedBackButton = inflater.inflate(R.layout.button, footerView, false);
+        feedBackButton.setTag(R.id.giveFeedBack);
+        ((TextView)feedBackButton.findViewById(R.id.text)).setText(R.string.give_feedback);
+        footerView.addView(feedBackButton);
     }
 
     private void onChainLoad()
@@ -1960,8 +1965,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             EditText amount = null;
 
-            if(!mDisplayOptionalReceive)
+            if(mIsSupportURI)
+            {
                 receiveView.findViewById(R.id.optionalReceive).setVisibility(View.GONE);
+                ((TextView)receiveView.findViewById(R.id.receiveTitle)).setText(R.string.support_nextcash);
+                ((TextView)receiveView.findViewById(R.id.receiveDescription))
+                  .setText(R.string.support_nextcash_description);
+            }
             else
             {
                 receiveView.findViewById(R.id.optionalReceive).setVisibility(View.VISIBLE);
@@ -2929,7 +2939,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             startActivity(coinbaseIntent);
             break;
         }
-        case R.id.support_us:
+        case R.id.supportNextCash:
         {
             synchronized(this)
             {
@@ -2943,10 +2953,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
               "bitcoincash:qzy2cndws0c0cy8pvkxh6fmg5kzx0v47jq9gg6vczc?message=Support%20NextCash");
             if(mQRCode == null)
                 mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
-            mDisplayOptionalReceive = false;
+            mIsSupportURI = true;
             CreateAddressTask task = new CreateAddressTask(getApplicationContext(), mBitcoin, mPaymentRequest,
               mQRCode);
             task.execute();
+            break;
+        }
+        case R.id.giveFeedBack:
+        {
+            String feedBackUrl = "mailto:development@nextcash.tech?subject=Android%20Feedback";
+            Intent feedBackIntent = new Intent(Intent.ACTION_VIEW);
+            feedBackIntent.setData(Uri.parse(feedBackUrl));
+            startActivity(feedBackIntent);
             break;
         }
         case R.id.createWallet:
@@ -3400,7 +3418,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 if(mQRCode == null)
                     mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
-                mDisplayOptionalReceive = true;
+                mIsSupportURI = false;
                 CreateAddressTask task = new CreateAddressTask(getApplicationContext(), mBitcoin, mPaymentRequest,
                   mQRCode);
                 task.execute();

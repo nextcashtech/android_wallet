@@ -7,6 +7,7 @@
     android:padding="20dp">
 
     <TextView
+        android:id="@+id/receiveTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         style="@style/HeadingText"
@@ -16,6 +17,7 @@
         android:text="@string/receive_payment_code"/>
 
     <TextView
+        android:id="@+id/receiveDescription"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="5dp"

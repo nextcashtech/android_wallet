@@ -11,8 +11,6 @@ import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
 
-import java.text.DateFormat;
-import java.util.Date;
 import java.util.Locale;
 
 
