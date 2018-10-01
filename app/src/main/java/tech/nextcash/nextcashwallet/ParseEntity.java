@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
@@ -118,6 +119,8 @@ public class ParseEntity implements Iterable<ParseEntity>
                 return "boolean";
             case 'r':
                 return "bytes";
+            case 'a':
+                return "array";
             default:
                 return "unknown - " + pType;
         }
@@ -133,6 +136,7 @@ public class ParseEntity implements Iterable<ParseEntity>
         protected static final char doubleType = 'd';
         protected static final char boolType = 'b';
         protected static final char bytesType = 'r';
+        protected static final char arrayType = 'a';
 
         protected char type;
 
@@ -350,6 +354,32 @@ public class ParseEntity implements Iterable<ParseEntity>
             byte[] bytes = new byte[length];
             pStream.read(bytes);
             return new BytesValue(bytes);
+        }
+
+        //public String toString()
+        //{
+        //    return Double.toString(value);
+        //}
+    }
+
+    // TODO Add interface for arrays
+    private static class ArrayValue extends Value
+    {
+        ArrayList<Value> value;
+
+        public ArrayValue()
+        {
+            type = arrayType;
+            value = new ArrayList<>();
+        }
+
+        @Override
+        public void write(DataOutputStream pStream) throws IOException
+        {
+            pStream.writeByte(type);
+            pStream.writeInt(value.size());
+            for(Value item : value)
+                item.write(pStream);
         }
 
         //public String toString()
@@ -834,6 +864,17 @@ public class ParseEntity implements Iterable<ParseEntity>
                 return BoolValue.read(pStream);
             case Value.bytesType:
                 return BytesValue.read(pStream);
+            case Value.arrayType:
+            {
+                ArrayValue result = new ArrayValue();
+                int size = pStream.readInt();
+
+                result.value.ensureCapacity(size);
+                for(int i = 0; i < size; i++)
+                    result.value.add(readValue(pStream));
+
+                return result;
+            }
             default:
                 throw new TypeException("Invalid type found for value : " + valueType);
         }
@@ -896,7 +937,8 @@ public class ParseEntity implements Iterable<ParseEntity>
         throw new ParseException(String.format("Did not contain value, children, or empty flag : %s", name));
     }
 
-    public static ParseEntity readFromFile(File pDirectory, String pFilePathName) throws TypeException, ParseException, IOException
+    public static ParseEntity readFromFile(File pDirectory, String pFilePathName) throws TypeException, ParseException,
+      IOException
     {
         Log.i(logTag, String.format("Reading file %s", pFilePathName));
         ParseEntity result = new ParseEntity();

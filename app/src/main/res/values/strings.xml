@@ -12,6 +12,13 @@
     <string name="synchronizing">Synchronizing</string>
     <string name="needs_backed_up">Needs Backed Up</string>
 
+    <string name="beta_message">
+        This is a Beta release.
+        That means there is the potential to lose any Bitcoin Cash you put into the wallet.
+        Please only put small amounts in your wallet until Beta testing is complete.
+        Please use for small regular transactions and provide feedback.
+    </string>
+
     <string name="inactive">Inactive</string>
     <string name="loading">Loading</string>
     <string name="loading_wallets">Loading Wallets</string>

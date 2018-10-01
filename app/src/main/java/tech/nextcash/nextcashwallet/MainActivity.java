@@ -120,6 +120,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private FullTransaction mTransaction;
     private int mTransactionWalletIndex;
     private ArrayList<String> mPersistentMessages;
+    private Messages mMessages;
 
 
     public class TransactionRunnable implements Runnable
@@ -145,6 +146,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        Settings settings = Settings.getInstance(getApplicationContext().getFilesDir());
 
         mBitcoin = ((MainApp)getApplication()).bitcoin;
         mBitcoin.appIsOpen = true;
@@ -180,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mPreviousMode = Mode.LOADING_WALLETS;
         mAuthorizedTask = AuthorizedTask.NONE;
         mFinishOnBack = false;
-        mExchangeRate = Settings.getInstance(getFilesDir()).doubleValue("usd_rate");
+        mExchangeRate = settings.doubleValue("usd_rate");
         mCurrentWalletIndex = -1;
         mWalletsNeedUpdated = false;
         mDontUpdatePaymentAmount = false;
@@ -191,6 +194,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mPersistentMessages = new ArrayList<String>();
         mRequestedTransactionAttempts = 0;
         mDisplayOptionalReceive = true;
+        mMessages = new Messages();
+        mMessages.load(getApplicationContext());
+        refreshPersistentMessages();
+
+        if(!settings.containsValue("beta_message"))
+        {
+            addPersistentMessage(getString(R.string.beta_message));
+            settings.setLongValue("beta_message", System.currentTimeMillis() / 1000);
+        }
 
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
@@ -294,7 +306,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         if(pIntent.getExtras().containsKey(MainActivity.ACTION_MESSAGE_PERSISTENT_FIELD))
                         {
                             Log.i(logTag, String.format("Persistent message contained in action : %s", message));
-                            showPersistentMessage(message);
+                            addPersistentMessage(message);
                         }
                         else
                         {
@@ -3473,6 +3485,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         otherMessageView = headerView.getChildAt(index);
                         if(otherMessageView == messageView)
                         {
+                            mMessages.dismissMessage(mPersistentMessages.get(index));
+                            mMessages.save(getApplicationContext());
                             mPersistentMessages.remove(index);
                             break;
                         }
@@ -3493,7 +3507,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mDelayHandler.postDelayed(mClearNotification, pDelay);
     }
 
-    public synchronized void showPersistentMessage(String pText)
+    public synchronized void refreshPersistentMessages()
+    {
+        ArrayList<String> activeMessages = mMessages.activeMessages();
+        for(String message : activeMessages)
+            showPersistentMessage(message);
+    }
+
+    public synchronized void addPersistentMessage(String pText)
+    {
+        mMessages.addMessage(pText);
+        mMessages.save(getApplicationContext());
+        showPersistentMessage(pText);
+    }
+
+    private synchronized void showPersistentMessage(String pText)
     {
         mPersistentMessages.add(pText);
         ViewGroup headerView = findViewById(R.id.header);
