@@ -524,8 +524,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         else if(mMode == Mode.LOADING_WALLETS)
             displayWallets();
-
-        findViewById(R.id.controls).setVisibility(View.VISIBLE);
     }
 
     private void onChainLoad()
@@ -2963,7 +2961,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.giveFeedBack:
         {
-            String feedBackUrl = "mailto:development@nextcash.tech?subject=Android%20Feedback";
+            String feedBackUrl = "mailto:beta_test@nextcash.test?subject=Android%20Feedback";
             Intent feedBackIntent = new Intent(Intent.ACTION_VIEW);
             feedBackIntent.setData(Uri.parse(feedBackUrl));
             startActivity(feedBackIntent);
