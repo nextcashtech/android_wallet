@@ -2949,8 +2949,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             displayProgress();
 
+            // Some wallets don't support BIP-0021 ?message=Support%20NextCash");
             mPaymentRequest = mBitcoin.decodePaymentCode(
-              "bitcoincash:qzy2cndws0c0cy8pvkxh6fmg5kzx0v47jq9gg6vczc?message=Support%20NextCash");
+              "bitcoincash:qzy2cndws0c0cy8pvkxh6fmg5kzx0v47jq9gg6vczc");
             if(mQRCode == null)
                 mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
             mIsSupportURI = true;
