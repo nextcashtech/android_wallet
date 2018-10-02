@@ -293,8 +293,8 @@
     <string name="legacy">Legacy</string>
     <string name="cash">Cash</string>
     <string name="address">Address</string>
-    <string name="pub_key_hash">public key</string>
-    <string name="script_hash">script</string>
+    <string name="pub_key_hash">Public Key Hash</string>
+    <string name="script_hash">Script Hash</string>
     <string name="amount_request">Amount Request</string>
     <string name="secure">Secure</string>
     <string name="payment_code">Payment Code</string>

@@ -1503,9 +1503,9 @@ extern "C"
             pEnvironment->SetIntField(inputObject, sInputSequenceID, (jint)input->sequence);
 
             // Address
-            if(!transaction.inputAddresses[offset].isEmpty())
+            if(transaction.inputAddresses[offset])
                 pEnvironment->SetObjectField(inputObject, sInputAddressID,
-                  pEnvironment->NewStringUTF(BitCoin::encodeCashAddress(transaction.inputAddresses[offset])));
+                  pEnvironment->NewStringUTF(transaction.inputAddresses[offset]));
 
             // Amount
             pEnvironment->SetLongField(inputObject, sInputAmountID,
@@ -1538,9 +1538,9 @@ extern "C"
                 daemon->chain()->forks(), daemon->chain()->headerHeight())));
 
             // Address
-            if(!transaction.outputAddresses[offset].isEmpty())
+            if(transaction.outputAddresses[offset])
                 pEnvironment->SetObjectField(outputObject, sOutputAddressID,
-                  pEnvironment->NewStringUTF(BitCoin::encodeCashAddress(transaction.outputAddresses[offset])));
+                  pEnvironment->NewStringUTF(transaction.outputAddresses[offset]));
 
             // Related
             pEnvironment->SetBooleanField(outputObject, sOutputRelatedID,

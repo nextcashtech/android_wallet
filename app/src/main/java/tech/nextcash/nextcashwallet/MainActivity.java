@@ -1466,25 +1466,27 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         }
 
-        String typeText;
+        String title;
+        if(mPaymentRequest.secure)
+            title = String.format("%s %s %s", getString(R.string.secure), formatText, getString(R.string.address));
+        else
+            title = String.format("%s %s", formatText, getString(R.string.address));
+
+        ((TextView)sendView.findViewById(R.id.title)).setText(title);
+
+        String subtitle;
         switch(mPaymentRequest.type)
         {
             default:
             case PaymentRequest.TYPE_PUB_KEY_HASH:
-                typeText = getString(R.string.pub_key_hash);
+                subtitle = getString(R.string.pub_key_hash);
                 break;
             case PaymentRequest.TYPE_SCRIPT_HASH:
-                typeText = getString(R.string.script_hash);
+                subtitle = getString(R.string.script_hash);
                 break;
         }
 
-        String title;
-        if(mPaymentRequest.secure)
-            title = String.format("%s %s %s (%s)", getString(R.string.secure), formatText, getString(R.string.address), typeText);
-        else
-            title = String.format("%s %s (%s)", formatText, getString(R.string.address), typeText);
-
-        ((TextView)sendView.findViewById(R.id.title)).setText(title);
+        ((TextView)sendView.findViewById(R.id.subtitle)).setText(subtitle);
 
         ((TextView)sendView.findViewById(R.id.walletName)).setText(wallet.name);
 
@@ -1787,8 +1789,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ((TextView)inputView.findViewById(R.id.outpointIndex)).setText(String.format(Locale.getDefault(),
               "%s %d", getString(R.string.index), input.outpointIndex));
 
-            ((TextView)inputView.findViewById(R.id.sequence)).setText(String.format(Locale.getDefault(), "0x%08x",
-              input.sequence));
+            ((TextView)inputView.findViewById(R.id.sequence)).setText(String.format(Locale.getDefault(),
+              "0x%08x", input.sequence));
 
             if(input.address != null && input.address.length() > 0)
                 ((TextView)inputView.findViewById(R.id.address)).setText(input.address);
