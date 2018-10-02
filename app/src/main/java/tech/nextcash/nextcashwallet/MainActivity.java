@@ -1417,6 +1417,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         if(mPaymentRequest.format == PaymentRequest.FORMAT_INVALID ||
           (mPaymentRequest.type != PaymentRequest.TYPE_PUB_KEY_HASH &&
+          mPaymentRequest.type != PaymentRequest.TYPE_SCRIPT_HASH &&
           mPaymentRequest.type != PaymentRequest.TYPE_BIP0700))
         {
             showMessage(getString(R.string.invalid_payment_code), 2000);
@@ -1465,11 +1466,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         }
 
+        String typeText;
+        switch(mPaymentRequest.type)
+        {
+            default:
+            case PaymentRequest.TYPE_PUB_KEY_HASH:
+                typeText = getString(R.string.pub_key_hash);
+                break;
+            case PaymentRequest.TYPE_SCRIPT_HASH:
+                typeText = getString(R.string.script_hash);
+                break;
+        }
+
         String title;
         if(mPaymentRequest.secure)
-            title = String.format("%s %s %s", getString(R.string.secure), formatText, getString(R.string.address));
+            title = String.format("%s %s %s (%s)", getString(R.string.secure), formatText, getString(R.string.address), typeText);
         else
-            title = String.format("%s %s", formatText, getString(R.string.address));
+            title = String.format("%s %s (%s)", formatText, getString(R.string.address), typeText);
 
         ((TextView)sendView.findViewById(R.id.title)).setText(title);
 
@@ -3370,7 +3383,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 showMessage(getString(R.string.failed_generate_address), 2000);
                 displayWallets();
             }
-            else if(!mPaymentRequest.setAddress(address))
+            else if(!mPaymentRequest.setAddress(address, PaymentRequest.TYPE_PUB_KEY_HASH))
             {
                 showMessage(getString(R.string.failed_generate_payment_code), 2000);
                 displayWallets();

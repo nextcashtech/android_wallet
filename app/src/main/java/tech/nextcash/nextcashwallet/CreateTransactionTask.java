@@ -37,9 +37,11 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
         if(mRequest.paymentScript != null)
             result = mBitcoin.sendOutputPayment(mWalletOffset, mPassCode, mRequest.paymentScript, mRequest.amount,
               mRequest.feeRate, mRequest.usePending);
-        else
-            result = mBitcoin.sendP2PKHPayment(mWalletOffset, mPassCode, mRequest.address, mRequest.amount,
+        else if(mRequest.type == PaymentRequest.TYPE_PUB_KEY_HASH || mRequest.type == PaymentRequest.TYPE_SCRIPT_HASH)
+            result = mBitcoin.sendStandardPayment(mWalletOffset, mPassCode, mRequest.address, mRequest.amount,
               mRequest.feeRate, mRequest.usePending, mRequest.sendMax);
+        else
+            result = 3;
 
         return result;
     }

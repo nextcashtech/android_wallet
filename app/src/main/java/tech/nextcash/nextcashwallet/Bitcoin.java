@@ -337,7 +337,7 @@ public class Bitcoin
     // Send a P2PKH (Pay to Public Key Hash) payment
     // Amount in satoshis
     // Fee rate in satoshis per byte of transaction size
-    public native int sendP2PKHPayment(int pWalletOffset, String pPassCode, String pAddress, long pAmount,
+    public native int sendStandardPayment(int pWalletOffset, String pPassCode, String pAddress, long pAmount,
       double pFeeRate, boolean pUsePending, boolean pSendAll);
 
     // Send a payment given a specific output script to pay

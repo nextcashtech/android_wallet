@@ -12,9 +12,6 @@ import android.net.Uri;
 import java.io.ByteArrayInputStream;
 import java.util.Locale;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.compiler.PluginProtos;
-
 
 public class PaymentRequest
 {
@@ -106,10 +103,10 @@ public class PaymentRequest
         outpoints = null;
     }
 
-    public boolean setAddress(String pAddress)
+    public boolean setAddress(String pAddress, int pType)
     {
         address = pAddress;
-        type = TYPE_PUB_KEY_HASH;
+        type = pType;
         return encode();
     }
 

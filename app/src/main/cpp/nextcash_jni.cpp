@@ -1558,15 +1558,15 @@ extern "C"
         return JNI_TRUE;
     }
 
-    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendP2PKHPayment(JNIEnv *pEnvironment,
-                                                                                      jobject pObject,
-                                                                                      jint pWalletOffset,
-                                                                                      jstring pPassCode,
-                                                                                      jstring pAddress,
-                                                                                      jlong pAmount,
-                                                                                      jdouble pFeeRate,
-                                                                                      jboolean pUsePending,
-                                                                                      jboolean pSendAll)
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendStandardPayment(JNIEnv *pEnvironment,
+                                                                                         jobject pObject,
+                                                                                         jint pWalletOffset,
+                                                                                         jstring pPassCode,
+                                                                                         jstring pAddress,
+                                                                                         jlong pAmount,
+                                                                                         jdouble pFeeRate,
+                                                                                         jboolean pUsePending,
+                                                                                         jboolean pSendAll)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL || daemon->keyStore()->size() <= pWalletOffset)
@@ -1578,23 +1578,25 @@ extern "C"
         NextCash::Hash hash;
         BitCoin::AddressType type;
         const char *address = pEnvironment->GetStringUTFChars(pAddress, NULL);
-        if(!BitCoin::decodeCashAddress(address, hash, type))
-            BitCoin::decodeLegacyAddress(address, hash, type);
-        pEnvironment->ReleaseStringUTFChars(pAddress, address);
-
-        if(hash.size() != 20 || type != BitCoin::AddressType::MAIN_PUB_KEY_HASH)
+        if(!BitCoin::decodeCashAddress(address, hash, type) &&
+          !BitCoin::decodeLegacyAddress(address, hash, type))
         {
+            pEnvironment->ReleaseStringUTFChars(pAddress, address);
             daemon->keyStore()->unloadPrivate();
             return (jint)3; // Invalid Hash
         }
+        pEnvironment->ReleaseStringUTFChars(pAddress, address);
 
-        int result = daemon->sendP2PKHPayment((unsigned int)pWalletOffset, hash, (uint64_t)pAmount,
-          pFeeRate, pUsePending, pSendAll);
+        int result = daemon->sendStandardPayment((unsigned int)pWalletOffset, type, hash,
+          (uint64_t)pAmount, pFeeRate, pUsePending, pSendAll);
 
-        if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
-            daemon->saveMonitor();
-        else
-            result = 1; // Failed to save
+        if(result == 0)
+        {
+            if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
+                daemon->saveMonitor();
+            else
+                result = 1; // Failed to save
+        }
 
         return (jint)result;
     }
