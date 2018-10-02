@@ -774,6 +774,7 @@ extern "C"
             daemon->keyStore()->setName(offset, name);
             pEnvironment->ReleaseStringUTFChars(pName, name);
 
+            daemon->resetKeysSynchronized();
             daemon->keyStore()->setBackedUp(offset);
             daemon->monitor()->refreshKeyStore();
             daemon->monitor()->updatePasses(daemon->chain());
@@ -1100,6 +1101,7 @@ extern "C"
         unsigned int offset = daemon->keyStore()->size() - 1;
         const char *name = pEnvironment->GetStringUTFChars(pName, NULL);
         daemon->keyStore()->setName(offset, name);
+        daemon->resetKeysSynchronized();
         if(pIsBackedUp)
             daemon->keyStore()->setBackedUp(offset);
         pEnvironment->ReleaseStringUTFChars(pName, name);
