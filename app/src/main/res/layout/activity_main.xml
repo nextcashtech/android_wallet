@@ -49,6 +49,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"/>
+                <LinearLayout
+                    android:id="@+id/controlsPadding"
+                    android:layout_width="wrap_content"
+                    android:layout_height="90dp"
+                    android:orientation="horizontal"/>
             </LinearLayout>
             <LinearLayout
                 android:id="@+id/dialog"
@@ -62,7 +67,7 @@
         android:id="@+id/controls"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:layout_above="@id/statusBar"
         android:layout_alignParentEnd="true"
         android:layout_margin="20dp">
@@ -71,7 +76,7 @@
             android:id="@+id/giveFeedBack"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_marginBottom="10dp"
+            android:layout_marginRight="10dp"
             android:padding="5dp"
             android:background="@drawable/control_button_background"
             android:src="@drawable/baseline_bug_report_white_36dp"
@@ -82,7 +87,7 @@
             android:id="@+id/supportNextCash"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_marginBottom="10dp"
+            android:layout_marginRight="10dp"
             android:padding="8dp"
             android:background="@drawable/control_button_background"
             android:src="@drawable/baseline_favorite_white_36dp"
@@ -93,7 +98,7 @@
             android:id="@+id/buyFromCoinbase"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:layout_marginBottom="10dp"
+            android:layout_marginRight="10dp"
             android:padding="5dp"
             android:background="@drawable/control_button_background"
             android:src="@drawable/baseline_attach_money_white_36dp"

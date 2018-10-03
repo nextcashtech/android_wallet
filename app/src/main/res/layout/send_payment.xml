@@ -107,7 +107,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:layout_marginRight="10dp"
+            android:layout_marginEnd="10dp"
             android:text="@string/send_max"
             android:padding="8dp"
             android:textColor="@color/buttonText"
