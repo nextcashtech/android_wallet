@@ -46,6 +46,7 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -1339,61 +1340,22 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             findViewById(R.id.usingPending).setVisibility(View.GONE);
         }
 
-        switch(units.getSelectedItemPosition())
-        {
-            case 0: // USD
-                sendFee.setText(String.format(Locale.getDefault(), "%.2f",
-                  Bitcoin.bitcoinsFromSatoshis(feeSatoshis) * mExchangeRate));
-                break;
-            case 1: // bits
-                sendFee.setText(String.format(Locale.getDefault(), "%.2f",
-                  Bitcoin.bitsFromBitcoins(Bitcoin.bitcoinsFromSatoshis(feeSatoshis))));
-                break;
-            case 2: // bitcoins
-                sendFee.setText(String.format(Locale.getDefault(), "%.8f",
-                  Bitcoin.bitcoinsFromSatoshis(feeSatoshis)));
-                break;
-            default:
-                sendFee.setText(String.format(Locale.getDefault(), "%.2f",
-                  0.0));
-                break;
-        }
-
+        sendFee.setText(amountText(units.getSelectedItemPosition(), feeSatoshis));
         satoshiFee.setText(Bitcoin.satoshiText(feeSatoshis));
     }
 
-    // Update amount fields based on mPaymentAmount value
+    // Update amount fields based on Payment Request value
     public void updateSendAmount()
     {
         Spinner units = findViewById(R.id.units);
         EditText amountField = findViewById(R.id.sendAmount);
         TextView satoshiAmount = findViewById(R.id.satoshiAmount);
-        double amount;
 
         if(units == null || amountField == null || satoshiAmount == null)
             return;
 
         mDontUpdatePaymentAmount = true;
-        switch(units.getSelectedItemPosition())
-        {
-            case 0: // USD
-                amount = Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount) * mExchangeRate;
-                amountField.setText(String.format(Locale.getDefault(), "%.2f", amount));
-                break;
-            case 1: // bits
-                amount = Bitcoin.bitsFromSatoshis(mPaymentRequest.amount);
-                amountField.setText(String.format(Locale.getDefault(), "%.6f", amount));
-                break;
-            case 2: // bitcoins
-                amount = Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount);
-                amountField.setText(String.format(Locale.getDefault(), "%.8f", amount));
-                break;
-            default:
-                amount = 0.0;
-                amountField.setText(String.format(Locale.getDefault(), "%.2f", amount));
-                break;
-        }
-
+        amountField.setText(amountText(units.getSelectedItemPosition(), mPaymentRequest.amount));
         satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
     }
 
@@ -1522,11 +1484,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         EditText amount = sendView.findViewById(R.id.sendAmount);
         TextView satoshiAmount = sendView.findViewById(R.id.satoshiAmount);
+        Spinner units = sendView.findViewById(R.id.units);
         if(mPaymentRequest.amountSpecified)
         {
-            amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mExchangeRate));
+            amount.setText(amountText(Bitcoin.FIAT, mPaymentRequest.amount));
             satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
+
             sendView.findViewById(R.id.sendMax).setVisibility(View.GONE);
+
+            // Align amount field to end of parent
+            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams)units.getLayoutParams();
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END);
+            units.setLayoutParams(layoutParams);
         }
         else
             satoshiAmount.setText(Bitcoin.satoshiText(0));
@@ -1616,18 +1585,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             amount.setOnEditorActionListener(amountListener);
         }
 
-        Spinner units = sendView.findViewById(R.id.units);
-        ArrayAdapter<CharSequence> unitAdapter = ArrayAdapter.createFromResource(this, R.array.amount_units,
-          android.R.layout.simple_spinner_item);
-        unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        units.setAdapter(unitAdapter);
+//        ArrayAdapter<CharSequence> unitAdapter = ArrayAdapter.createFromResource(this, R.array.amount_units,
+//          android.R.layout.simple_spinner_item);
+//        unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//        units.setAdapter(unitAdapter);
         units.setOnItemSelectedListener(this);
+        units.setSelection(Bitcoin.FIAT); // Default to Fiat
 
         Spinner feeRates = sendView.findViewById(R.id.feeRates);
-        ArrayAdapter<CharSequence> feeRateAdapter = ArrayAdapter.createFromResource(this, R.array.fee_rates,
-          android.R.layout.simple_spinner_item);
-        feeRateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        feeRates.setAdapter(feeRateAdapter);
+//        ArrayAdapter<CharSequence> feeRateAdapter = ArrayAdapter.createFromResource(this, R.array.fee_rates,
+//          android.R.layout.simple_spinner_item);
+//        feeRateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//        feeRates.setAdapter(feeRateAdapter);
         feeRates.setOnItemSelectedListener(this);
         feeRates.setSelection(2); // Default to Low
 
@@ -2303,6 +2272,24 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.CREATE_WALLET;
     }
 
+    public String amountText(int pUnitType, long pSatoshis)
+    {
+        switch(pUnitType)
+        {
+            case Bitcoin.FIAT:
+                return String.format(Locale.getDefault(), "%.2f",
+                  Bitcoin.bitcoinsFromSatoshis(pSatoshis) * mExchangeRate);
+            case Bitcoin.BITS:
+                return String.format(Locale.getDefault(), "%.2f",
+                  Bitcoin.bitsFromSatoshis(pSatoshis));
+            case Bitcoin.BITCOINS:
+                return String.format(Locale.getDefault(), "%.8f",
+                  Bitcoin.bitcoinsFromSatoshis(pSatoshis));
+            default:
+                return getString(R.string.not_available_abbreviation);
+        }
+    }
+
     @Override
     public void onItemSelected(AdapterView<?> pParent, View pView, int pPosition, long pID)
     {
@@ -2338,24 +2325,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 if(mPaymentRequest.amount == 0)
                     amountField.setText("");
                 else
-                    switch(pPosition)
-                    {
-                        case 0: // USD
-                            amountField.setText(String.format(Locale.getDefault(), "%.2f",
-                              Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount) * mExchangeRate));
-                            break;
-                        case 1: // bits
-                            amountField.setText(String.format(Locale.getDefault(), "%.2f",
-                              Bitcoin.bitsFromBitcoins(Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount))));
-                            break;
-                        case 2: // bitcoins
-                            amountField.setText(String.format(Locale.getDefault(), "%.8f",
-                              Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount)));
-                            break;
-                        default:
-                            amountField.setText("");
-                            break;
-                    }
+                    amountField.setText(amountText(pPosition, mPaymentRequest.amount));
             }
 
             if(!isRequest)

@@ -56,14 +56,19 @@ public class Bitcoin
         mWallets = new Wallet[0];
     }
 
+    // Units
+    public static final int FIAT = 0;
+    public static final int BITS = 1;
+    public static final int BITCOINS = 2;
+
     public static double bitcoinsFromSatoshis(long pSatoshis)
     {
-        return (double)pSatoshis / 100000000;
+        return (double)pSatoshis / 100000000.0;
     }
 
     public static double bitsFromSatoshis(long pSatoshis)
     {
-        return (double)pSatoshis / 1000000;
+        return (double)pSatoshis / 100.0;
     }
 
     public static long satoshisFromBitcoins(double pBitcoins)
@@ -73,7 +78,7 @@ public class Bitcoin
 
     public static double bitsFromBitcoins(double pBitcoins)
     {
-        return pBitcoins * 1000000.0;
+        return pBitcoins * 0.000001;
     }
 
     public static long satoshisFromBits(double pBits)
