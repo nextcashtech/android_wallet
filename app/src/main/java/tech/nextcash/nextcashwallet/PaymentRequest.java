@@ -47,7 +47,7 @@ public class PaymentRequest
     public PaymentRequestBufferProtocols.PaymentDetails protocolDetails;
 
     // For calculations
-    public boolean usePending, sendMax;
+    public boolean sendMax;
     public double feeRate;
     public Outpoint[] outpoints;
 
@@ -59,7 +59,6 @@ public class PaymentRequest
         amountSpecified = false;
         secure = false;
         expires = 0;
-        usePending = false;
         sendMax = false;
         feeRate = 1.0;
     }
@@ -98,7 +97,6 @@ public class PaymentRequest
         paymentScript = null;
         expires = 0;
         transactionID = null;
-        usePending = false;
         sendMax = false;
         outpoints = null;
     }
@@ -189,16 +187,21 @@ public class PaymentRequest
         return false;
     }
 
-    public long amountAvailable()
+    public long amountAvailable(boolean pIncludePending)
     {
         if(outpoints == null)
             return 0L;
 
         long result = 0L;
         for(Outpoint outpoint : outpoints)
-            if(usePending || outpoint.confirmations > 0)
+            if(pIncludePending || outpoint.confirmations > 0)
                 result += outpoint.output.amount;
         return result;
+    }
+
+    public boolean requiresPending()
+    {
+        return amount > amountAvailable(false);
     }
 
     public long estimatedTransactionSize()
@@ -209,15 +212,13 @@ public class PaymentRequest
         long inputAmount = 0;
         int inputCount = 0;
         for(Outpoint outpoint : outpoints)
-            if(usePending || outpoint.confirmations > 0)
-            {
-                inputAmount += outpoint.output.amount;
-                inputCount++;
+        {
+            inputAmount += outpoint.output.amount;
+            inputCount++;
 
-                if(inputAmount > amount + (Bitcoin.estimatedP2PKHSize(inputCount, 2) *
-                  feeRate))
-                    break;
-            }
+            if(inputAmount > amount + (Bitcoin.estimatedP2PKHSize(inputCount, 2) * feeRate))
+                break;
+        }
 
         return Bitcoin.estimatedP2PKHSize(inputCount == 0 ? 1 : inputCount, sendMax ? 1 : 2);
     }

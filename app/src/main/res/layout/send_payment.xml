@@ -50,18 +50,6 @@
     </LinearLayout>
 
     <TextView
-        android:id="@+id/insufficientFunds"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/insufficient_funds"
-        android:background="@color/warningBackground"
-        android:textColor="@color/warningText"
-        android:padding="10dp"
-        android:layout_marginTop="10dp"
-        android:layout_gravity="center"
-        android:visibility="gone"/>
-
-    <TextView
         android:id="@+id/expires"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -85,21 +73,71 @@
             style="@style/SubHeadingText"/>
     </LinearLayout>
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/amountAvailableTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/pending_balance"
+            android:layout_marginEnd="10dp"
+            android:layout_gravity="center_vertical"/>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/amountAvailable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginStart="8dp"
+                style="@style/SubHeadingText"
+                android:textAlignment="textEnd"
+                android:text="$1.25"/>
+
+            <TextView
+                android:id="@+id/bitcoinAmountAvailable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginStart="8dp"
+                android:textAlignment="textEnd"
+                android:text="0 123 456 789"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/insufficientFunds"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/insufficient_funds"
+        android:background="@color/warningBackground"
+        android:textColor="@color/textNegative"
+        android:padding="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_gravity="center"/>
+
+    <TextView
+        android:id="@+id/usingPending"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/using_pending"
+        android:textColor="@color/textWarning"
+        android:padding="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_gravity="center"/>
+
     <RelativeLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp">
-
-        <Switch
-            android:id="@+id/usePendingToggle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:switchPadding="10dp"
-            style="@style/SubHeadingText"
-            android:text="@string/use_pending"/>
 
         <TextView
             android:id="@+id/sendMax"

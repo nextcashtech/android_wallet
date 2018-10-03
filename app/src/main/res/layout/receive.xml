@@ -23,22 +23,25 @@
         android:padding="5dp"
         android:text="@string/receive_description"/>
 
-    <ImageView
-        android:id="@+id/image"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:contentDescription="@string/payment_code_qr"/>
-
     <TextView
-        android:layout_marginTop="10dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:text="@string/tap_to_copy"/>
+
+    <ImageView
+        android:id="@+id/qrImage"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:layout_margin="10dp"
+        android:contentDescription="@string/payment_code_qr"
+        android:onClick="onClick"/>
 
     <TextView
         android:id="@+id/paymentCode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:onClick="onClick"/>
 
     <LinearLayout

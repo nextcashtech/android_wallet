@@ -110,7 +110,7 @@
     <string name="failed_send_payment">Failed to send payment</string>
     <string name="failed_insufficient_funds">Insufficient Funds</string>
     <string name="insufficient_funds">Insufficient Funds</string>
-    <string name="use_pending">Use Pending</string>
+    <string name="using_pending">Spending Unconfirmed</string>
     <string name="failed_invalid_address">Invalid Address</string>
     <string name="failed_change_address">Change Address Not Found</string>
     <string name="failed_signing">Failed to Sign Transaction</string>
@@ -135,6 +135,7 @@
     <string name="failed_to_get_recover_date">Failed to get recover date.</string>
     <string name="expand_compress">Expand/Compress</string>
     <string name="pending">Pending</string>
+    <string name="balance">Balance</string>
     <string name="pending_balance">Unconfirmed Balance</string>
     <string name="send">Send</string>
     <string name="receive">Receive</string>

@@ -17,22 +17,20 @@
 
         <TextView
             android:id="@+id/amount"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
             style="@style/SubHeadingText"
-            android:textAlignment="textEnd"
-            android:text="$1.25"/>
+            android:textAlignment="textEnd"/>
 
         <TextView
             android:id="@+id/bitcoinAmount"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
-            android:textAlignment="textEnd"
-            android:text="0 123 456 789"/>
+            android:textAlignment="textEnd"/>
 
     </LinearLayout>
 
@@ -42,8 +40,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_gravity="center_vertical"
-        style="@style/SubHeadingText"
-        android:text="just now"/>
+        style="@style/SubHeadingText"/>
 
     <TextView
         android:id="@+id/count"
@@ -53,7 +50,6 @@
         android:layout_marginStart="8dp"
         style="@style/SubHeadingText"
         android:textAlignment="textEnd"
-        android:layout_gravity="center_vertical"
-        android:text="9+"/>
+        android:layout_gravity="center_vertical"/>
 
 </LinearLayout>

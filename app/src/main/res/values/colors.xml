@@ -21,7 +21,7 @@
     <color name="highlight">#fffa</color>
     <color name="textNegative">#fa21</color>
     <color name="textNegativeLight">#f810</color>
-    <color name="textWarning">#fa90</color>
+    <color name="textWarning">#ff93</color>
     <color name="textPositive">#f180</color>
     <color name="heading">#f666</color>
 </resources>

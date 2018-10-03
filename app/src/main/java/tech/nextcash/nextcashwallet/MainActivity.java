@@ -1147,11 +1147,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             else
                 Log.i(logTag, "Transaction notifications turned off");
             break;
-        case R.id.usePendingToggle:
-            if(mPaymentRequest != null)
-                mPaymentRequest.usePending = ((Switch)findViewById(R.id.usePendingToggle)).isChecked();
-            updateFee(); // Update "insufficient funds" message
-            break;
         }
     }
 
@@ -1320,7 +1315,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         Spinner units = findViewById(R.id.units);
 
         long feeSatoshis = mPaymentRequest.estimatedFee();
-        long available = mPaymentRequest.amountAvailable();
+        long available = mPaymentRequest.amountAvailable(true);
 
         if(mPaymentRequest.sendMax)
         {
@@ -1331,10 +1326,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(mPaymentRequest.amount + feeSatoshis > available)
         {
             findViewById(R.id.insufficientFunds).setVisibility(View.VISIBLE);
-            findViewById(R.id.usePendingToggle).setVisibility(View.VISIBLE);
+            findViewById(R.id.usingPending).setVisibility(View.GONE);
+        }
+        else if(mPaymentRequest.requiresPending())
+        {
+            findViewById(R.id.insufficientFunds).setVisibility(View.GONE);
+            findViewById(R.id.usingPending).setVisibility(View.VISIBLE);
         }
         else
+        {
             findViewById(R.id.insufficientFunds).setVisibility(View.GONE);
+            findViewById(R.id.usingPending).setVisibility(View.GONE);
+        }
 
         switch(units.getSelectedItemPosition())
         {
@@ -1488,14 +1491,34 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         ((TextView)sendView.findViewById(R.id.subtitle)).setText(subtitle);
 
+        // Wallet info
         ((TextView)sendView.findViewById(R.id.walletName)).setText(wallet.name);
+        if(wallet.hasPending())
+            ((TextView)sendView.findViewById(R.id.amountAvailableTitle)).setText(getString(R.string.pending_balance));
+        else
+            ((TextView)sendView.findViewById(R.id.amountAvailableTitle)).setText(getString(R.string.balance));
+        ((TextView)sendView.findViewById(R.id.amountAvailable)).setText(
+          Bitcoin.amountText(mPaymentRequest.amountAvailable(true), mExchangeRate));
+        ((TextView)sendView.findViewById(R.id.bitcoinAmountAvailable)).setText(
+          Bitcoin.satoshiText(mPaymentRequest.amountAvailable(true)));
 
-        // Configure "use pending" toggle
-        Switch usePending = sendView.findViewById(R.id.usePendingToggle);
-        if(!mPaymentRequest.usePending)
-            usePending.setVisibility(View.GONE);
-        usePending.setChecked(mPaymentRequest.usePending);
-        usePending.setOnCheckedChangeListener(this);
+        // Insufficient funds/using pending messages
+        if(mPaymentRequest.amount + mPaymentRequest.estimatedFee() >
+          mPaymentRequest.amountAvailable(true))
+        {
+            sendView.findViewById(R.id.insufficientFunds).setVisibility(View.VISIBLE);
+            sendView.findViewById(R.id.usingPending).setVisibility(View.GONE);
+        }
+        else if(mPaymentRequest.requiresPending())
+        {
+            sendView.findViewById(R.id.insufficientFunds).setVisibility(View.GONE);
+            sendView.findViewById(R.id.usingPending).setVisibility(View.VISIBLE);
+        }
+        else
+        {
+            sendView.findViewById(R.id.insufficientFunds).setVisibility(View.GONE);
+            sendView.findViewById(R.id.usingPending).setVisibility(View.GONE);
+        }
 
         EditText amount = sendView.findViewById(R.id.sendAmount);
         TextView satoshiAmount = sendView.findViewById(R.id.satoshiAmount);
@@ -1955,7 +1978,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ViewGroup receiveView = (ViewGroup)inflater.inflate(R.layout.receive, dialogView, false);
 
             // Set image and text
-            ((ImageView)receiveView.findViewById(R.id.image)).setImageBitmap(mQRCode);
+            ((ImageView)receiveView.findViewById(R.id.qrImage)).setImageBitmap(mQRCode);
             ((TextView)receiveView.findViewById(R.id.paymentCode)).setText(mPaymentRequest.uri);
             dialogView.addView(receiveView);
 
@@ -2933,9 +2956,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public synchronized void displayProgress()
     {
-        // ViewGroup dialogView = findViewById(R.id.dialog);
-        // dialogView.removeAllViews();
-
         findViewById(R.id.main).setVisibility(View.GONE);
         findViewById(R.id.dialog).setVisibility(View.GONE);
         findViewById(R.id.statusBar).setVisibility(View.GONE);
@@ -2946,6 +2966,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public void processClick(View pView, int pID)
     {
+        View focus = getCurrentFocus();
+        if(focus != null)
+        {
+            InputMethodManager imManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            if(imManager != null)
+                imManager.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+        }
+
         switch(pID)
         {
         case R.id.addWallet:
@@ -3432,27 +3460,30 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
             break;
         }
+        case R.id.qrImage:
+        {
+            TextView paymentCode = findViewById(R.id.paymentCode);
+            ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+            if(paymentCode != null && manager != null)
+            {
+                ClipData clip = ClipData.newPlainText("Bitcoin Cash Payment Code",
+                  paymentCode.getText().toString());
+                manager.setPrimaryClip(clip);
+                showMessage(getString(R.string.payment_code_clipboard), 2000);
+            }
+            break;
+        }
         case R.id.sendMax:
         {
             if(mPaymentRequest != null && !mPaymentRequest.amountSpecified)
             {
-                if(mBitcoin.wallet(mCurrentWalletIndex).hasPending())
-                {
-                    Switch pendingToggle = findViewById(R.id.usePendingToggle);
-                    if(pendingToggle != null)
-                    {
-                        pendingToggle.setVisibility(View.VISIBLE);
-                        if(!pendingToggle.isChecked())
-                            pendingToggle.toggle();
-                    }
-                    mPaymentRequest.usePending = true;
-                }
                 mPaymentRequest.sendMax = true;
                 EditText sendAmount = findViewById(R.id.sendAmount);
                 sendAmount.setEnabled(false);
                 sendAmount.setFocusable(false);
 
-                mPaymentRequest.amount = mPaymentRequest.amountAvailable() - mPaymentRequest.estimatedFee();
+                mPaymentRequest.amount = mPaymentRequest.amountAvailable(true) -
+                  mPaymentRequest.estimatedFee();
                 updateFee();
             }
             break;

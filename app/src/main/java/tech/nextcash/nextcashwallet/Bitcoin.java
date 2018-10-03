@@ -12,11 +12,13 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitArray;
 import com.google.zxing.common.BitMatrix;
 
+import java.util.HashMap;
 import java.util.Locale;
 
 
@@ -198,10 +200,11 @@ public class Bitcoin
 
         try
         {
-            BitMatrix bitMatrix = multiFormatWriter.encode(pURI, BarcodeFormat.QR_CODE, QR_WIDTH, QR_WIDTH);
+            HashMap<EncodeHintType,String> hints = new HashMap<>();
+            hints.put(EncodeHintType.MARGIN, "0");
+            BitMatrix bitMatrix = multiFormatWriter.encode(pURI, BarcodeFormat.QR_CODE, QR_WIDTH, QR_WIDTH, hints);
             BitArray rowBits = new BitArray(QR_WIDTH);
             int row[] = new int[QR_WIDTH];
-            int on = 0xffffffff;
 
             for(int y = 0; y < QR_WIDTH; y++)
             {
@@ -209,9 +212,9 @@ public class Bitcoin
                 for(int x = 0; x < QR_WIDTH; x++)
                 {
                     if(rowBits.get(x))
-                        row[x] = on;
+                        row[x] = 0xffffffff;
                     else
-                        row[x] = 0;
+                        row[x] = 0x00000000;
                 }
                 pBitmap.setPixels(row, 0, QR_WIDTH, 0, y, QR_WIDTH, 1);
             }
