@@ -309,7 +309,7 @@
     <string-array name="amount_units">
         <item>USD</item>
         <item>bits</item>
-        <item>bitcoins</item>
+        <item>BCH</item>
     </string-array>
     <string-array name="fee_rates">
         <item>Priority</item>

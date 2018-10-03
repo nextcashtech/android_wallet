@@ -163,7 +163,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_toStartOf="@id/sendMax"
-            android:layout_centerVertical="true"/>
+            android:layout_centerVertical="true"
+            android:entries="@array/amount_units"/>
 
         <TextView
             android:id="@+id/sendMax"
@@ -194,8 +195,7 @@
         <TextView
             android:id="@+id/satoshiAmount"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 00 000 000"/>
+            android:layout_height="wrap_content"/>
     </LinearLayout>
 
     <RelativeLayout
@@ -245,8 +245,7 @@
                 <TextView
                     android:id="@+id/satoshiFee"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0 00 000 000"/>
+                    android:layout_height="wrap_content"/>
             </LinearLayout>
         </LinearLayout>
 
@@ -256,7 +255,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_centerVertical="true"
-            android:layout_toEndOf="@id/feeAmountGroup"/>
+            android:layout_toEndOf="@id/feeAmountGroup"
+            android:entries="@array/fee_rates"/>
 
     </RelativeLayout>
 
@@ -272,7 +272,6 @@
         android:id="@+id/description"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:text="This is the description"/>
+        android:layout_marginTop="5dp"/>
 
 </LinearLayout>
