@@ -3455,6 +3455,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 mPaymentRequest.amount = mPaymentRequest.amountAvailable() - mPaymentRequest.estimatedFee();
                 updateFee();
             }
+            break;
         }
         case R.id.systemNotificationSettings:
         {
@@ -3466,6 +3467,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 //.putExtra(Settings.EXTRA_CHANNEL_ID, MY_CHANNEL_ID);
                 startActivity(settingsIntent);
             }
+            break;
         }
         case R.id.closeMessage:
             synchronized(this)
