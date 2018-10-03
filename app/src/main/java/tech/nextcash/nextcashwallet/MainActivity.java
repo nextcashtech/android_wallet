@@ -1346,7 +1346,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                   Bitcoin.bitcoinsFromSatoshis(feeSatoshis) * mExchangeRate));
                 break;
             case 1: // bits
-                sendFee.setText(String.format(Locale.getDefault(), "%.6f",
+                sendFee.setText(String.format(Locale.getDefault(), "%.2f",
                   Bitcoin.bitsFromBitcoins(Bitcoin.bitcoinsFromSatoshis(feeSatoshis))));
                 break;
             case 2: // bitcoins
@@ -2345,7 +2345,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                               Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount) * mExchangeRate));
                             break;
                         case 1: // bits
-                            amountField.setText(String.format(Locale.getDefault(), "%.6f",
+                            amountField.setText(String.format(Locale.getDefault(), "%.2f",
                               Bitcoin.bitsFromBitcoins(Bitcoin.bitcoinsFromSatoshis(mPaymentRequest.amount))));
                             break;
                         case 2: // bitcoins

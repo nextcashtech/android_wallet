@@ -134,27 +134,6 @@
     <RelativeLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp">
-
-        <TextView
-            android:id="@+id/sendMax"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="10dp"
-            android:text="@string/send_max"
-            android:padding="8dp"
-            android:textColor="@color/buttonText"
-            android:background="@drawable/button_background"
-            android:onClick="onClick"/>
-
-    </RelativeLayout>
-
-    <RelativeLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <TextView
@@ -183,8 +162,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
+            android:layout_toStartOf="@id/sendMax"
+            android:layout_centerVertical="true"/>
+
+        <TextView
+            android:id="@+id/sendMax"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:layout_alignParentEnd="true"/>
+            android:layout_marginEnd="10dp"
+            android:text="@string/send_max"
+            android:padding="8dp"
+            android:textColor="@color/buttonText"
+            android:background="@drawable/button_background"
+            android:onClick="onClick"/>
 
     </RelativeLayout>
 
@@ -202,7 +194,8 @@
         <TextView
             android:id="@+id/satoshiAmount"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:text="0 00 000 000"/>
     </LinearLayout>
 
     <RelativeLayout
