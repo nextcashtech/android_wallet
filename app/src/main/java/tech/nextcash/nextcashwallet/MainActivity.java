@@ -2966,7 +2966,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mPaymentRequest = mBitcoin.decodePaymentCode(
               "bitcoincash:qzy2cndws0c0cy8pvkxh6fmg5kzx0v47jq9gg6vczc");
             if(mQRCode == null)
-                mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
+                mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
             mIsSupportURI = true;
             CreateAddressTask task = new CreateAddressTask(getApplicationContext(), mBitcoin, mPaymentRequest,
               mQRCode);
@@ -3138,7 +3138,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 mPaymentRequest.setLabel(label);
                 mPaymentRequest.setMessage(message);
                 if(mQRCode == null)
-                    mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
+                    mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
                 CreatePaymentRequestTask task = new CreatePaymentRequestTask(getApplicationContext(), mBitcoin,
                   mPaymentRequest, mQRCode);
                 task.execute();
@@ -3392,7 +3392,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             else
             {
                 if(mQRCode == null)
-                    mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ALPHA_8);
+                    mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
                 mIsSupportURI = false;
                 CreateAddressTask task = new CreateAddressTask(getApplicationContext(), mBitcoin, mPaymentRequest,
                   mQRCode);

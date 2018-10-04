@@ -92,7 +92,7 @@ public class Bitcoin
             return String.format(Locale.getDefault(), "$%,.2f",
               Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pFiatRate);
         else
-            return String.format(Locale.getDefault(), "%,.5f",
+            return String.format(Locale.getDefault(), "%,.8f",
               Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)));
     }
 
@@ -217,7 +217,7 @@ public class Bitcoin
                 for(int x = 0; x < QR_WIDTH; x++)
                 {
                     if(rowBits.get(x))
-                        row[x] = 0xffffffff;
+                        row[x] = 0xff008020; //0xffffffff;
                     else
                         row[x] = 0x00000000;
                 }
