@@ -29,7 +29,7 @@ public class Transaction
         count = 0;
     }
 
-    public String description(Context pContext)
+    public String description(Context pContext, String pExchangeType, double pExchangeRate)
     {
         int startString, endString;
 
@@ -43,17 +43,16 @@ public class Transaction
         else
             endString = R.string.confirmed_notification_description_end;
 
-        double fiatRate = Settings.getInstance(pContext.getFilesDir()).doubleValue("usd_rate");
-
         return String.format(Locale.getDefault(), "%s %s %s",
-          pContext.getString(startString), Bitcoin.amountText(amount, fiatRate), pContext.getString(endString));
+          pContext.getString(startString), Bitcoin.amountText(amount, pExchangeType, pExchangeRate),
+          pContext.getString(endString));
     }
 
-    public void updateView(Context pContext, View pView, double pFiatRate)
+    public void updateView(Context pContext, View pView, String pExchangeType, double pExchangeRate)
     {
         TextView amountText = pView.findViewById(R.id.amount);
         TextView bitcoinAmountText = pView.findViewById(R.id.bitcoinAmount);
-        amountText.setText(Bitcoin.amountText(amount, pFiatRate));
+        amountText.setText(Bitcoin.amountText(amount, pExchangeType, pExchangeRate));
         bitcoinAmountText.setText(Bitcoin.satoshiText(amount));
         if(amount > 0)
         {

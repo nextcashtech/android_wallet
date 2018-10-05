@@ -59,6 +59,7 @@ public class BitcoinService extends Service
     private boolean mIsStopped, mRestart;
     private HashMap<String, Integer> mTransactionNotificationIDs;
     private Bitmap mIcon;
+    private Settings mSettings;
 
 
     public class LocalBinder extends Binder
@@ -91,6 +92,7 @@ public class BitcoinService extends Service
         mTransactionNotificationIDs = new HashMap<>();
         mIcon = null;
         mInitialBlockDownloadIsComplete = false;
+        mSettings = Settings.getInstance(getApplicationContext().getFilesDir());
 
         mBitcoinRunnable = new Runnable()
         {
@@ -755,7 +757,10 @@ public class BitcoinService extends Service
                                             break;
 
                                 if(wallet.isSynchronized)
-                                    notify(title, transaction.description(this), offset, transaction.hash);
+                                    notify(title, transaction.description(getApplicationContext(),
+                                      mSettings.value(FiatRateRequestTask.EXCHANGE_TYPE_NAME),
+                                      mSettings.doubleValue(FiatRateRequestTask.EXCHANGE_RATE_NAME)), offset,
+                                      transaction.hash);
                             }
                         }
 

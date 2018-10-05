@@ -8,23 +8,43 @@
     android:layout_marginBottom="20dp">
 
     <TextView
+        android:id="@+id/exchangeCurrencyTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/baseline_attach_money_black_36dp"
+        android:drawablePadding="5dp"
+        android:text="@string/title_exchange_currency"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="20dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
+
+    <Spinner
+        android:id="@+id/exchangeCurrency"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="20dp"
+        android:entries="@array/exchange_names"/>
+
+    <TextView
         android:id="@+id/notifyTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:drawableLeft="@drawable/ic_notifications_black_36dp"
+        android:drawableStart="@drawable/ic_notifications_black_36dp"
         android:drawablePadding="5dp"
         android:text="@string/title_notifications"
         android:layout_marginTop="20dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="20dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="20dp"
         android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
 
     <Switch
         android:id="@+id/notifyTransactionsToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="10dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="10dp"
         android:switchPadding="10dp"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         android:text="@string/title_transactions"/>
@@ -33,7 +53,7 @@
         android:id="@+id/systemNotificationSettings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
+        android:layout_marginStart="20dp"
         android:text="@string/system_settings"
         android:onClick="onClick"/>
 
@@ -47,7 +67,7 @@
         android:id="@+id/syncFrequencyTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:drawableLeft="@drawable/ic_sync_black_36dp"
+        android:drawableStart="@drawable/ic_sync_black_36dp"
         android:drawablePadding="5dp"
         android:text="@string/title_sync_frequency"
         android:layout_marginTop="20dp"
@@ -60,8 +80,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/description_sync_frequency"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="10dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="10dp"
         android:layout_marginTop="10dp"
         android:layout_marginBottom="10dp"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"/>
@@ -70,8 +90,8 @@
         android:id="@+id/syncFrequencySpinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="10dp">
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="10dp">
 
     </Spinner>
 
@@ -85,12 +105,12 @@
         android:id="@+id/editWalletsTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:drawableLeft="@drawable/ic_edit_black_36dp"
+        android:drawableStart="@drawable/ic_edit_black_36dp"
         android:drawablePadding="5dp"
         android:text="@string/edit_wallets"
         android:layout_marginTop="20dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="20dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="20dp"
         android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
 
     <LinearLayout

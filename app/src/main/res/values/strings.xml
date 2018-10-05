@@ -232,6 +232,26 @@
     <string name="expires_in">Expires in</string>
     <string name="seconds_abbreviation">s</string>
 
+    <string name="title_exchange_currency">Exchange Currency</string>
+    <string-array name="exchange_types">
+        <item>AUD</item>
+        <item>CAD</item>
+        <item>EUR</item>
+        <item>GBP</item>
+        <item>JPY</item>
+        <item>KRW</item>
+        <item>USD</item>
+    </string-array>
+    <string-array name="exchange_names">
+        <item>Australia (AUD)</item>
+        <item>Canada (CAD)</item>
+        <item>European Union (EUR)</item>
+        <item>United Kingdom (GBP)</item>
+        <item>Japan (JPY)</item>
+        <item>South Korea (KRW)</item>
+        <item>United States (USD)</item>
+    </string-array>
+
     <string name="create_passcode_description">
         Create a pass code to protect your private keys. You will be required to enter it when
         creating/adding keys or sending transactions.

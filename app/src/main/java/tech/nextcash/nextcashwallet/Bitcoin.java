@@ -86,11 +86,32 @@ public class Bitcoin
         return (long)(pBits * 100.0);
     }
 
-    public static String amountText(long pAmount, double pFiatRate)
+    public static String amountText(long pAmount, String pExchangeType, double pExchangeRate)
     {
-        if(pFiatRate != 0.0)
-            return String.format(Locale.getDefault(), "$%,.2f",
-              Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pFiatRate);
+        if(pExchangeRate != 0.0)
+        {
+            switch(pExchangeType)
+            {
+            default:
+            case "AUD":
+            case "CAD":
+            case "USD":
+                return String.format(Locale.getDefault(), "$%,.2f",
+                  Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pExchangeRate);
+            case "EUR":
+                return String.format(Locale.getDefault(), "€%,.2f",
+                  Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pExchangeRate);
+            case "GBP":
+                return String.format(Locale.getDefault(), "£%,.2f",
+                  Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pExchangeRate);
+            case "JPY":
+                return String.format(Locale.getDefault(), "¥%,d",
+                  (int)(Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pExchangeRate));
+            case "KRW":
+                return String.format(Locale.getDefault(), "₩%,d",
+                  (int)(Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pExchangeRate));
+            }
+        }
         else
             return String.format(Locale.getDefault(), "%,.8f",
               Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)));

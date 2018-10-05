@@ -101,6 +101,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private int mCurrentWalletIndex;
     private boolean mSeedBackupOnly;
     private int mDerivationPathMethodToLoad;
+    private String mExchangeType;
     private double mExchangeRate;
     private Bitcoin mBitcoin;
     private boolean mFinishOnBack;
@@ -136,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         @Override
         public void run()
         {
-            showMessage(mTransaction.description(getApplicationContext()), 2000);
+            showMessage(mTransaction.description(getApplicationContext(), mExchangeType, mExchangeRate), 2000);
         }
     }
 
@@ -154,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mBitcoin.appIsOpen = true;
         mDelayHandler = new Handler();
         mStatusUpdateRunnable = new Runnable() { @Override public void run() { updateStatus(); } };
-        mRateUpdateRunnable = new Runnable() { @Override public void run() { startUpdateRates(); } };
+        mRateUpdateRunnable = new Runnable() { @Override public void run() { scheduleExchangeRateUpdate(); } };
         mClearFinishOnBack = new Runnable() { @Override public void run() { mFinishOnBack = false; } };
         mClearNotification = new Runnable()
         {
@@ -184,7 +185,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mPreviousMode = Mode.LOADING_WALLETS;
         mAuthorizedTask = AuthorizedTask.NONE;
         mFinishOnBack = false;
-        mExchangeRate = settings.doubleValue("usd_rate");
+        mExchangeType = settings.value(FiatRateRequestTask.EXCHANGE_TYPE_NAME);
+        if(mExchangeType == null || mExchangeType.length() == 0)
+        {
+            mExchangeType = "USD";
+            settings.setValue(FiatRateRequestTask.EXCHANGE_TYPE_NAME, mExchangeType);
+            mExchangeRate = 0.0;
+        }
+        else
+            mExchangeRate = settings.doubleValue(FiatRateRequestTask.EXCHANGE_RATE_NAME);
         mCurrentWalletIndex = -1;
         mWalletsNeedUpdated = false;
         mDontUpdatePaymentAmount = false;
@@ -733,7 +742,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mBitcoin.appIsOpen = true;
         startBitcoinService();
         mBitcoin.clearFinishTime();
-        startUpdateRates();
+        scheduleExchangeRateUpdate();
         updateStatus();
 
         super.onStart();
@@ -767,11 +776,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         super.onDestroy();
     }
 
-    private void startUpdateRates()
+    private void scheduleExchangeRateUpdate()
     {
-        new FiatRateRequestTask(getApplicationContext()).execute();
-
         mDelayHandler.removeCallbacks(mRateUpdateRunnable); // Ensure we don't get multiple scheduled
+
+        new FiatRateRequestTask(getApplicationContext()).execute();
         mDelayHandler.postDelayed(mRateUpdateRunnable, 60000); // Run again in 60 seconds
     }
 
@@ -847,7 +856,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(mExchangeRate == 0.0)
             exchangeRate.setText("");
         else
-            exchangeRate.setText(String.format(Locale.getDefault(), "%d BCH = $%,d USD", 1, (int)mExchangeRate));
+            exchangeRate.setText(String.format(Locale.getDefault(), "%d BCH = %s %s", 1,
+              Bitcoin.amountText(100000000, mExchangeType, mExchangeRate), mExchangeType));
 
         boolean areWalletsLoaded = mBitcoin.walletsAreLoaded();
         boolean isChainLoaded = mBitcoin.chainIsLoaded();
@@ -1026,7 +1036,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
 
             ((TextView)walletView.findViewById(R.id.walletBalance)).setText(Bitcoin.amountText(wallet.balance,
-              mExchangeRate));
+              mExchangeType, mExchangeRate));
 
             if(mExchangeRate != 0.0)
             {
@@ -1042,7 +1052,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 walletView.findViewById(R.id.walletPendingGroup).setVisibility(View.VISIBLE);
 
                 ((TextView)walletView.findViewById(R.id.walletPendingBalance)).setText(Bitcoin.amountText(
-                  wallet.pendingBalance, mExchangeRate));
+                  wallet.pendingBalance, mExchangeType, mExchangeRate));
 
                 if(mExchangeRate != 0.0)
                     ((TextView)walletView.findViewById(R.id.walletBitcoinPendingBalance)).setText(
@@ -1171,9 +1181,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
+        Settings settings = Settings.getInstance(getFilesDir());
         View settingsView = inflater.inflate(R.layout.settings, dialogView, false);
 
-        Settings settings = Settings.getInstance(getFilesDir());
+        Spinner exchangeCurrency = settingsView.findViewById(R.id.exchangeCurrency);
+        String[] exchangeTypes = getResources().getStringArray(R.array.exchange_types);
+        exchangeCurrency.setOnItemSelectedListener(this);
+        for(int i = 0; i < exchangeTypes.length; i++)
+            if(mExchangeType.equals(exchangeTypes[i]))
+            {
+                exchangeCurrency.setSelection(i);
+                break;
+            }
 
         // Configure sync frequency options
         int currentFrequency = settings.intValue(Bitcoin.SYNC_FREQUENCY_NAME);
@@ -1460,7 +1479,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         else
             ((TextView)sendView.findViewById(R.id.amountAvailableTitle)).setText(getString(R.string.balance));
         ((TextView)sendView.findViewById(R.id.amountAvailable)).setText(
-          Bitcoin.amountText(mPaymentRequest.amountAvailable(true), mExchangeRate));
+          Bitcoin.amountText(mPaymentRequest.amountAvailable(true), mExchangeType, mExchangeRate));
         ((TextView)sendView.findViewById(R.id.bitcoinAmountAvailable)).setText(
           Bitcoin.satoshiText(mPaymentRequest.amountAvailable(true)));
 
@@ -1735,7 +1754,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         long amount = mTransaction.amount();
         TextView amountText = transactionView.findViewById(R.id.transactionAmount);
         TextView bitcoinsAmountText = transactionView.findViewById(R.id.bitcoinsAmount);
-        amountText.setText(Bitcoin.amountText(amount, mExchangeRate));
+        amountText.setText(Bitcoin.amountText(amount, mExchangeType, mExchangeRate));
         bitcoinsAmountText.setText(Bitcoin.satoshiText(amount));
         if(amount > 0)
         {
@@ -1761,7 +1780,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             TextView feeText = transactionView.findViewById(R.id.transactionFee);
             TextView bitcoinsFeeText = transactionView.findViewById(R.id.bitcoinsFee);
-            feeText.setText(Bitcoin.amountText(fee, mExchangeRate));
+            feeText.setText(Bitcoin.amountText(fee, mExchangeType, mExchangeRate));
             bitcoinsFeeText.setText(Bitcoin.satoshiText(fee));
         }
 
@@ -1796,7 +1815,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 inputView.setBackgroundColor(getResources().getColor(R.color.highlight));
                 TextView inputAmountText = inputView.findViewById(R.id.inputAmount);
-                inputAmountText.setText(Bitcoin.amountText(input.amount, mExchangeRate));
+                inputAmountText.setText(Bitcoin.amountText(input.amount, mExchangeType, mExchangeRate));
                 inputAmountText.setTextColor(getResources().getColor(R.color.colorNegative));
 
                 TextView inputBitcoinAmountText = inputView.findViewById(R.id.bitcoinsAmount);
@@ -1837,7 +1856,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             TextView outputAmountText = outputView.findViewById(R.id.outputAmount);
             TextView outputBitcoinsAmountText = outputView.findViewById(R.id.bitcoinsAmount);
-            outputAmountText.setText(Bitcoin.amountText(output.amount, mExchangeRate));
+            outputAmountText.setText(Bitcoin.amountText(output.amount, mExchangeType, mExchangeRate));
             outputBitcoinsAmountText.setText(Bitcoin.satoshiText(output.amount));
             if(output.related)
             {
@@ -1969,7 +1988,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 TextView satoshiAmount = receiveView.findViewById(R.id.satoshiAmount);
                 if(mPaymentRequest.amount != 0)
                 {
-                    amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mExchangeRate));
+                    amount.setText(Bitcoin.amountText(mPaymentRequest.amount, mExchangeType, mExchangeRate));
                     satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
                 }
                 else
@@ -2296,7 +2315,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(pParent.getId() == R.id.seedEntropy)
         {
             int[] values = getResources().getIntArray(R.array.mnemonic_seed_length_values);
-
             if(pPosition >= values.length)
                 Log.e(logTag, String.format("Invalid seed entropy position selected : %d", pPosition));
             else
@@ -2355,13 +2373,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         else if(pParent.getId() == R.id.syncFrequencySpinner)
         {
             int[] frequencyValues = getResources().getIntArray(R.array.sync_frequency_values);
-
             if(pPosition >= frequencyValues.length)
                 Log.e(logTag, String.format("Invalid sync frequency position selected : %d", pPosition));
             else
             {
-                Settings.getInstance(getFilesDir()).setIntValue(Bitcoin.SYNC_FREQUENCY_NAME, frequencyValues[pPosition]);
-                setResult(1);
+                Settings.getInstance(getFilesDir()).setIntValue(Bitcoin.SYNC_FREQUENCY_NAME,
+                  frequencyValues[pPosition]);
                 if(frequencyValues[pPosition] == -1)
                     Log.i(logTag, "Sync frequency set to never.");
                 else if(frequencyValues[pPosition] >= 60)
@@ -2369,6 +2386,24 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 else
                     Log.i(logTag, String.format("Sync frequency set to %d minutes.", frequencyValues[pPosition]));
                 scheduleJobs();
+            }
+        }
+        else if(pParent.getId() == R.id.exchangeCurrency)
+        {
+            String[] exchangeTypes = getResources().getStringArray(R.array.exchange_types);
+            if(pPosition >= exchangeTypes.length)
+                Log.e(logTag, String.format("Invalid exchange type position selected : %d", pPosition));
+            else if(mExchangeType != exchangeTypes[pPosition])
+            {
+                mExchangeType = exchangeTypes[pPosition];
+                mExchangeRate = 0.0;
+
+                Settings settings = Settings.getInstance(getFilesDir());
+                settings.setValue(FiatRateRequestTask.EXCHANGE_TYPE_NAME, mExchangeType);
+                settings.setDoubleValue(FiatRateRequestTask.EXCHANGE_RATE_NAME, mExchangeRate);
+                Log.i(logTag, String.format("Exchange type set to %s", mExchangeType));
+
+                scheduleExchangeRateUpdate();
             }
         }
     }
@@ -2829,7 +2864,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             transactionView = inflater.inflate(R.layout.wallet_transaction, transactionViewGroup,
               false);
 
-            transaction.updateView(this, transactionView, mExchangeRate);
+            transaction.updateView(this, transactionView, mExchangeType, mExchangeRate);
 
             // Set tag with transaction offset
             transactionView.setTag(transaction.hash);

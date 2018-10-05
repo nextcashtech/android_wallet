@@ -17,7 +17,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
@@ -30,12 +29,18 @@ import javax.net.ssl.HttpsURLConnection;
 public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
 {
     public static final String logTag = "FiatRateRequestTask";
+    public static final String EXCHANGE_TYPE_NAME = "exchange_type";
+    public static final String EXCHANGE_RATE_NAME = "exchange_rate";
 
     private Context mContext;
+    private String mExchangeType;
+    private Settings mSettings;
 
     public FiatRateRequestTask(Context pContext)
     {
         mContext = pContext;
+        mSettings = Settings.getInstance(pContext.getFilesDir());
+        mExchangeType = mSettings.value(FiatRateRequestTask.EXCHANGE_TYPE_NAME);
     }
 
     private double getCoinMarketCap()
@@ -43,7 +48,8 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
         URL url;
         try
         {
-            url = new URL("https://api.coinmarketcap.com/v1/ticker/bitcoin-cash/");
+            url = new URL(String.format("https://api.coinmarketcap.com/v1/ticker/bitcoin-cash/?convert=%s",
+              mExchangeType));
         }
         catch(MalformedURLException pException)
         {
@@ -69,9 +75,9 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
                         text += inputLine + '\n';
 
                     JSONArray json = new JSONArray(text);
-                    result = ((JSONObject)json.get(0)).getDouble("price_usd");
-                    Log.i(logTag, String.format(Locale.getDefault(), "CoinMarketCap rate found : %,.2f",
-                      result));
+                    result = ((JSONObject)json.get(0)).getDouble("price_" + mExchangeType.toLowerCase());
+                    Log.i(logTag, String.format(Locale.getDefault(), "CoinMarketCap %s rate found : %,f",
+                      mExchangeType, result));
                 }
             }
         }
@@ -119,8 +125,9 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
                         text += inputLine + '\n';
 
                     JSONObject json = new JSONObject(text);
-                    result = json.getJSONObject("data").getJSONObject("rates").getDouble("USD");
-                    Log.i(logTag, String.format(Locale.getDefault(), "CoinBase rate found : %,.2f", result));
+                    result = json.getJSONObject("data").getJSONObject("rates").getDouble(mExchangeType);
+                    Log.i(logTag, String.format(Locale.getDefault(), "CoinBase %s rate found : %,f",
+                      mExchangeType, result));
                 }
             }
         }
@@ -142,7 +149,8 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
         URL url;
         try
         {
-            url = new URL("https://coinlib.io/api/v1/coin?key=a4c3d52c60dc7856&pref=USD&symbol=BCH");
+            url = new URL(String.format("https://coinlib.io/api/v1/coin?key=a4c3d52c60dc7856&pref=%s&symbol=BCH",
+              mExchangeType));
         }
         catch(MalformedURLException pException)
         {
@@ -169,8 +177,8 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
 
                     JSONObject json = new JSONObject(text);
                     result = json.getDouble("price");
-                    Log.i(logTag, String.format(Locale.getDefault(), "CoinLib rate found : %,.2f",
-                      result));
+                    Log.i(logTag, String.format(Locale.getDefault(), "CoinLib %s rate found : %,f",
+                      mExchangeType, result));
                 }
             }
         }
@@ -228,7 +236,7 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
     {
         if(pRate != null && pRate != 0.0)
         {
-            Settings.getInstance(mContext.getFilesDir()).setDoubleValue("usd_rate", pRate);
+            mSettings.setDoubleValue(EXCHANGE_RATE_NAME, pRate);
 
             Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
             finishIntent.setAction(MainActivity.ACTION_EXCHANGE_RATE_UPDATED);
