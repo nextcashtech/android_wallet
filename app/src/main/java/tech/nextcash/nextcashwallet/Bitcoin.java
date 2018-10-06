@@ -238,7 +238,7 @@ public class Bitcoin
                 for(int x = 0; x < QR_WIDTH; x++)
                 {
                     if(rowBits.get(x))
-                        row[x] = 0xff008020; //0xffffffff;
+                        row[x] = 0xff000000;
                     else
                         row[x] = 0x00000000;
                 }
