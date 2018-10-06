@@ -7,6 +7,7 @@
  **************************************************************************/
 package tech.nextcash.nextcashwallet;
 
+import android.Manifest;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
@@ -17,6 +18,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
@@ -24,6 +26,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -35,6 +39,7 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -51,8 +56,6 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.google.zxing.integration.android.IntentIntegrator;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -61,10 +64,10 @@ import java.util.TimeZone;
 
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener,
-  CompoundButton.OnCheckedChangeListener
+  CompoundButton.OnCheckedChangeListener, Scanner.CallBack
 {
     public static final String logTag = "MainActivity";
-    public static final int SCAN_REQUEST_CODE = 30;
+    public static final int CAMERA_PERMISSION_REQUEST_CODE = 41;
 
     public static final String ACTIVITY_ACTION = "tech.nextcash.nextcashwallet.ACTIVITY_ACTION";
     public static final String ACTION_MESSAGE_ID_FIELD = "MESSAGE_ID";
@@ -87,8 +90,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification,
       mRequestExpiresUpdater, mRequestTransactionRunnable;
+
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
-      IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, RECEIVE, ENTER_PAYMENT_CODE,
+      IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, SCAN, RECEIVE, ENTER_PAYMENT_CODE,
       ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, SETTINGS }
     private Mode mMode, mPreviousMode;
     private boolean mWalletsNeedUpdated;
@@ -110,7 +114,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private boolean mServiceIsBound, mServiceIsBinding;
     private ServiceConnection mServiceConnection;
     private BroadcastReceiver mReceiver;
-    private IntentIntegrator mQRScanner;
     private PaymentRequest mPaymentRequest;
     private boolean mIsSupportURI;
     private Bitmap mQRCode;
@@ -123,6 +126,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private int mTransactionWalletIndex;
     private ArrayList<String> mPersistentMessages;
     private Messages mMessages;
+    private Scanner mScanner;
 
 
     public class TransactionRunnable implements Runnable
@@ -201,12 +205,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mRecoverDate = 0L;
         mRequestedTransactionWalletIndex = -1;
         mHistoryToShowWalletIndex = -1;
-        mPersistentMessages = new ArrayList<String>();
+        mPersistentMessages = new ArrayList<>();
         mRequestedTransactionAttempts = 0;
         mIsSupportURI = false;
         mMessages = new Messages();
         mMessages.load(getApplicationContext());
         refreshPersistentMessages();
+        mScanner = new Scanner(this, new Handler(getMainLooper()));
 
         if(!settings.containsValue("beta_message"))
         {
@@ -432,9 +437,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         filter.addAction(ACTION_EXCHANGE_RATE_UPDATED);
         registerReceiver(mReceiver, filter);
 
-        mQRScanner = new IntentIntegrator(this);
-        //mQRScanner.addExtra(); // TODO Find extra value that can switch to portrait mode
-
         findViewById(R.id.main).setVisibility(View.GONE);
         findViewById(R.id.dialog).setVisibility(View.GONE);
         findViewById(R.id.progress).setVisibility(View.VISIBLE);
@@ -588,6 +590,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 if(mTransaction != null)
                     openTransaction(mTransactionWalletIndex, mTransaction.hash); // Reload
                 break;
+            case SCAN:
+                break;
             case RECEIVE:
                 break;
             case ENTER_PAYMENT_CODE:
@@ -717,6 +721,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 pState.putString("Transaction", ((TextView)findViewById(R.id.id)).getText().toString());
                 pState.putInt("Wallet", mCurrentWalletIndex);
                 break;
+            case SCAN:
+                break;
             case RECEIVE:
                 break;
             case ENTER_PAYMENT_CODE:
@@ -749,9 +755,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     @Override
+    public synchronized void onPause()
+    {
+        if(mMode == Mode.SCAN)
+            displayWallets();
+        super.onPause();
+    }
+
+    @Override
     public synchronized void onStop()
     {
         Log.d(logTag, "Stopping");
+        if(mMode == Mode.SCAN)
+            mScanner.close();
         mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
         mDelayHandler.removeCallbacks(mRateUpdateRunnable);
         mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
@@ -961,6 +977,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         if(mMode == Mode.WALLETS)
             return;
+
+        if(mMode == Mode.SCAN)
+            mScanner.close();
 
         // Setup action bar
         ActionBar actionBar = getSupportActionBar();
@@ -1303,26 +1322,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     @Override
-    protected void onActivityResult(int pRequestCode, int pResultCode, Intent pData)
+    public void onRequestPermissionsResult(int pRequestCode, @NonNull String[] pPermissions, @NonNull int[] pGrantResults)
     {
         switch(pRequestCode)
         {
-            case SCAN_REQUEST_CODE:
-            case IntentIntegrator.REQUEST_CODE:
-                if(pResultCode == RESULT_OK && pData != null)
-                {
-                    Log.i(logTag, String.format("Scan result received : %s", pData.getStringExtra("SCAN_RESULT")));
-                    mPaymentRequest = mBitcoin.decodePaymentCode(pData.getStringExtra("SCAN_RESULT"));
-                    if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
-                        displayEnterPaymentDetails();
-                    else
-                        showMessage(getString(R.string.failed_payment_code), 2000);
-                }
-                break;
-            default:
-                super.onActivityResult(pRequestCode, pResultCode, pData);
-                break;
+        case CAMERA_PERMISSION_REQUEST_CODE:
+            if(pGrantResults[0] == PackageManager.PERMISSION_GRANTED)
+                displayScanPaymentCode();
+            else
+                displayWallets();
+            break;
         }
+        super.onRequestPermissionsResult(pRequestCode, pPermissions, pGrantResults);
     }
 
     public void updateFee()
@@ -1907,14 +1918,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ((TextView)continueButton.findViewById(R.id.text)).setText(R.string.continue_string);
         dialogView.addView(continueButton);
 
-        // Scan button
-        View scanButton = inflater.inflate(R.layout.button, dialogView, false);
-        scanButton.setTag(R.id.openScanner);
-        ImageView scanIcon = scanButton.findViewById(R.id.image);
-        scanIcon.setImageResource(R.drawable.ic_scan_white_36dp);
-        scanIcon.setVisibility(View.VISIBLE);
-        ((TextView)scanButton.findViewById(R.id.text)).setText(R.string.scan);
-        dialogView.addView(scanButton);
+        PackageManager packageManager = getApplicationContext().getPackageManager();
+        if(packageManager != null && packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
+        {
+            // Scan button
+            View scanButton = inflater.inflate(R.layout.button, dialogView, false);
+            scanButton.setTag(R.id.openScanner);
+            ImageView scanIcon = scanButton.findViewById(R.id.image);
+            scanIcon.setImageResource(R.drawable.ic_scan_white_36dp);
+            scanIcon.setVisibility(View.VISIBLE);
+            ((TextView)scanButton.findViewById(R.id.text)).setText(R.string.scan);
+            dialogView.addView(scanButton);
+        }
 
         TextView.OnEditorActionListener paymentCodeListener = new TextView.OnEditorActionListener()
         {
@@ -1938,6 +1953,94 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         findViewById(R.id.mainScroll).setScrollY(0);
         focusOnText(paymentCodeEntry);
         mMode = Mode.ENTER_PAYMENT_CODE;
+    }
+
+    @Override
+    public void onScannerResult(String pResult)
+    {
+        mScanner.close();
+
+        mPaymentRequest = mBitcoin.decodePaymentCode(pResult);
+        if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
+            displayEnterPaymentDetails();
+        else
+        {
+            showMessage(getString(R.string.failed_payment_code), 2000);
+            displayWallets();
+        }
+    }
+
+    @Override
+    public void onScannerFailed(int pFailReason)
+    {
+        mScanner.close();
+
+        switch(pFailReason)
+        {
+        case Scanner.FAIL_ACCESS:
+            showMessage(getString(R.string.failed_camera_access), 2000);
+            break;
+        case Scanner.FAIL_CREATION:
+            showMessage(getString(R.string.failed_camera_create), 2000);
+            break;
+        default:
+            showMessage(getString(R.string.failed_camera_general), 2000);
+            break;
+        }
+
+        displayEnterPaymentDetails();
+    }
+
+    public synchronized void displayScanPaymentCode()
+    {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+        {
+            if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
+              PackageManager.PERMISSION_GRANTED)
+            {
+                // Request permission
+                String[] permissions = {Manifest.permission.CAMERA};
+                requestPermissions(permissions, CAMERA_PERMISSION_REQUEST_CODE);
+                displayProgress();
+                return;
+            }
+        }
+
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.main).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+        findViewById(R.id.controls).setVisibility(View.GONE);
+
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_send_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.scan_payment_code));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup scanView = (ViewGroup)inflater.inflate(R.layout.scan, dialogView, false);
+        dialogView.addView(scanView);
+
+        ScannerView cameraView = scanView.findViewById(R.id.camera);
+        SurfaceHolder holder = cameraView.getHolder();
+        holder.setKeepScreenOn(true);
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+        mMode = Mode.SCAN;
+
+        cameraView.setCamera(mScanner);
+        if(!mScanner.open(getApplicationContext(), holder, Scanner.FACING_BACK))
+        {
+            Log.w(logTag, "Camera failed to open");
+            showMessage(getString(R.string.failed_camera_access), 2000);
+            displayWallets();
+        }
     }
 
     public synchronized void displayRequestPaymentCode()
@@ -2793,7 +2896,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 entry = row.getChildAt(columnOffset);
                 entry.setMinimumWidth(widest[columnOffset]);
-                //TODO entry.setWidth(widest[columnOffset]);
             }
 
             if(shade)
@@ -3181,7 +3283,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         }
         case R.id.openScanner:
-            mQRScanner.initiateScan(IntentIntegrator.QR_CODE_TYPES);
+            displayScanPaymentCode();
             break;
         case R.id.sendPayment:
         {
@@ -3615,6 +3717,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case TRANSACTION:
             break;
+        case SCAN:
+            mScanner.close();
+            displayEnterPaymentCode();
+            return;
         case RECEIVE:
             mPaymentRequest = null;
             break;
