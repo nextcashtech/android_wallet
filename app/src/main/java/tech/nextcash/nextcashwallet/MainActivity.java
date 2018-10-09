@@ -3064,12 +3064,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public void processClick(View pView, int pID)
     {
-        View focus = getCurrentFocus();
-        if(focus != null)
+        if(pID != R.id.seedWordButton)
         {
-            InputMethodManager imManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-            if(imManager != null)
-                imManager.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+            View focus = getCurrentFocus();
+            if(focus != null)
+            {
+                InputMethodManager imManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                if(imManager != null)
+                    imManager.hideSoftInputFromWindow(focus.getWindowToken(), 0);
+            }
         }
 
         switch(pID)
