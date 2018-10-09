@@ -18,11 +18,19 @@
         android:id="@+id/date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
         android:layout_marginTop="20dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
         android:datePickerMode="spinner"
+        android:calendarViewShown="false"
         android:endYear="2100"
-        android:startYear="2008"
-        android:layout_gravity="center_horizontal">
+        android:startYear="2009">
     </DatePicker>
+
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/dateSelected"
+        style="@style/Button"
+        android:text="@string/okay"/>
 
 </LinearLayout>

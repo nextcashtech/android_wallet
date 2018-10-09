@@ -58,6 +58,11 @@
             android:textAlignment="center"
             android:text="@string/optional"/>
 
+        <tech.nextcash.nextcashwallet.Button
+            android:id="@+id/updateRequestPaymentCode"
+            style="@style/Button"
+            android:text="@string/update"/>
+
         <TextView
             android:id="@+id/amountLabel"
             android:layout_width="match_parent"
@@ -109,8 +114,7 @@
             <TextView
                 android:id="@+id/satoshiAmount"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 00 000 000"/>
+                android:layout_height="wrap_content"/>
         </LinearLayout>
 
         <TextView

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="10dp">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="5dp"
+            android:text="@string/name"
+            style="@style/SubHeadingText"
+            android:labelFor="@id/name"/>
+
+        <EditText
+            android:id="@+id/name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"/>
+
+    </LinearLayout>
+
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/updateWalletName"
+        style="@style/Button"
+        android:text="@string/update_name"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
+        android:background="#ddd" />
+
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/backupWallet"
+        style="@style/Button"
+        android:text="@string/backup_wallet"/>
+
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/removeWallet"
+        style="@style/Button"
+        android:text="@string/remove_wallet"/>
+
+</LinearLayout>

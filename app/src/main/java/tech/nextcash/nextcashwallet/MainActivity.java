@@ -39,7 +39,6 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -93,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
       IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, SCAN, RECEIVE, ENTER_PAYMENT_CODE,
-      ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, SETTINGS }
+      CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, SETTINGS }
     private Mode mMode, mPreviousMode;
     private boolean mWalletsNeedUpdated;
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
@@ -388,7 +387,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     break;
                 case ACTION_DISPLAY_ENTER_PAYMENT:
                     Log.i(logTag, "Display enter payment details action received");
-                    displayEnterPaymentDetails();
+                    displayPaymentDetails();
                     break;
                 case ACTION_ACKNOWLEDGE_PAYMENT:
                     Log.i(logTag, "Acknowledge payment action received");
@@ -596,6 +595,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case ENTER_PAYMENT_CODE:
                 break;
+            case CLIPBOARD_PAYMENT_CODE:
+                break;
             case ENTER_PAYMENT_DETAILS:
                 break;
             case AUTHORIZE:
@@ -726,6 +727,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case RECEIVE:
                 break;
             case ENTER_PAYMENT_CODE:
+                break;
+            case CLIPBOARD_PAYMENT_CODE:
                 break;
             case ENTER_PAYMENT_DETAILS:
                 break;
@@ -1252,16 +1255,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         // Add Wallet buttons
         ViewGroup walletsView = settingsView.findViewById(R.id.walletsSettings);
-        View button;
+        Button button;
         int offset = 0;
 
         for(Wallet wallet : mBitcoin.wallets())
         {
             // Edit button
-            button = inflater.inflate(R.layout.button, walletsView, false);
-            button.findViewById(R.id.button).setId(R.id.editWallet);
+            button = (Button)inflater.inflate(R.layout.button, walletsView, false);
+            button.setId(R.id.editWallet);
             button.setTag(offset);
-            ((TextView)button.findViewById(R.id.text)).setText(wallet.name);
+            button.setText(wallet.name);
             walletsView.addView(button);
             offset++;
         }
@@ -1389,7 +1392,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
     }
 
-    public synchronized void displayEnterPaymentDetails()
+    public synchronized void displayPaymentDetails()
     {
         if(mPaymentRequest == null)
         {
@@ -1596,37 +1599,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 };
             }
             amount.addTextChangedListener(mAmountWatcher);
-
-            TextView.OnEditorActionListener amountListener = new TextView.OnEditorActionListener()
-            {
-                @Override
-                public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
-                {
-                    if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE ||
-                      pActionId == EditorInfo.IME_ACTION_SEND || (pEvent != null &&
-                      pEvent.getAction() == KeyEvent.ACTION_DOWN && pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
-                    {
-                        processClick(pView, R.id.sendPayment);
-                        return true;
-                    }
-                    return false;
-                }
-            };
-            amount.setOnEditorActionListener(amountListener);
         }
 
-//        ArrayAdapter<CharSequence> unitAdapter = ArrayAdapter.createFromResource(this, R.array.amount_units,
-//          android.R.layout.simple_spinner_item);
-//        unitAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-//        units.setAdapter(unitAdapter);
         units.setOnItemSelectedListener(this);
         units.setSelection(Bitcoin.FIAT); // Default to Fiat
 
         Spinner feeRates = sendView.findViewById(R.id.feeRates);
-//        ArrayAdapter<CharSequence> feeRateAdapter = ArrayAdapter.createFromResource(this, R.array.fee_rates,
-//          android.R.layout.simple_spinner_item);
-//        feeRateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-//        feeRates.setAdapter(feeRateAdapter);
         feeRates.setOnItemSelectedListener(this);
         feeRates.setSelection(2); // Default to Low
 
@@ -1661,13 +1639,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         dialogView.addView(sendView);
-
-        // Verify button
-        View button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.sendPayment);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.continue_string);
-        dialogView.addView(button);
-
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
 
@@ -1907,16 +1878,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
           false);
 
         EditText paymentCodeEntry = paymentCodeView.findViewById(R.id.paymentCode);
-        if(mPaymentRequest != null && mPaymentRequest.uri != null)
-            paymentCodeEntry.setText(mPaymentRequest.uri);
 
         dialogView.addView(paymentCodeView);
-
-        // Continue button
-        View continueButton = inflater.inflate(R.layout.button, dialogView, false);
-        continueButton.setTag(R.id.enterPaymentDetails);
-        ((TextView)continueButton.findViewById(R.id.text)).setText(R.string.continue_string);
-        dialogView.addView(continueButton);
 
         TextView.OnEditorActionListener paymentCodeListener = new TextView.OnEditorActionListener()
         {
@@ -1942,12 +1905,44 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.ENTER_PAYMENT_CODE;
     }
 
+    public synchronized void displayClipBoardPaymentCode()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.main).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+        findViewById(R.id.controls).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_send_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.send_payment));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup paymentCodeView = (ViewGroup)inflater.inflate(R.layout.clipboard_payment_code, dialogView,
+          false);
+
+        TextView paymentCode = paymentCodeView.findViewById(R.id.clipboard);
+        paymentCode.setText(mPaymentRequest.uri);
+
+        dialogView.addView(paymentCodeView);
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+        mMode = Mode.CLIPBOARD_PAYMENT_CODE;
+    }
+
     @Override
     public void onScannerResult(String pResult)
     {
         mPaymentRequest = mBitcoin.decodePaymentCode(pResult);
         if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
-            displayEnterPaymentDetails();
+            displayPaymentDetails();
         else
         {
             showMessage(getString(R.string.invalid_payment_code), 2000);
@@ -2194,12 +2189,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     }
                 };
                 ((EditText)receiveView.findViewById(R.id.message)).setOnEditorActionListener(messageActionListener);
-
-                // Add update button
-                View button = inflater.inflate(R.layout.button, dialogView, false);
-                button.setTag(R.id.updateRequestPaymentCode);
-                ((TextView)button.findViewById(R.id.text)).setText(R.string.update);
-                dialogView.addView(button);
             }
 
             dialogView.setVisibility(View.VISIBLE);
@@ -2222,21 +2211,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         findViewById(R.id.statusBar).setVisibility(View.GONE);
         findViewById(R.id.controls).setVisibility(View.GONE);
 
-        button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.createWallet);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.create_new_key);
-        dialogView.addView(button);
-
-        button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.recoverWallet);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.recover_wallet);
-        dialogView.addView(button);
-
-        button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.importWallet);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.import_bip0032_key);
-        dialogView.addView(button);
-
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
         {
@@ -2244,6 +2218,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setTitle(" " + getResources().getString(R.string.title_add_wallet));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
+
+        inflater.inflate(R.layout.add_wallet, dialogView, true);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2273,10 +2249,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         inflater.inflate(R.layout.select_recover_date, dialogView, true);
 
         // Done button
-        View button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.enterImportKey);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.okay);
-        dialogView.addView(button);
+        dialogView.findViewById(R.id.dateSelected).setId(R.id.enterImportKey);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2300,12 +2273,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.derivation_methods, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         derivationMethod.setAdapter(adapter);
-
-        // Load button
-        View button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.loadKey);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.import_text);
-        dialogView.addView(button);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2360,12 +2327,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
         }
         entropy.setSelection(entropyPosition);
-
-        // Verify button
-        View button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.verifySeedSaved);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.continue_string);
-        dialogView.addView(button);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2532,11 +2493,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             wordButtons.addView(wordButton);
         }
 
-        // Skip button
-        View button = inflater.inflate(R.layout.negative_button, dialogView, false);
-        button.setTag(R.id.skipCheckSeed);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.skip_check_seed);
-        dialogView.addView(button);
+        if(mSeedBackupOnly)
+            verifySeed.findViewById(R.id.skipCheckSeed).setVisibility(View.GONE);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2566,10 +2524,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         inflater.inflate(R.layout.select_recover_date, dialogView, true);
 
         // Done button
-        View button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.enterRecoverSeed);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.okay);
-        dialogView.addView(button);
+        dialogView.findViewById(R.id.dateSelected).setId(R.id.enterRecoverSeed);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2653,12 +2608,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         dialogView.addView(enterSeed);
 
-        // Done button
-        View button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.importSeed);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.okay);
-        dialogView.addView(button);
-
         focusOnText(seedWordEntry);
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2700,12 +2649,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         viewSeed.findViewById(R.id.seedEntropyContainer).setVisibility(View.GONE);
 
         dialogView.addView(viewSeed);
-
-        // Verify button
-        View button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.verifySeedSaved);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.continue_string);
-        dialogView.addView(button);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2758,12 +2701,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             passcode.findViewById(R.id.createDescription).setVisibility(View.VISIBLE);
         dialogView.addView(passcode);
 
-        // Authorize button
-        View button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.authorize);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.authorize);
-        dialogView.addView(button);
-
         EditText passCodeEntry = passcode.findViewById(R.id.passcode);
         TextView.OnEditorActionListener passCodeListener = new TextView.OnEditorActionListener()
         {
@@ -2815,28 +2752,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         // Edit Name
-        editName = (ViewGroup)inflater.inflate(R.layout.edit_name, dialogView, false);
+        editName = (ViewGroup)inflater.inflate(R.layout.edit_wallet, dialogView, false);
         ((EditText)editName.findViewById(R.id.name)).setText(wallet.name);
 
         dialogView.addView(editName);
-
-        // Update button
-        button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.updateWalletName);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.update_name);
-        dialogView.addView(button);
-
-        // Backup button
-        button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.backupWallet);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.backup_wallet);
-        dialogView.addView(button);
-
-        // Remove button
-        button = inflater.inflate(R.layout.button, dialogView, false);
-        button.setTag(R.id.removeWallet);
-        ((TextView)button.findViewById(R.id.text)).setText(R.string.remove_wallet);
-        dialogView.addView(button);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -3028,15 +2947,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public void onClick(View pView)
     {
-        if(pView.getId() == R.id.button)
-        {
-            int tag = 0;
-            if(((View)pView.getParent()).getTag() != null)
-                tag = (Integer)((View)pView.getParent()).getTag();
-            processClick(pView, tag);
-        }
-        else
-            processClick(pView, pView.getId());
+        processClick(pView, pView.getId());
     }
 
     public synchronized void displayProgress()
@@ -3231,10 +3142,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 mPaymentRequest = mBitcoin.decodePaymentCode(paymentCode.getText().toString());
                 if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
-                    displayEnterPaymentDetails();
+                    displayPaymentDetails();
                 else
                 {
-                    showMessage(getString(R.string.failed_payment_code), 2000);
+                    showMessage(getString(R.string.invalid_payment_code), 2000);
                     displayWallets();
                 }
             }
@@ -3482,15 +3393,40 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
             mCurrentWalletIndex = (int)walletView.getTag();
+            ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+            if(manager != null)
+            {
+                ClipData clip = manager.getPrimaryClip();
+                if(clip != null && clip.getItemCount() > 0)
+                {
+                    String clipText = clip.getItemAt(0).coerceToText(getApplicationContext()).toString();
+                    if(clipText.length() > 0)
+                    {
+                        mPaymentRequest = mBitcoin.decodePaymentCode(clipText);
+                        if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
+                        {
+                            displayClipBoardPaymentCode();
+                            break;
+                        }
+                    }
+                }
+            }
+
             displayScanPaymentCode();
             break;
         }
+        case R.id.scanPaymentCode:
+            displayScanPaymentCode();
+            break;
         case R.id.enterPaymentCode:
         {
             mScanner.close();
             displayEnterPaymentCode();
             break;
         }
+        case R.id.useClipBoardPaymentCode:
+            displayPaymentDetails();
+            break;
         case R.id.walletReceive:
         {
             displayProgress();
@@ -3530,7 +3466,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.editWallet:
         {
-            mCurrentWalletIndex = (int)((View)pView.getParent()).getTag();
+            mCurrentWalletIndex = (int)pView.getTag();
             displayEditWallet();
             break;
         }
@@ -3708,6 +3644,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case ENTER_PAYMENT_CODE:
             break;
+        case CLIPBOARD_PAYMENT_CODE:
+                break;
         case ENTER_PAYMENT_DETAILS:
             mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
             displayEnterPaymentCode();
@@ -3728,7 +3666,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 displayEditWallet();
                 return;
             case SIGN_TRANSACTION:
-                displayEnterPaymentDetails();
+                displayPaymentDetails();
                 return;
             }
             break;

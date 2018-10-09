@@ -62,4 +62,9 @@
         android:contentDescription="@string/remove_last"
         android:onClick="onClick"/>
 
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/skipCheckSeed"
+        style="@style/ButtonNegative"
+        android:text="@string/skip_check_seed"/>
+
 </LinearLayout>

@@ -154,8 +154,7 @@
             android:inputType="numberDecimal"
             android:layout_centerVertical="true"
             android:layout_toEndOf="@id/amountLabel"
-            android:layout_toStartOf="@id/units"
-            android:imeOptions="actionSend"/>
+            android:layout_toStartOf="@id/units"/>
 
         <Spinner
             android:id="@+id/units"
@@ -166,18 +165,14 @@
             android:layout_centerVertical="true"
             android:entries="@array/amount_units"/>
 
-        <TextView
+        <tech.nextcash.nextcashwallet.Button
             android:id="@+id/sendMax"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            style="@style/Button"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:layout_marginEnd="10dp"
-            android:text="@string/send_max"
-            android:padding="8dp"
-            android:textColor="@color/buttonText"
-            android:background="@drawable/button_background"
-            android:onClick="onClick"/>
+            android:minWidth="20dp"
+            android:text="@string/send_max"/>
 
     </RelativeLayout>
 
@@ -273,5 +268,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="5dp"/>
+
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/sendPayment"
+        style="@style/Button"
+        android:text="@string/continue_string"/>
 
 </LinearLayout>

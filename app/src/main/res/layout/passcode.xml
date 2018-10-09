@@ -35,4 +35,9 @@
 
     </LinearLayout>
 
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/authorize"
+        style="@style/Button"
+        android:text="@string/authorize"/>
+
 </LinearLayout>

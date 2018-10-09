@@ -19,20 +19,22 @@
 
     <HorizontalScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <EditText
-            android:id="@+id/paymentCode"
+        android:layout_height="wrap_content"
+        android:padding="10dp">
+        <TextView
+            android:id="@+id/clipboard"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:inputType="textNoSuggestions"
-            android:maxLines="1"
-            android:minWidth="300dp"
-            android:imeOptions="actionDone"/>
+            android:layout_height="wrap_content"/>
     </HorizontalScrollView>
 
     <tech.nextcash.nextcashwallet.Button
-        android:id="@+id/enterPaymentDetails"
+        android:id="@+id/useClipBoardPaymentCode"
         style="@style/Button"
-        android:text="@string/continue_string"/>
+        android:text="@string/use_clipboard"/>
+
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/scanPaymentCode"
+        style="@style/Button"
+        android:text="@string/scan_payment_code"/>
 
 </LinearLayout>

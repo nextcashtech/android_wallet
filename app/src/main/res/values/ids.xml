@@ -1,21 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <item type="id" name="editWallet" />
-    <item type="id" name="createWallet" />
-    <item type="id" name="recoverWallet" />
-    <item type="id" name="importWallet" />
     <item type="id" name="enterImportKey" />
-    <item type="id" name="loadKey" />
-    <item type="id" name="updateWalletName" />
-    <item type="id" name="backupWallet" />
-    <item type="id" name="removeWallet" />
-    <item type="id" name="authorize" />
-    <item type="id" name="verifySeedSaved" />
-    <item type="id" name="skipCheckSeed" />
-    <item type="id" name="sendPayment" />
-    <item type="id" name="openScanner" />
-    <item type="id" name="enterPaymentDetails" />
-    <item type="id" name="importSeed" />
     <item type="id" name="enterRecoverSeed" />
-    <item type="id" name="updateRequestPaymentCode" />
+    <item type="id" name="editWallet" />
 </resources>

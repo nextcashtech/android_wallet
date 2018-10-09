@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:padding="20dp">
+
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/createWallet"
+        style="@style/Button"
+        android:text="@string/create_new_key"/>
+
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/recoverWallet"
+        style="@style/Button"
+        android:text="@string/recover_wallet"/>
+
+    <tech.nextcash.nextcashwallet.Button
+        android:id="@+id/importWallet"
+        style="@style/Button"
+        android:text="@string/import_bip0032_key"/>
+
+</LinearLayout>
