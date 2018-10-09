@@ -2,6 +2,7 @@ package tech.nextcash.nextcashwallet;
 
 import android.content.Context;
 import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -9,9 +10,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraMetadata;
-import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
@@ -30,13 +29,14 @@ import com.google.zxing.BinaryBitmap;
 import com.google.zxing.DecodeHintType;
 import com.google.zxing.LuminanceSource;
 import com.google.zxing.MultiFormatReader;
+import com.google.zxing.NotFoundException;
 import com.google.zxing.PlanarYUVLuminanceSource;
-import com.google.zxing.ReaderException;
 import com.google.zxing.Result;
 import com.google.zxing.common.HybridBinarizer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -50,8 +50,8 @@ public class Scanner
 
     private static final int MIN_FRAME_WIDTH  = 240;
     private static final int MIN_FRAME_HEIGHT = 240;
-    private static final int MAX_FRAME_WIDTH  = 1200; // = 5/8 * 1920
-    private static final int MAX_FRAME_HEIGHT = 675; // = 5/8 * 1080
+    private static final int MAX_FRAME_WIDTH  = 1920;
+    private static final int MAX_FRAME_HEIGHT = 1080;
 
     public static final int FAIL_ACCESS   = 1;
     public static final int FAIL_CREATION = 2;
@@ -62,22 +62,24 @@ public class Scanner
         void onScannerFailed(int pFailReason);
     }
 
-    private boolean mIsValid, mIsClosing;
+    private boolean mIsValid, mIsClosing, mFinished;
 
     private CameraDevice mDevice;
     private Size mCaptureSize;
     private int [] mOutputFormats;
-    private int [] mDesiredOutputFormats;
+    private int [] mDesiredProcessOutputFormats;
+    private CameraCharacteristics mCameraCharacteristics;
 
-    private SurfaceHolder mSurfaceHolder;
-    private boolean mSurfaceCreated;
+    private boolean mSurfaceConfigured;
+    private Surface mSurface;
+    private int mImageFormat;
     private ImageReader mImageReader;
-    private CaptureRequest mSurfaceRequest, mImageReaderRequest;
-    private final MultiFormatReader mMultiFormatReader;
+    private MultiFormatReader mMultiFormatReader;
 
     private CameraCaptureSession mSession;
     private HandlerThread mHandlerThread;
 
+    private boolean mCaptureSessionCreated;
     private CameraDevice.StateCallback mDeviceCallBack;
     private CameraCaptureSession.StateCallback mCaptureStateCallBack;
     private SurfaceHolder.Callback mSurfaceCallBack;
@@ -91,17 +93,19 @@ public class Scanner
         mCallBack = pCallBack;
         mCallBackHandler = pCallBackHandler;
         mIsValid = false;
+        mFinished = false;
         mDevice = null;
-        mSurfaceHolder = null;
         mSession = null;
-        mSurfaceCreated = false;
+        mSurfaceConfigured = false;
+        mCaptureSessionCreated = false;
         mCaptureSize = null;
+        mSurface = null;
+        mImageFormat = 0;
         mImageReader = null;
         mOutputFormats = null;
-        mSurfaceRequest = null;
-        mImageReaderRequest = null;
         mHandlerThread = null;
         mIsClosing = false;
+        mCameraCharacteristics = null;
 
         mMultiFormatReader = new MultiFormatReader();
         HashMap<DecodeHintType, Object> decodeHints = new HashMap<>();
@@ -111,10 +115,10 @@ public class Scanner
         mMultiFormatReader.setHints(decodeHints);
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            mDesiredOutputFormats = new int[] { ImageFormat.YUV_420_888, ImageFormat.YUV_422_888,
+            mDesiredProcessOutputFormats = new int[] { ImageFormat.YUV_420_888, ImageFormat.YUV_422_888,
               ImageFormat.YUV_444_888 };
         else
-            mDesiredOutputFormats = new int[] { ImageFormat.YUV_420_888 };
+            mDesiredProcessOutputFormats = new int[] { ImageFormat.YUV_420_888 };
 
         mSurfaceCallBack = new SurfaceHolder.Callback()
         {
@@ -122,24 +126,50 @@ public class Scanner
             public void surfaceCreated(SurfaceHolder pSurfaceHolder)
             {
                 if(pSurfaceHolder == null)
-                    Log.e(logTag, "SurfaceHolder created a null surface");
-                else if (!mSurfaceCreated)
                 {
-                    mSurfaceCreated = true;
-                    attemptCreateSession();
+                    Log.e(logTag, "SurfaceHolder created a null surface");
+                    postFailCallBack(FAIL_CREATION);
+                    close();
+                    return;
                 }
+
+                Log.i(logTag, "SurfaceHolder surface created");
+                if(mSurface == null)
+                    Log.d(logTag, "SurfaceHolder created a new surface");
+                mSurface = pSurfaceHolder.getSurface();
             }
 
             @Override
             public void surfaceDestroyed(SurfaceHolder pSurfaceHolder)
             {
-                mSurfaceCreated = false;
+                if(pSurfaceHolder == null)
+                    Log.e(logTag, "SurfaceHolder destroyed a null surface");
+
+                Log.i(logTag, "SurfaceHolder surface destroyed");
+                mSurfaceConfigured = false;
+                mSurface = null;
             }
 
             @Override
             public void surfaceChanged(SurfaceHolder pSurfaceHolder, int pFormat, int pWidth, int pHeight)
             {
-                Log.d(logTag, "SurfaceHolder surfaceChange");
+                if(pSurfaceHolder == null)
+                {
+                    Log.e(logTag, "SurfaceHolder changed a null surface");
+                    postFailCallBack(FAIL_CREATION);
+                    close();
+                    return;
+                }
+
+                Log.d(logTag, String.format(Locale.US,
+                  "SurfaceHolder surface changed : format %s, size %d, %d", pixelFormatName(pFormat), pWidth,
+                  pHeight));
+                mSurface = pSurfaceHolder.getSurface();
+                if(mSurfaceConfigured || (pWidth == mCaptureSize.getWidth() && pHeight == mCaptureSize.getHeight()))
+                {
+                    mSurfaceConfigured = true;
+                    attemptCreateSession();
+                }
             }
         };
 
@@ -148,7 +178,7 @@ public class Scanner
             @Override
             public void onOpened(@NonNull CameraDevice pDevice)
             {
-                Log.i(logTag,"Camera opened");
+                Log.i(logTag,"Camera device opened");
                 mDevice = pDevice;
                 attemptCreateSession();
             }
@@ -156,7 +186,7 @@ public class Scanner
             @Override
             public void onDisconnected(@NonNull CameraDevice pDevice)
             {
-                Log.i(logTag,"Camera disconnected");
+                Log.i(logTag,"Camera device disconnected");
                 mDevice = null;
                 mIsValid = false;
                 close(); // Clean up other objects
@@ -165,7 +195,8 @@ public class Scanner
             @Override
             public void onError(@NonNull CameraDevice pDevice, int pError)
             {
-                Log.e(logTag, String.format(Locale.US, "Failed to open camera device : error %d", pError));
+                Log.e(logTag, String.format(Locale.US, "Camera device error : %d", pError));
+                postFailCallBack(FAIL_CREATION);
                 close();
             }
         };
@@ -177,26 +208,88 @@ public class Scanner
             {
                 Log.i(logTag,"Camera capture session configured");
                 mSession = pSession;
-                ArrayList<CaptureRequest> requests = new ArrayList<>();
+
                 try
                 {
-                    // Add surface request
-                    CaptureRequest.Builder builder = mDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-                    builder.addTarget(mSurfaceHolder.getSurface());
-                    mSurfaceRequest = builder.build();
-                    requests.add(mSurfaceRequest);
+                    // Put camera in repeating burst mode.
+                    CaptureRequest.Builder requestBuilder;
+                    int[] capabilities =
+                      mCameraCharacteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
 
-                    // Add image reader request
-                    builder = mDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-                    builder.addTarget(mImageReader.getSurface());
-                    mImageReaderRequest = builder.build();
-                    requests.add(mImageReaderRequest);
+                    Log.i(logTag, "Using preview template");
+                    requestBuilder = mDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
 
-                    mSession.setRepeatingBurst(requests, mCaptureCallBack, null);
+                    if(contains(mCameraCharacteristics.get(CameraCharacteristics.CONTROL_AVAILABLE_SCENE_MODES),
+                      CameraCharacteristics.CONTROL_MODE_USE_SCENE_MODE) &&
+                      contains(mCameraCharacteristics.get(CameraCharacteristics.CONTROL_AVAILABLE_SCENE_MODES),
+                      CameraCharacteristics.CONTROL_SCENE_MODE_BARCODE))
+                    {
+                        Log.i(logTag, "Using barcode scene mode");
+
+                        // Configure camera for barcode scanning. Disables auto-exposure and auto-focus modes.
+                        requestBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_USE_SCENE_MODE);
+                        requestBuilder.set(CaptureRequest.CONTROL_SCENE_MODE,
+                          CaptureRequest.CONTROL_SCENE_MODE_BARCODE);
+                    }
+                    else
+                    {
+                        Log.i(logTag, "Using basic auto mode");
+
+                        // Settings below this depend on this setting.
+                        requestBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
+
+                        // Turn on continuous auto focus.
+                        requestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_MACRO);
+
+                        // Turn on auto flash in torch (continuous) mode.
+                        requestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                        requestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
+                    }
+
+                    int[] edgeModes = mCameraCharacteristics.get(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES);
+                    if(contains(edgeModes, CameraCharacteristics.EDGE_MODE_FAST))
+                    {
+                        Log.i(logTag, "Using fast edge mode");
+                        requestBuilder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_FAST);
+                    }
+                    else if(contains(edgeModes, CameraCharacteristics.EDGE_MODE_HIGH_QUALITY))
+                    {
+                        Log.i(logTag, "Using high quality edge mode");
+                        requestBuilder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_HIGH_QUALITY);
+                    }
+
+                    int[] noiseReductionModes = mCameraCharacteristics.get(
+                      CameraCharacteristics.NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES);
+                    if(contains(noiseReductionModes, CameraCharacteristics.NOISE_REDUCTION_MODE_FAST))
+                    {
+                        Log.i(logTag, "Using fast noise reduction mode");
+                        requestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE,
+                          CaptureRequest.NOISE_REDUCTION_MODE_FAST);
+                    }
+                    else if(contains(noiseReductionModes, CameraCharacteristics.NOISE_REDUCTION_MODE_HIGH_QUALITY))
+                    {
+                        Log.i(logTag, "Using high quality noise reduction mode");
+                        requestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE,
+                          CaptureRequest.NOISE_REDUCTION_MODE_HIGH_QUALITY);
+                    }
+                    else if(contains(noiseReductionModes, CameraCharacteristics.NOISE_REDUCTION_MODE_MINIMAL) &&
+                      Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                    {
+                        Log.i(logTag, "Using minimal noise reduction mode");
+                        requestBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE,
+                          CaptureRequest.NOISE_REDUCTION_MODE_MINIMAL);
+                    }
+
+                    // One request seems to handle both surfaces.
+                    requestBuilder.addTarget(mImageReader.getSurface());
+                    requestBuilder.addTarget(mSurface);
+
+                    mSession.setRepeatingBurst(Collections.singletonList(requestBuilder.build()), mCaptureCallBack,
+                      new Handler(mHandlerThread.getLooper()));
                 }
-                catch(CameraAccessException pException)
+                catch(IllegalArgumentException|CameraAccessException pException)
                 {
-                    Log.e(logTag,"Failed to create/set capture request", pException);
+                    Log.e(logTag,"Failed to create capture request", pException);
                     close();
                 }
             }
@@ -206,6 +299,7 @@ public class Scanner
             {
                 Log.e(logTag,"Failed to configure camera capture session");
                 mSession = null;
+                postFailCallBack(FAIL_CREATION);
                 close();
             }
         };
@@ -213,86 +307,64 @@ public class Scanner
         mCaptureCallBack = new CameraCaptureSession.CaptureCallback()
         {
             @Override
-            public void onCaptureStarted(@NonNull CameraCaptureSession pSession, @NonNull CaptureRequest pRequest,
-                                         long pTimeStamp, long pFrameNumber)
-            {
-                super.onCaptureStarted(pSession, pRequest, pTimeStamp, pFrameNumber);
-            }
-
-            @Override
-            public void onCaptureProgressed(@NonNull CameraCaptureSession pSession, @NonNull CaptureRequest pRequest,
-                                            @NonNull CaptureResult pPartialResult)
-            {
-                super.onCaptureProgressed(pSession, pRequest, pPartialResult);
-            }
-
-            @Override
             public void onCaptureCompleted(@NonNull CameraCaptureSession pSession, @NonNull CaptureRequest pRequest,
                                            @NonNull TotalCaptureResult pResult)
             {
-                if(mImageReaderRequest == pRequest)
+                if(mFinished)
+                    return; // Don't process anymore images.
+
+                Image image = mImageReader.acquireLatestImage();
+                if(image != null)
                 {
-                    Image image = mImageReader.acquireLatestImage();
-                    Rect frame = calculateFramingRect();
-                    if(image != null && frame != null)
+                    Log.i(logTag, String.format("Processing %s image", imageFormatName(image.getFormat())));
+
+                    // Find square frame in the middle to process. This reduces data to parse.
+                    int diff;
+                    Rect frame;
+                    if(image.getHeight() > image.getWidth())
                     {
-                        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                        byte[] bytes = new byte[buffer.capacity()];
-                        buffer.get(bytes);
-                        LuminanceSource source = new PlanarYUVLuminanceSource(bytes, image.getWidth(),
-                          image.getHeight(), frame.left, frame.top, frame.width(), frame.height(),
-                          false);
-                        BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
-                        Result result;
-
-                        try
-                        {
-                            result = mMultiFormatReader.decodeWithState(bitmap);
-                            if(result != null)
-                                postResultCallBack(result.getText());
-                        }
-                        catch(ReaderException pException)
-                        {
-                            // I think this just happens when no code is found.
-                            //Log.e(logTag, "Capture decode read exception", pException);
-                        }
-                        finally
-                        {
-                            mMultiFormatReader.reset();
-                        }
-
-                        image.close();
+                        diff = (image.getHeight() - image.getWidth()) / 2;
+                        frame = new Rect(0, diff, image.getWidth(), diff + image.getWidth());
                     }
+                    else
+                    {
+                        diff = (image.getWidth() - image.getHeight()) / 2;
+                        frame = new Rect(diff, 0, diff + image.getHeight(), image.getHeight());
+                    }
+
+                    Image.Plane plane = image.getPlanes()[0];
+                    ByteBuffer buffer = plane.getBuffer();
+                    byte[] bytes = new byte[buffer.capacity()];
+                    buffer.get(bytes);
+
+                    // The PlanarYUVLuminanceSource dataWidth was tricky.
+                    // In some newer devices the data width is not the same as the image width.
+                    LuminanceSource source = new PlanarYUVLuminanceSource(bytes,
+                      plane.getRowStride() / plane.getPixelStride(),
+                      image.getHeight(), frame.left, frame.top, frame.width(), frame.height(),
+                      true);
+                    BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
+                    Result result;
+
+                    try
+                    {
+                        result = mMultiFormatReader.decodeWithState(bitmap);
+                        if(result != null)
+                            postResultCallBack(result.getText());
+                    }
+                    catch(NotFoundException pException)
+                    {
+                        // This happens every time an image is captured and a QR code is not found.
+                    }
+                    finally
+                    {
+                        mMultiFormatReader.reset();
+                    }
+
+                    image.close();
                 }
 
                 super.onCaptureCompleted(pSession, pRequest, pResult);
-            }
-
-            @Override
-            public void onCaptureFailed(@NonNull CameraCaptureSession pSession, @NonNull CaptureRequest pRequest,
-                                        @NonNull CaptureFailure pFailure)
-            {
-                super.onCaptureFailed(pSession, pRequest, pFailure);
-            }
-
-            @Override
-            public void onCaptureSequenceCompleted(@NonNull CameraCaptureSession pSession, int pSequenceID,
-                                                   long pFrameNumber)
-            {
-                super.onCaptureSequenceCompleted(pSession, pSequenceID, pFrameNumber);
-            }
-
-            @Override
-            public void onCaptureSequenceAborted(@NonNull CameraCaptureSession pSession, int pSequenceID)
-            {
-                super.onCaptureSequenceAborted(pSession, pSequenceID);
-            }
-
-            @Override
-            public void onCaptureBufferLost(@NonNull CameraCaptureSession pSession, @NonNull CaptureRequest pRequest,
-                                            @NonNull Surface pTarget, long pFrameNumber)
-            {
-                super.onCaptureBufferLost(pSession, pRequest, pTarget, pFrameNumber);
             }
         };
     }
@@ -303,17 +375,18 @@ public class Scanner
 
     public synchronized boolean open(Context pContext, SurfaceHolder pSurfaceHolder, int pFacing)
     {
+        Log.i(logTag, "Opening scanner");
+
         if(mIsClosing)
         {
-            Log.e(logTag, "Failed to open scanner : still closing");
+            Log.e(logTag, "Failed to open scanner : still closing previous scanner");
             close();
             postFailCallBack(FAIL_CREATION);
             return false;
         }
 
         mIsValid = false;
-        mSurfaceHolder = pSurfaceHolder;
-        mSurfaceHolder.addCallback(mSurfaceCallBack);
+        mFinished = false;
 
         CameraManager manager = (CameraManager)pContext.getSystemService(Context.CAMERA_SERVICE);
         if(manager == null)
@@ -346,19 +419,26 @@ public class Scanner
         }
 
         String selectedCamera = null;
-        CameraCharacteristics characteristics = null;
+        mCameraCharacteristics = null;
         Integer facing;
         try
         {
             for(String cameraID : cameraIDs)
             {
-                characteristics = manager.getCameraCharacteristics(cameraID);
-                facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                mCameraCharacteristics = manager.getCameraCharacteristics(cameraID);
+                facing = mCameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
                 if(facing != null && facing == pFacing)
                 {
                     selectedCamera = cameraID;
                     break;
                 }
+            }
+
+            if(selectedCamera == null)
+            {
+                Log.e(logTag, "Failed to get camera facing the desired direction. Using first");
+                selectedCamera = cameraIDs[0];
+                mCameraCharacteristics = manager.getCameraCharacteristics(selectedCamera);
             }
         }
         catch(CameraAccessException pException)
@@ -369,17 +449,37 @@ public class Scanner
             return false;
         }
 
-        if(selectedCamera == null)
+        // Determine capture template
+        Integer hardwareLevel = mCameraCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
+        if(hardwareLevel == null)
+            Log.i(logTag, "Hardware support level not specified");
+        else
         {
-            Log.e(logTag, "Failed to get camera facing the desired direction");
-            close();
-            postFailCallBack(FAIL_CREATION);
-            return false;
+            switch(hardwareLevel)
+            {
+                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY:
+                    Log.i(logTag, "Hardware support level legacy");
+                    break;
+                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_EXTERNAL:
+                    Log.i(logTag, "Hardware support level external");
+                    break;
+                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED:
+                    Log.i(logTag, "Hardware support level limited");
+                    break;
+                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL:
+                    Log.i(logTag, "Hardware support level full");
+                    break;
+                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_3:
+                    Log.i(logTag, "Hardware support level 3");
+                    break;
+                default:
+                    Log.i(logTag, "Hardware support level unknown");
+                    break;
+            }
         }
 
         StreamConfigurationMap configurationMap =
-          characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
+          mCameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         if(configurationMap == null)
         {
             Log.e(logTag, "Failed to get camera configuration map");
@@ -388,15 +488,33 @@ public class Scanner
             return false;
         }
 
-        // Choose the largest size that is smaller than pContainingSize.
+        // Determine the largest, most square size between min frame size and twice the max frame size.
         Size[] sizes = configurationMap.getOutputSizes(SurfaceHolder.class);
         mCaptureSize = null;
+        double selectedWidthHeightRatio = 1.0, currentWidthHeightRatio = 1.0;
         for(Size size : sizes)
             if(size.getWidth() > MIN_FRAME_WIDTH && size.getHeight() > MIN_FRAME_HEIGHT &&
-              MAX_FRAME_WIDTH > size.getWidth() && MAX_FRAME_HEIGHT > size.getHeight() &&
-              (mCaptureSize == null ||
-              (mCaptureSize.getWidth() * mCaptureSize.getHeight()) < (size.getWidth() * size.getWidth())))
-                mCaptureSize = size;
+              MAX_FRAME_WIDTH > size.getWidth() && MAX_FRAME_HEIGHT > size.getHeight())
+            {
+                if(mCaptureSize == null)
+                {
+                    mCaptureSize = size;
+                    selectedWidthHeightRatio = (double)Math.min(mCaptureSize.getWidth(), mCaptureSize.getHeight()) /
+                      (double)Math.max(mCaptureSize.getWidth(), mCaptureSize.getHeight());
+                }
+                else
+                {
+                    currentWidthHeightRatio = (double)Math.min(size.getWidth(), size.getHeight()) /
+                      (double)Math.max(size.getWidth(), size.getHeight());
+                    if(currentWidthHeightRatio > selectedWidthHeightRatio ||
+                      (currentWidthHeightRatio == selectedWidthHeightRatio &&
+                      (size.getWidth() * size.getHeight()) > (mCaptureSize.getWidth() * mCaptureSize.getHeight())))
+                    {
+                        mCaptureSize = size;
+                        selectedWidthHeightRatio = currentWidthHeightRatio;
+                    }
+                }
+            }
 
         if(mCaptureSize == null)
         {
@@ -406,11 +524,46 @@ public class Scanner
             return false;
         }
 
+        // Determine format for data processing.
         mOutputFormats = configurationMap.getOutputFormats();
+        boolean formatSelected = false;
+        for(int desiredFormat : mDesiredProcessOutputFormats)
+        {
+            for(int supportedFormat : mOutputFormats)
+                if(supportedFormat == desiredFormat)
+                {
+                    formatSelected = true;
+                    mImageFormat = supportedFormat;
+                    break;
+                }
 
-        Log.i(logTag, String.format(Locale.US, "Set camera output size to %d, %d", mCaptureSize.getWidth(),
-          mCaptureSize.getHeight()));
-        mSurfaceHolder.setFixedSize(mCaptureSize.getWidth(), mCaptureSize.getHeight());
+            if(formatSelected)
+                break;
+        }
+
+        if(!formatSelected)
+        {
+            StringBuilder supportedText = new StringBuilder();
+            for(int supportedFormat : mOutputFormats)
+            {
+                if(supportedText.length() > 0)
+                    supportedText.append(", ");
+                supportedText.append(imageFormatName(supportedFormat));
+            }
+            Log.e(logTag, String.format("Failed to find desired output format : %s", supportedText.toString()));
+            close();
+            postFailCallBack(FAIL_ACCESS);
+            return false;
+        }
+
+        Log.i(logTag, String.format("Using format %s", imageFormatName(mImageFormat)));
+
+        Log.i(logTag, String.format(Locale.US, "Set camera output size to %d, %d",
+          mCaptureSize.getWidth(), mCaptureSize.getHeight()));
+        pSurfaceHolder.setFixedSize(mCaptureSize.getWidth(), mCaptureSize.getHeight());
+        pSurfaceHolder.setKeepScreenOn(true);
+        // This later provides the surface object, so no need to keep the holder.
+        pSurfaceHolder.addCallback(mSurfaceCallBack);
 
         // Start handler thread to run callbacks in.
         mHandlerThread = new HandlerThread("ScannerCapture", Thread.MIN_PRIORITY);
@@ -441,13 +594,35 @@ public class Scanner
 
     private void internalClose()
     {
-        Log.i(logTag,"Closing camera");
+        Log.i(logTag,"Closing scanner");
+
         mIsValid = false;
+        mSurfaceConfigured = false;
+        mCaptureSessionCreated = false;
+        mCameraCharacteristics = null;
 
         // Close capture session
         if(mSession != null)
         {
-            mSession.close();
+            try
+            {
+                mSession.abortCaptures();
+                mSession.stopRepeating();
+            }
+            catch(IllegalStateException|CameraAccessException pException)
+            {
+                Log.d(logTag, "Failed to stop repeating capture session");
+            }
+
+            try
+            {
+                mSession.close();
+            }
+            catch(Exception pException)
+            {
+                Log.d(logTag, "Failed to close session");
+            }
+
             mSession = null;
         }
 
@@ -458,11 +633,7 @@ public class Scanner
             mImageReader = null;
         }
 
-        if(mSurfaceRequest != null)
-            mSurfaceRequest = null;
-
-        if(mImageReaderRequest != null)
-            mImageReaderRequest = null;
+        mSurface = null;
 
         // Disconnect from device
         if(mDevice != null)
@@ -478,7 +649,7 @@ public class Scanner
         }
 
         mIsClosing = false;
-        Log.i(logTag,"Camera closed");
+        Log.i(logTag,"Scanner closed");
     }
 
     public synchronized void close()
@@ -493,7 +664,7 @@ public class Scanner
             internalClose();
         else
         {
-            Log.i(logTag,"Closing camera in handler thread");
+            Log.i(logTag,"Closing scanner in handler thread");
             Handler closeHandler = new Handler(mHandlerThread.getLooper());
             closeHandler.post(new Runnable()
             {
@@ -503,6 +674,49 @@ public class Scanner
                     internalClose();
                 }
             });
+        }
+    }
+
+    private synchronized void attemptCreateSession()
+    {
+        if(mIsClosing || !mIsValid || mDevice == null || !mSurfaceConfigured)
+            return;
+
+        if(mCaptureSessionCreated)
+        {
+            Log.i(logTag, "Recreating capture session");
+            // Documentation says you don't need to close the previous session.
+            mSession.close();
+        }
+        else
+        {
+            Log.i(logTag, "Creating capture session");
+            mCaptureSessionCreated = true;
+        }
+
+        ArrayList<Surface> surfaces = new ArrayList<>();
+
+        // Add screen surface view.
+        surfaces.add(mSurface);
+
+        if(mImageReader == null)
+            mImageReader = ImageReader.newInstance(mCaptureSize.getWidth(), mCaptureSize.getHeight(), mImageFormat,
+              2);
+        else
+            mImageReader.close();
+
+        // Add ImageReader for processing QR codes
+        surfaces.add(mImageReader.getSurface());
+
+        try
+        {
+            mDevice.createCaptureSession(surfaces, mCaptureStateCallBack, new Handler(mHandlerThread.getLooper()));
+        }
+        catch(CameraAccessException pException)
+        {
+            Log.e(logTag, "Failed to get camera access to create capture session", pException);
+            close();
+            postFailCallBack(FAIL_ACCESS);
         }
     }
 
@@ -553,102 +767,54 @@ public class Scanner
         }
     }
 
-    private void attemptCreateSession()
+    public String pixelFormatName(int pFormat)
     {
-        if(mIsClosing || !mIsValid || mDevice == null || mSurfaceHolder == null || !mSurfaceCreated)
-            return;
-
-        Log.i(logTag, "Creating capture session");
-
-        // Start capture session on screen surface
-        ArrayList<Surface> surfaces = new ArrayList<>();
-        surfaces.add(mSurfaceHolder.getSurface());
-
-        // Add ImageReader to process QR codes
-        // Close previous image reader
-        if(mImageReader != null)
+        switch(pFormat)
         {
-            mImageReader.close();
-            mImageReader = null;
+        case PixelFormat.TRANSLUCENT:
+            return "TRANSLUCENT";
+        case PixelFormat.TRANSPARENT:
+            return "TRANSPARENT";
+        case PixelFormat.RGBA_8888:
+            return "RGBA_8888";
+        case PixelFormat.RGBX_8888:
+            return "RGBX_8888";
+        case PixelFormat.RGB_888:
+            return "RGB_888";
+        case PixelFormat.RGB_565:
+            return "RGB_565";
+        case PixelFormat.RGBA_5551:
+            return "RGBA_5551";
+        case PixelFormat.RGBA_4444:
+            return "RGBA_4444";
+        case PixelFormat.A_8:
+            return "A_8";
+        case PixelFormat.L_8:
+            return "L_8";
+        case PixelFormat.LA_88:
+            return "LA_88";
+        case PixelFormat.RGB_332:
+            return "RGB_332";
+        case PixelFormat.YCbCr_422_SP:
+            return "YCbCr_422_SP";
+        case PixelFormat.YCbCr_420_SP:
+            return "YCbCr_420_SP";
+        case PixelFormat.YCbCr_422_I:
+            return "YCbCr_422_I";
+        case PixelFormat.RGBA_F16:
+            return "RGBA_F16";
+        case PixelFormat.RGBA_1010102:
+            return "RGBA_1010102";
+        case PixelFormat.JPEG:
+            return "JPEG";
+        default:
+            return "UNDEFINED";
         }
-
-        boolean formatSelected = false;
-        int selectedFormat = 0;
-        for(int desiredFormat : mDesiredOutputFormats)
-        {
-            for(int supportedFormat : mOutputFormats)
-                if(supportedFormat == desiredFormat)
-                {
-                    formatSelected = true;
-                    selectedFormat = supportedFormat;
-                    break;
-                }
-
-            if(formatSelected)
-                break;
-        }
-
-        if(!formatSelected)
-        {
-            String supportedText = "";
-            for(int supportedFormat : mOutputFormats)
-            {
-                if(supportedText.length() > 0)
-                    supportedText += ", ";
-                supportedText += imageFormatName(supportedFormat);
-            }
-            Log.e(logTag, String.format("Failed to find desired output format : %s", supportedText));
-            close();
-            postFailCallBack(FAIL_CREATION);
-            return;
-        }
-
-        mImageReader = ImageReader.newInstance(mCaptureSize.getWidth(), mCaptureSize.getHeight(), selectedFormat,
-          1);
-
-        surfaces.add(mImageReader.getSurface());
-
-        try
-        {
-            mDevice.createCaptureSession(surfaces, mCaptureStateCallBack, new Handler(mHandlerThread.getLooper()));
-        }
-        catch(CameraAccessException pException)
-        {
-            Log.e(logTag, "Failed to get camera access to create capture session", pException);
-            close();
-            postFailCallBack(FAIL_ACCESS);
-        }
-    }
-
-    public Rect calculateFramingRect()
-    {
-        if(mCaptureSize == null)
-            return null;
-
-        int width = findDesiredDimensionInRange(mCaptureSize.getWidth(), MIN_FRAME_WIDTH, MAX_FRAME_WIDTH);
-        int height = findDesiredDimensionInRange(mCaptureSize.getHeight(), MIN_FRAME_HEIGHT, MAX_FRAME_HEIGHT);
-
-        int left = (mCaptureSize.getWidth() - width) / 2;
-        int top = (mCaptureSize.getHeight() - height) / 2;
-        return new Rect(left, top, left + width, top + height);
-    }
-
-    private static int findDesiredDimensionInRange(int pResolution, int pHardMin, int pHardMax)
-    {
-        int dim = 5 * pResolution / 8; // Target 5/8 of each dimension
-        if(dim < pHardMin)
-        {
-            return pHardMin;
-        }
-        if(dim > pHardMax)
-        {
-            return pHardMax;
-        }
-        return dim;
     }
 
     private void postResultCallBack(final String pResult)
     {
+        mFinished = true;
         mCallBackHandler.post(new Runnable()
         {
             @Override
@@ -657,10 +823,12 @@ public class Scanner
                 mCallBack.onScannerResult(pResult);
             }
         });
+        close();
     }
 
     private void postFailCallBack(final int pError)
     {
+        mFinished = true;
         mCallBackHandler.post(new Runnable()
         {
             @Override
@@ -669,5 +837,18 @@ public class Scanner
                 mCallBack.onScannerFailed(pError);
             }
         });
+        close();
+    }
+
+    private boolean contains(int[] pList, int pValue)
+    {
+        if(pList == null)
+            return false;
+
+        for(int item : pList)
+            if(item == pValue)
+                return true;
+
+        return false;
     }
 }

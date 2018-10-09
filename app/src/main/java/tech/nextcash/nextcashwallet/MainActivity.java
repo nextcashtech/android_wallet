@@ -1958,14 +1958,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onScannerResult(String pResult)
     {
-        mScanner.close();
-
         mPaymentRequest = mBitcoin.decodePaymentCode(pResult);
         if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
             displayEnterPaymentDetails();
         else
         {
-            showMessage(getString(R.string.failed_payment_code), 2000);
+            showMessage(getString(R.string.invalid_payment_code), 2000);
             displayWallets();
         }
     }
@@ -1973,8 +1971,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onScannerFailed(int pFailReason)
     {
-        mScanner.close();
-
         switch(pFailReason)
         {
         case Scanner.FAIL_ACCESS:
@@ -1988,7 +1984,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         }
 
-        displayEnterPaymentDetails();
+        displayEnterPaymentCode();
     }
 
     public synchronized void displayScanPaymentCode()
@@ -2027,15 +2023,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         dialogView.addView(scanView);
 
         ScannerView cameraView = scanView.findViewById(R.id.camera);
-        SurfaceHolder holder = cameraView.getHolder();
-        holder.setKeepScreenOn(true);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.SCAN;
 
         cameraView.setCamera(mScanner);
-        if(!mScanner.open(getApplicationContext(), holder, Scanner.FACING_BACK))
+        if(!mScanner.open(getApplicationContext(), cameraView.getHolder(), Scanner.FACING_BACK))
         {
             Log.w(logTag, "Camera failed to open");
             showMessage(getString(R.string.failed_camera_access), 2000);
@@ -2223,9 +2217,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             dialogView.setVisibility(View.VISIBLE);
             findViewById(R.id.mainScroll).setScrollY(0);
-
-            if(amount != null)
-                amount.selectAll();
 
             mMode = Mode.RECEIVE;
         }
