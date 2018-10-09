@@ -52,4 +52,20 @@
         android:layout_centerInParent="true"
         android:translationZ="1dp"/>
 
+    <TextView
+        android:id="@+id/enterPaymentCode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/camera"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:minWidth="200dp"
+        android:padding="10dp"
+        android:layout_margin="10dp"
+        android:gravity="center"
+        android:text="@string/enter_payment_code"
+        android:background="@drawable/button_background"
+        android:onClick="onClick"/>
+
 </android.support.constraint.ConstraintLayout>

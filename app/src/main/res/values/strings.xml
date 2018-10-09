@@ -357,7 +357,7 @@
     <string name="outputs">Outputs</string>
     <string name="output">Output</string>
     <string name="coins_being_sent">Coins being sent/created</string>
-    <string name="enter_payment_code">Enter Payment Code/Address</string>
+    <string name="enter_payment_code">Enter Payment Code</string>
     <string name="scan">Scan</string>
 
     <string name="mnemonic_seed_entropy">Entropy</string>

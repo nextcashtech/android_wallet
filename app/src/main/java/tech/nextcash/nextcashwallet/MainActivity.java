@@ -1330,7 +1330,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(pGrantResults[0] == PackageManager.PERMISSION_GRANTED)
                 displayScanPaymentCode();
             else
-                displayWallets();
+                displayEnterPaymentCode();
             break;
         }
         super.onRequestPermissionsResult(pRequestCode, pPermissions, pGrantResults);
@@ -1917,19 +1917,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         continueButton.setTag(R.id.enterPaymentDetails);
         ((TextView)continueButton.findViewById(R.id.text)).setText(R.string.continue_string);
         dialogView.addView(continueButton);
-
-        PackageManager packageManager = getApplicationContext().getPackageManager();
-        if(packageManager != null && packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA))
-        {
-            // Scan button
-            View scanButton = inflater.inflate(R.layout.button, dialogView, false);
-            scanButton.setTag(R.id.openScanner);
-            ImageView scanIcon = scanButton.findViewById(R.id.image);
-            scanIcon.setImageResource(R.drawable.ic_scan_white_36dp);
-            scanIcon.setVisibility(View.VISIBLE);
-            ((TextView)scanButton.findViewById(R.id.text)).setText(R.string.scan);
-            dialogView.addView(scanButton);
-        }
 
         TextView.OnEditorActionListener paymentCodeListener = new TextView.OnEditorActionListener()
         {
@@ -3276,9 +3263,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
             break;
         }
-        case R.id.openScanner:
-            displayScanPaymentCode();
-            break;
         case R.id.sendPayment:
         {
             mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
@@ -3498,6 +3482,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
             mCurrentWalletIndex = (int)walletView.getTag();
+            displayScanPaymentCode();
+            break;
+        }
+        case R.id.enterPaymentCode:
+        {
+            mScanner.close();
             displayEnterPaymentCode();
             break;
         }
@@ -3712,9 +3702,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case TRANSACTION:
             break;
         case SCAN:
-            mScanner.close();
-            displayEnterPaymentCode();
-            return;
+            break;
         case RECEIVE:
             mPaymentRequest = null;
             break;
