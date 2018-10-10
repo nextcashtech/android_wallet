@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="20dp"
+    android:background="#9000"
+    android:onClick="onClick">
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintVertical_bias="0.8">
+
+        <LinearLayout
+            android:id="@+id/digits"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <tech.nextcash.nextcashwallet.Button
+                    android:id="@+id/two"
+                    android:layout_centerHorizontal="true"
+                    style="@style/PINButton"
+                    android:text="@string/two"/>
+
+                <tech.nextcash.nextcashwallet.Button
+                    android:id="@+id/one"
+                    android:layout_toLeftOf="@id/two"
+                    style="@style/PINButton"
+                    android:text="@string/one"/>
+
+                <tech.nextcash.nextcashwallet.Button
+                    android:id="@+id/three"
+                    android:layout_toRightOf="@id/two"
+                    style="@style/PINButton"
+                    android:text="@string/three"/>
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <tech.nextcash.nextcashwallet.Button
+                    android:id="@+id/five"
+                    android:layout_centerHorizontal="true"
+                    style="@style/PINButton"
+                    android:text="@string/five"/>
+
+                <tech.nextcash.nextcashwallet.Button
+                    android:id="@+id/four"
+                    android:layout_toLeftOf="@id/five"
+                    style="@style/PINButton"
+                    android:text="@string/four"/>
+
+                <tech.nextcash.nextcashwallet.Button
+                    android:id="@+id/six"
+                    android:layout_toRightOf="@id/five"
+                    style="@style/PINButton"
+                    android:text="@string/six"/>
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <tech.nextcash.nextcashwallet.Button
+                    android:id="@+id/eight"
+                    android:layout_centerHorizontal="true"
+                    style="@style/PINButton"
+                    android:text="@string/eight"/>
+
+                <tech.nextcash.nextcashwallet.Button
+                    android:id="@+id/seven"
+                    android:layout_toLeftOf="@id/eight"
+                    style="@style/PINButton"
+                    android:text="@string/seven"/>
+
+                <tech.nextcash.nextcashwallet.Button
+                    android:id="@+id/nine"
+                    android:layout_toRightOf="@id/eight"
+                    style="@style/PINButton"
+                    android:text="@string/nine"/>
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <tech.nextcash.nextcashwallet.Button
+                    android:id="@+id/zero"
+                    android:layout_centerHorizontal="true"
+                    style="@style/PINButton"
+                    android:text="@string/zero"/>
+
+                <ImageView
+                    android:id="@+id/backspace"
+                    android:layout_toLeftOf="@id/zero"
+                    style="@style/PINButton"
+                    android:src="@drawable/baseline_backspace_white_36dp"
+                    android:contentDescription="@string/backspace"/>
+
+                <ImageView
+                    android:id="@+id/authorize"
+                    android:layout_toRightOf="@id/zero"
+                    style="@style/PINButton"
+                    android:src="@drawable/ic_lock_white_36dp"
+                    android:contentDescription="@string/authorize"/>
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/entryDots"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            app:layout_constraintBottom_toTopOf="@id/digits"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:orientation="horizontal"
+            android:layout_marginBottom="20dp"
+            android:gravity="center_vertical">
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/authorizeMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toTopOf="@id/entryDots"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="10dp"
+            style="@style/SubHeadingText"
+            android:textColor="#ffff"
+            android:padding="10dp"
+            android:background="@drawable/text_background">
+        </TextView>
+
+    </android.support.constraint.ConstraintLayout>
+
+</android.support.constraint.ConstraintLayout>

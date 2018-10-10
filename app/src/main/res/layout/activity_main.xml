@@ -207,6 +207,13 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/pin"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/notification"
         android:orientation="vertical"
         android:layout_width="match_parent"

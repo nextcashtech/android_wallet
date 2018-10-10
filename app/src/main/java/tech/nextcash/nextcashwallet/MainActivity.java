@@ -126,6 +126,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private ArrayList<String> mPersistentMessages;
     private Messages mMessages;
     private Scanner mScanner;
+    private String mPIN;
 
 
     public class TransactionRunnable implements Runnable
@@ -211,6 +212,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMessages.load(getApplicationContext());
         refreshPersistentMessages();
         mScanner = new Scanner(this, new Handler(getMainLooper()));
+        mPIN = null;
 
         if(!settings.containsValue("beta_message"))
         {
@@ -435,6 +437,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         filter.addAction(ACTION_DISPLAY_ENTER_PAYMENT);
         filter.addAction(ACTION_EXCHANGE_RATE_UPDATED);
         registerReceiver(mReceiver, filter);
+
+        LinearLayout pinLayout = findViewById(R.id.pin);
+        LayoutInflater inflater = getLayoutInflater();
+        inflater.inflate(R.layout.pin_entry, pinLayout, true);
+        pinLayout.setVisibility(View.GONE);
 
         findViewById(R.id.main).setVisibility(View.GONE);
         findViewById(R.id.dialog).setVisibility(View.GONE);
@@ -2236,7 +2243,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public synchronized void displayAddOptions()
     {
         // Display options for adding wallets
-        View button;
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup dialogView = findViewById(R.id.dialog);
 
@@ -2692,71 +2698,37 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public synchronized void displayAuthorize()
     {
-        LayoutInflater inflater = getLayoutInflater();
-        ViewGroup dialogView = findViewById(R.id.dialog);
+        LinearLayout pinLayout = findViewById(R.id.pin);
+        pinLayout.setVisibility(View.VISIBLE);
 
-        dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
+        mPIN = "";
+        ((ViewGroup)findViewById(R.id.entryDots)).removeAllViews();
 
-        // Title
-        ActionBar actionBar = getSupportActionBar();
-        if(actionBar != null)
+        // Message
+        TextView messageView = pinLayout.findViewById(R.id.authorizeMessage);
+        if(messageView != null)
         {
-            actionBar.setIcon(R.drawable.ic_lock_black_36dp);
             switch(mAuthorizedTask)
             {
                 case NONE:
                     break;
                 case ADD_KEY:
-                    actionBar.setTitle(" " + getString(R.string.authorize) + " " +
-                      getString(R.string.add_wallet));
+                    messageView.setText(getString(R.string.add_wallet));
                     break;
                 case BACKUP_KEY:
-                    actionBar.setTitle(" " + getString(R.string.authorize) + " " +
-                      getString(R.string.backup_wallet));
+                    messageView.setText(getString(R.string.backup_wallet));
                     break;
                 case REMOVE_KEY:
-                    actionBar.setTitle(" " + getString(R.string.authorize) + " " +
-                      getString(R.string.remove_wallet));
+                    messageView.setText(getString(R.string.remove_wallet));
                     break;
                 case SIGN_TRANSACTION:
-                    actionBar.setTitle(" " + getString(R.string.authorize) + " " +
-                      getString(R.string.send_payment));
+                    messageView.setText(getString(R.string.send_payment));
                     break;
             }
-            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        // Pass code input
-        ViewGroup passcode = (ViewGroup)inflater.inflate(R.layout.passcode, dialogView, false);
-        if(!mBitcoin.hasPassCode())
-            passcode.findViewById(R.id.createDescription).setVisibility(View.VISIBLE);
-        dialogView.addView(passcode);
-
-        EditText passCodeEntry = passcode.findViewById(R.id.passcode);
-        TextView.OnEditorActionListener passCodeListener = new TextView.OnEditorActionListener()
-        {
-            @Override
-            public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
-            {
-                if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE ||
-                  pActionId == EditorInfo.IME_ACTION_SEND ||
-                  (pEvent != null && pEvent.getAction() == KeyEvent.ACTION_DOWN &&
-                  pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
-                {
-                    processClick(pView, R.id.authorize);
-                    return true;
-                }
-                return false;
-            }
-        };
-        passCodeEntry.setOnEditorActionListener(passCodeListener);
-        focusOnText(passCodeEntry);
-        dialogView.setVisibility(View.VISIBLE);
-        findViewById(R.id.mainScroll).setScrollY(0);
+        if(mMode != Mode.AUTHORIZE)
+            mPreviousMode = mMode;
         mMode = Mode.AUTHORIZE;
     }
 
@@ -3231,66 +3203,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayAuthorize();
             break;
         }
-        case R.id.authorize:
-            String passcode = ((EditText)findViewById(R.id.passcode)).getText().toString();
-            switch(mAuthorizedTask)
-            {
-                case ADD_KEY:
-                {
-                    displayProgress();
-
-                    if(mKeyToLoad != null)
-                    {
-                        ImportKeyTask task = new ImportKeyTask(getApplicationContext(), mBitcoin, passcode, mKeyToLoad,
-                          mDerivationPathMethodToLoad, mRecoverDate);
-                        task.execute();
-                        mKeyToLoad = null;
-                    }
-                    else
-                    {
-                        CreateKeyTask task = new CreateKeyTask(getApplicationContext(), mBitcoin, passcode, mSeed,
-                          mDerivationPathMethodToLoad, mSeedIsBackedUp, mRecoverDate);
-                        task.execute();
-                        mSeed = null;
-                    }
-                    break;
-                }
-                case BACKUP_KEY:
-                    displayBackupWallet(passcode);
-                    break;
-                case REMOVE_KEY:
-                {
-                    displayProgress();
-
-                    RemoveKeyTask task = new RemoveKeyTask(this, mBitcoin, passcode,
-                      mCurrentWalletIndex);
-                    task.execute();
-                    break;
-                }
-                case SIGN_TRANSACTION:
-                {
-                    if(mPaymentRequest != null && mPaymentRequest.protocolDetails != null &&
-                      mPaymentRequest.protocolDetails.hasExpires())
-                    {
-                        if(mPaymentRequest.protocolDetails.getExpires() <=
-                          (System.currentTimeMillis() / 1000L) + 5)
-                        {
-                            showMessage(getString(R.string.request_expired), 2000);
-                            mPaymentRequest = null;
-                            displayWallets();
-                            return;
-                        }
-                    }
-
-                    displayProgress();
-
-                    CreateTransactionTask task = new CreateTransactionTask(getApplicationContext(), mBitcoin, passcode,
-                      mCurrentWalletIndex, mPaymentRequest);
-                    task.execute();
-                    break;
-                }
-            }
-            break;
         case R.id.seedWordButton:
         {
             ViewGroup wordButtons = (ViewGroup)pView.getParent();
@@ -3585,9 +3497,185 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
             }
             break;
+        case R.id.one:
+            if(mPIN.length() >= 8)
+                showMessage(getString(R.string.max_pin_length), 2000);
+            else
+            {
+                mPIN += "1";
+                addPINEntry();
+            }
+            break;
+        case R.id.two:
+            if(mPIN.length() >= 8)
+                showMessage(getString(R.string.max_pin_length), 2000);
+            else
+            {
+                mPIN += "2";
+                addPINEntry();
+            }
+            break;
+        case R.id.three:
+            if(mPIN.length() >= 8)
+                showMessage(getString(R.string.max_pin_length), 2000);
+            else
+            {
+                mPIN += "3";
+                addPINEntry();
+            }
+            break;
+        case R.id.four:
+            if(mPIN.length() >= 8)
+                showMessage(getString(R.string.max_pin_length), 2000);
+            else
+            {
+                mPIN += "4";
+                addPINEntry();
+            }
+            break;
+        case R.id.five:
+            if(mPIN.length() >= 8)
+                showMessage(getString(R.string.max_pin_length), 2000);
+            else
+            {
+                mPIN += "5";
+                addPINEntry();
+            }
+            break;
+        case R.id.six:
+            if(mPIN.length() >= 8)
+                showMessage(getString(R.string.max_pin_length), 2000);
+            else
+            {
+                mPIN += "6";
+                addPINEntry();
+            }
+            break;
+        case R.id.seven:
+            if(mPIN.length() >= 8)
+                showMessage(getString(R.string.max_pin_length), 2000);
+            else
+            {
+                mPIN += "7";
+                addPINEntry();
+            }
+            break;
+        case R.id.eight:
+            if(mPIN.length() >= 8)
+                showMessage(getString(R.string.max_pin_length), 2000);
+            else
+            {
+                mPIN += "8";
+                addPINEntry();
+            }
+            break;
+        case R.id.nine:
+            if(mPIN.length() >= 8)
+                showMessage(getString(R.string.max_pin_length), 2000);
+            else
+            {
+                mPIN += "9";
+                addPINEntry();
+            }
+            break;
+        case R.id.zero:
+            if(mPIN.length() >= 8)
+                showMessage(getString(R.string.max_pin_length), 2000);
+            else
+            {
+                mPIN += "0";
+                addPINEntry();
+            }
+            break;
+        case R.id.backspace:
+            if(mPIN.length() > 0)
+                mPIN = mPIN.substring(0, mPIN.length() - 1);
+            removePINEntry();
+            break;
+        case R.id.authorize:
+        {
+            if(mPIN.length() < 4)
+            {
+                showMessage(getString(R.string.min_pin_length), 2000);
+                break;
+            }
+
+            findViewById(R.id.pin).setVisibility(View.GONE);
+            ((ViewGroup)findViewById(R.id.entryDots)).removeAllViews();
+            String pin = mPIN;
+            mPIN = null;
+            switch(mAuthorizedTask)
+            {
+                case ADD_KEY:
+                {
+                    displayProgress();
+                    if(mKeyToLoad != null)
+                    {
+                        ImportKeyTask task = new ImportKeyTask(getApplicationContext(), mBitcoin, pin, mKeyToLoad,
+                          mDerivationPathMethodToLoad, mRecoverDate);
+                        task.execute();
+                        mKeyToLoad = null;
+                    }
+                    else
+                    {
+                        CreateKeyTask task = new CreateKeyTask(getApplicationContext(), mBitcoin, pin, mSeed,
+                          mDerivationPathMethodToLoad, mSeedIsBackedUp, mRecoverDate);
+                        task.execute();
+                        mSeed = null;
+                    }
+                    break;
+                }
+                case BACKUP_KEY:
+                    displayBackupWallet(pin);
+                    break;
+                case REMOVE_KEY:
+                {
+                    displayProgress();
+                    RemoveKeyTask task = new RemoveKeyTask(this, mBitcoin, pin, mCurrentWalletIndex);
+                    task.execute();
+                    break;
+                }
+                case SIGN_TRANSACTION:
+                {
+                    if(mPaymentRequest != null && mPaymentRequest.protocolDetails != null &&
+                      mPaymentRequest.protocolDetails.hasExpires())
+                    {
+                        if(mPaymentRequest.protocolDetails.getExpires() <= (System.currentTimeMillis() / 1000L) + 5)
+                        {
+                            showMessage(getString(R.string.request_expired), 2000);
+                            mPaymentRequest = null;
+                            displayWallets();
+                            return;
+                        }
+                    }
+
+                    displayProgress();
+                    CreateTransactionTask task = new CreateTransactionTask(getApplicationContext(), mBitcoin, pin,
+                      mCurrentWalletIndex, mPaymentRequest);
+                    task.execute();
+                    break;
+                }
+            }
+            break;
+        }
         default:
             break;
         }
+    }
+
+    public void addPINEntry()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dots = findViewById(R.id.entryDots);
+
+        inflater.inflate(R.layout.pin_dot, dots, true);
+    }
+
+    public void removePINEntry()
+    {
+        ViewGroup dots = findViewById(R.id.entryDots);
+        if(dots.getChildCount() > 0)
+            dots.removeViewAt(dots.getChildCount() - 1);
     }
 
     public void showMessage(String pText, int pDelay)
@@ -3686,6 +3774,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayEnterPaymentCode();
             return;
         case AUTHORIZE:
+            // Hide PIN entry
             switch(mAuthorizedTask)
             {
             case NONE:
@@ -3695,16 +3784,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 mSeedEntropyBytes = 0;
                 break;
             case ADD_KEY:
-                break;
             case BACKUP_KEY:
             case REMOVE_KEY:
-                displayEditWallet();
-                return;
             case SIGN_TRANSACTION:
-                displayPaymentDetails();
-                return;
+                break;
             }
-            break;
+
+            findViewById(R.id.pin).setVisibility(View.GONE);
+            mMode = mPreviousMode;
+            return;
         case INFO:
             break;
         case HELP:
