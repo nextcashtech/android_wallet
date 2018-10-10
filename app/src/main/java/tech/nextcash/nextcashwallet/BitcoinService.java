@@ -453,7 +453,7 @@ public class BitcoinService extends Service
         }
         else if(isInSync)
         {
-            if(merkleHeight == blockHeight)
+            if(mBitcoin.walletCount() == 0 || merkleHeight == blockHeight)
             {
                 indeterminate = true;
                 builder.setContentTitle(getString(R.string.monitoring));
