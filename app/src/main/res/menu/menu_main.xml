@@ -11,6 +11,13 @@
         app:showAsAction="ifRoom"/>
 
     <item
+        android:id="@+id/action_help"
+        android:orderInCategory="200"
+        android:icon="@drawable/baseline_help_outline_black_36dp"
+        android:title="@string/action_help"
+        app:showAsAction="ifRoom"/>
+
+    <item
         android:id="@+id/action_info"
         android:orderInCategory="200"
         android:icon="@drawable/ic_info_outline_black_36dp"

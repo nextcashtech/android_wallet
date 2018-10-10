@@ -26,8 +26,8 @@
         android:id="@+id/nodeUserAgentValue"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="10dp"/>
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="10dp"/>
 
     <TextView
         android:id="@+id/nextCashLink"
@@ -35,8 +35,8 @@
         android:layout_height="wrap_content"
         android:text="@string/nextcash_link"
         android:autoLink="web"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="10dp"/>
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="10dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -81,8 +81,8 @@
         android:layout_height="wrap_content"
         android:text="@string/pricing_coinbase"
         android:autoLink="web"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="10dp"/>
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="10dp"/>
 
     <TextView
         android:id="@+id/pricingCoinMarketCap"
@@ -90,8 +90,8 @@
         android:layout_height="wrap_content"
         android:text="@string/pricing_coinmarketcap"
         android:autoLink="web"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="10dp"/>
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="10dp"/>
 
     <TextView
         android:id="@+id/pricingCoinLib"
@@ -99,8 +99,8 @@
         android:layout_height="wrap_content"
         android:text="@string/pricing_coinlib"
         android:autoLink="web"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="10dp"/>
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="10dp"/>
 
 
 
@@ -118,8 +118,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/secp256k1_library"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="10dp"/>
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="10dp"/>
 
     <TextView
         android:id="@+id/openSourceLicense_2"
@@ -127,8 +127,8 @@
         android:layout_height="wrap_content"
         android:text="@string/zxing_library"
         android:autoLink="web"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="10dp"/>
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="10dp"/>
 
     <TextView
         android:layout_width="match_parent"

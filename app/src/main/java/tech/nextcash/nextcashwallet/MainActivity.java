@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
       IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, SCAN, RECEIVE, ENTER_PAYMENT_CODE,
-      CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, SETTINGS }
+      CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP, SETTINGS }
     private Mode mMode, mPreviousMode;
     private boolean mWalletsNeedUpdated;
     private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
@@ -603,6 +603,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case INFO:
                 break;
+            case HELP:
+                break;
             case SETTINGS:
                 displaySettings(); // Reload
                 break;
@@ -736,6 +738,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case INFO:
                 pState.putString("State", "Info");
+                break;
+            case HELP:
+                pState.putString("State", "Help");
                 break;
             case SETTINGS:
                 pState.putString("State", "Settings");
@@ -1275,6 +1280,33 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.SETTINGS;
     }
 
+    public synchronized void displayHelp()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.main).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+        findViewById(R.id.controls).setVisibility(View.GONE);
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_info_outline_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.instructions));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        inflater.inflate(R.layout.instructions, dialogView, true);
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+        mMode = Mode.HELP;
+    }
+
     public synchronized void displayInfo()
     {
         LayoutInflater inflater = getLayoutInflater();
@@ -1315,6 +1347,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 return true;
             case R.id.action_settings:
                 displaySettings();
+                return true;
+            case R.id.action_help:
+                displayHelp();
                 return true;
             case R.id.action_info:
                 displayInfo();
@@ -3671,6 +3706,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
             break;
         case INFO:
+            break;
+        case HELP:
             break;
         case SETTINGS:
             break;

@@ -630,5 +630,39 @@
         Check out Wikipedia for more information. https://en.wikipedia.org/wiki/Proof-of-work_system
     </string>
 
+    <string name="action_help">Help</string>
+    <string name="instructions">Instructions</string>
+    <string name="app_instructions">
+        You need to add at least one wallet to the app in order to send and receive payments.
+    </string>
+
+    <string name="app_controls">Application Controls</string>
+    <string name="add_wallet_instructions">
+        Add a wallet to the NextCash wallet app.
+    </string>
+    <string name="buy_instructions">
+        Buy Bitcoin Cash from CoinBase with a referral from NextCash.
+    </string>
+    <string name="support_instructions">
+        Support NextCash wallet development.
+    </string>
+    <string name="feedback_instructions">
+        Provide feedback to NextCash about this app.
+    </string>
+
+    <string name="wallet_controls">Wallet Controls</string>
+    <string name="wallet_instructions">
+        Touch a wallet to expand or contract it.
+    </string>
+    <string name="send_instructions">
+        Send a payment to someone from a wallet.
+    </string>
+    <string name="receive_instructions">
+        Receive a payment from someone to a wallet.
+    </string>
+    <string name="history_instructions">
+        See historical transactions for a wallet.
+    </string>
+
 
 </resources>
