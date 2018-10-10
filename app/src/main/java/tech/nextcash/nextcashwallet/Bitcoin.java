@@ -27,6 +27,7 @@ public class Bitcoin
 {
     public static final String LAST_SYNC_NAME = "last_sync"; // Time in seconds since epoch of last synchronization
     public static final String SYNC_FREQUENCY_NAME = "sync_frequency"; // Frequency in minutes for background sync jobs
+    public static final String PIN_CREATED_NAME = "pin_created";
     public static final int QR_WIDTH = 200;
 
     private static final String logTag = "Bitcoin";

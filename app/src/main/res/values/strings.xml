@@ -13,7 +13,8 @@
     <string name="needs_backed_up">Needs Backed Up</string>
 
     <string name="add_wallet_message">
-        Use the \"+\" button in the lower right to add a wallet to begin using Bitcoin Cash.
+        An initial wallet has been created for you.
+        You can create and/or import more if you would like.
     </string>
 
     <string name="beta_message">
@@ -106,6 +107,7 @@
     <string name="failed_generate_address">Failed to generate address</string>
     <string name="failed_generate_payment_code">Failed to generate payment code</string>
     <string name="failed_generate_qr">Failed to generate QR code</string>
+    <string name="failed_generate_key">Failed to generate wallet</string>
     <string name="sent_payment">Sent Payment</string>
     <string name="failed_send_payment">Failed to send payment</string>
     <string name="failed_insufficient_funds">Insufficient Funds</string>
@@ -264,6 +266,10 @@
     <string name="backspace">Back Space</string>
     <string name="min_pin_length">Minimum or 4 digits required in PIN</string>
     <string name="max_pin_length">Maximum of 8 digits in PIN</string>
+    <string name="must_create_pin">You must create a PIN</string>
+    <string name="create_pin">
+        Create a PIN to encrypt your wallets. This will be required for some actions.
+    </string>
     <string name="create_wallet">Create Wallet</string>
     <string name="verify_seed">Verify Seed</string>
     <string name="wallet_seed">Wallet Seed</string>

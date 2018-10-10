@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
       CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP, SETTINGS }
     private Mode mMode, mPreviousMode;
     private boolean mWalletsNeedUpdated;
-    private enum AuthorizedTask { NONE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
+    private enum AuthorizedTask { NONE, INITIALIZE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private AuthorizedTask mAuthorizedTask;
     private String mKeyToLoad, mSeed;
     private int mSeedEntropyBytes;
@@ -476,6 +476,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     displaySettings();
                     break;
                 }
+        }
+
+        if(!settings.containsValue(Bitcoin.PIN_CREATED_NAME))
+        {
+            mAuthorizedTask = AuthorizedTask.INITIALIZE;
+            displayAuthorize();
         }
 
         Intent intent = getIntent();
@@ -1350,7 +1356,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         switch(item.getItemId())
         {
             case android.R.id.home:
-                displayWallets();
+                if(mMode == Mode.AUTHORIZE && mAuthorizedTask == AuthorizedTask.INITIALIZE)
+                    showMessage(getString(R.string.must_create_pin), 2000);
+                else
+                    displayWallets();
                 return true;
             case R.id.action_settings:
                 displaySettings();
@@ -2355,7 +2364,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         entropy.setAdapter(adapter);
         entropy.setOnItemSelectedListener(this);
 
-        int entropyPosition = 1;
+        int entropyPosition = 0;
         if(mSeedEntropyBytes != 0)
         {
             int[] values = getResources().getIntArray(R.array.mnemonic_seed_length_values);
@@ -2711,6 +2720,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             switch(mAuthorizedTask)
             {
                 case NONE:
+                    break;
+                case INITIALIZE:
+                    messageView.setText(getString(R.string.create_pin));
                     break;
                 case ADD_KEY:
                     messageView.setText(getString(R.string.add_wallet));
@@ -3606,6 +3618,26 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mPIN = null;
             switch(mAuthorizedTask)
             {
+                case INITIALIZE:
+                {
+                    displayProgress();
+                    String seed = mBitcoin.generateMnemonicSeed(24);
+                    if(seed == null || seed.length() == 0)
+                    {
+                        showMessage(getString(R.string.failed_generate_key), 2000);
+                        displayWallets();
+                        mService.stop();
+                        finish();
+                    }
+                    else
+                    {
+                        CreateKeyTask task = new CreateKeyTask(getApplicationContext(), mBitcoin, pin, seed,
+                          Bitcoin.BIP0044_DERIVATION, false,
+                          System.currentTimeMillis() / 1000L);
+                        task.execute();
+                    }
+                    break;
+                }
                 case ADD_KEY:
                 {
                     displayProgress();
@@ -3719,7 +3751,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case WALLETS:
             if(mFinishOnBack)
             {
-                Log.d(logTag, "Stopping because of back button");
+                Log.i(logTag, "Stopping because of back button");
                 mService.stop();
                 super.onBackPressed();
             }
@@ -3783,6 +3815,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 mRecoverDate = 0L;
                 mSeedEntropyBytes = 0;
                 break;
+            case INITIALIZE:
+                showMessage(getString(R.string.must_create_pin), 2000);
+                if(mFinishOnBack)
+                {
+                    Log.i(logTag, "Stopping because of back button");
+                    mService.stop();
+                    super.onBackPressed();
+                }
+                else
+                {
+                    mFinishOnBack = true;
+                    mDelayHandler.postDelayed(mClearFinishOnBack, 1000);
+                }
+                return;
             case ADD_KEY:
             case BACKUP_KEY:
             case REMOVE_KEY:
