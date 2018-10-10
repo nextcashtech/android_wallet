@@ -480,6 +480,17 @@ extern "C"
         return (jboolean)daemon->chain()->wasInSync();
     }
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isInRoughSync(JNIEnv *pEnvironment,
+                                                                                       jobject pObject)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return JNI_FALSE;
+
+        return (jboolean)(daemon->chain()->isInSync() &&
+          daemon->chain()->headerHeight() == daemon->monitor()->roughHeight());
+    }
+
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_finishMode(JNIEnv *pEnvironment,
                                                                                 jobject pObject)
     {

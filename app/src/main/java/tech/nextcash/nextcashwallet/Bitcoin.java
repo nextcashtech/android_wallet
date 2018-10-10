@@ -185,6 +185,7 @@ public class Bitcoin
 
     public native boolean isInSync();
     public native boolean wasInSync();
+    public native boolean isInRoughSync();
 
     public static final int FINISH_ON_REQUEST = 0; // Continue running until stop is requested.
     public static final int FINISH_ON_SYNC = 1; // Finish when block chain is in sync.

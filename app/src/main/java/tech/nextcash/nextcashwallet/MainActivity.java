@@ -1098,7 +1098,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             if(wallet.isPrivate && wallet.isSynchronized && mBitcoin.chainIsLoaded() &&
-              mBitcoin.initialBlockDownloadIsComplete())
+              mBitcoin.initialBlockDownloadIsComplete() && mBitcoin.isInRoughSync())
                 walletView.findViewById(R.id.walletSend).setVisibility(View.VISIBLE);
             else
                 walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
