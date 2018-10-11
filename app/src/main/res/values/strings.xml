@@ -664,6 +664,10 @@
     <string name="wallet_instructions">
         Touch a wallet to expand or contract it.
     </string>
+    <string name="backup_instructions">
+        Back up your wallet by writing down the seed words.
+        If you don\'t have the seed and your device fails or you lose it, your money is gone.
+    </string>
     <string name="send_instructions">
         Send a payment to someone from a wallet.
     </string>

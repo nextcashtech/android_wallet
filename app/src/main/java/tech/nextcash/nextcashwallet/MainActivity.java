@@ -1111,6 +1111,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 walletView.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
             }
 
+            if(!wallet.isBackedUp && wallet.isPrivate)
+                walletView.findViewById(R.id.walletBackup).setVisibility(View.VISIBLE);
+            else
+                walletView.findViewById(R.id.walletBackup).setVisibility(View.GONE);
+
             if(wallet.isPrivate && wallet.isSynchronized && mBitcoin.chainIsLoaded() &&
               mBitcoin.initialBlockDownloadIsComplete() && mBitcoin.isInRoughSync())
                 walletView.findViewById(R.id.walletSend).setVisibility(View.VISIBLE);
@@ -2751,8 +2756,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(wallet == null)
             return;
 
-        View button;
-        ViewGroup editName;
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup dialogView = findViewById(R.id.dialog);
 
@@ -2771,11 +2774,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        // Edit Name
-        editName = (ViewGroup)inflater.inflate(R.layout.edit_wallet, dialogView, false);
-        ((EditText)editName.findViewById(R.id.name)).setText(wallet.name);
+        ViewGroup editWallet = (ViewGroup)inflater.inflate(R.layout.edit_wallet, dialogView, false);
 
-        dialogView.addView(editName);
+        // Set Name
+        ((EditText)editWallet.findViewById(R.id.name)).setText(wallet.name);
+
+        if(!wallet.isPrivate)
+            editWallet.findViewById(R.id.backupWallet).setVisibility(View.GONE);
+
+        dialogView.addView(editWallet);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -3373,6 +3380,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             displayScanPaymentCode();
+            break;
+        }
+        case R.id.walletBackup:
+        {
+            ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
+            mCurrentWalletIndex = (int)walletView.getTag();
+            mSeedBackupOnly = true;
+            mAuthorizedTask = AuthorizedTask.BACKUP_KEY;
+            displayAuthorize();
             break;
         }
         case R.id.scanPaymentCode:

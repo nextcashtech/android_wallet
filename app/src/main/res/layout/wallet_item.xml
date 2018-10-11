@@ -108,6 +108,18 @@
             android:gravity="end">
 
             <ImageView
+                android:id="@+id/walletBackup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_toStartOf="@+id/walletSend"
+                android:src="@drawable/baseline_backup_black_36dp"
+                android:padding="5dp"
+                android:layout_marginEnd="5dp"
+                android:contentDescription="@string/backup_wallet"
+                android:onClick="onClick"/>
+
+            <ImageView
                 android:id="@+id/walletSend"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
