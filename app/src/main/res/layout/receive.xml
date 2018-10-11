@@ -58,7 +58,7 @@
             android:textAlignment="center"
             android:text="@string/optional"/>
 
-        <tech.nextcash.nextcashwallet.Button
+        <tech.nextcash.nextcashwallet.TextButton
             android:id="@+id/updateRequestPaymentCode"
             style="@style/Button"
             android:text="@string/update"/>

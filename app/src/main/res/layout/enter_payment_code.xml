@@ -30,7 +30,7 @@
             android:imeOptions="actionDone"/>
     </HorizontalScrollView>
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/enterPaymentDetails"
         style="@style/Button"
         android:text="@string/continue_string"/>

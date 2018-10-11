@@ -71,7 +71,7 @@
         android:layout_marginTop="10dp"
         android:text="@string/wallet_seed_written"/>
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/verifySeedSaved"
         style="@style/Button"
         android:text="@string/continue_string"/>

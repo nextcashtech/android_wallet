@@ -5,4 +5,6 @@
     <dimen name="text_size_subheading">16sp</dimen>
     <dimen name="text_size_smallheading">14sp</dimen>
     <dimen name="text_size_small">14sp</dimen>
+    <dimen name="pin_button_size">45dp</dimen>
+    <dimen name="pin_button_text_size">20dp</dimen>
 </resources>

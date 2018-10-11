@@ -2,6 +2,7 @@
     <string name="app_name">NextCash Wallet</string>
     <string name="action_settings">Settings</string>
     <string name="action_add_wallet">Add Wallet</string>
+    <string name="default_wallet_name">Main</string>
     <string name="initial_block_download_message">
         The initial block download is not yet complete.
         It might take an hour or more.
@@ -268,7 +269,7 @@
     <string name="max_pin_length">Maximum of 8 digits in PIN</string>
     <string name="must_create_pin">You must create a PIN</string>
     <string name="create_pin">
-        Create a PIN to encrypt your wallets. This will be required for some actions.
+        Create a PIN to encrypt your wallet(s). This will be required for some actions.
     </string>
     <string name="create_wallet">Create Wallet</string>
     <string name="verify_seed">Verify Seed</string>

@@ -220,12 +220,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             settings.setLongValue("beta_message", System.currentTimeMillis() / 1000);
         }
 
-        if(!settings.containsValue("add_wallet_message"))
-        {
-            addPersistentMessage(getString(R.string.add_wallet_message));
-            settings.setLongValue("add_wallet_message", System.currentTimeMillis() / 1000);
-        }
-
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
             @Override
@@ -478,10 +472,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
         }
 
-        if(!settings.containsValue(Bitcoin.PIN_CREATED_NAME))
+        if(!settings.containsValue("add_wallet_message"))
         {
+            addPersistentMessage(getString(R.string.add_wallet_message));
+            settings.setLongValue("add_wallet_message", System.currentTimeMillis() / 1000);
             mAuthorizedTask = AuthorizedTask.INITIALIZE;
             displayAuthorize();
+        }
+        else if(!settings.containsValue(Bitcoin.PIN_CREATED_NAME))
+        {
+            // Set to "unknown" if pin created before this value existed.
+            settings.setLongValue(Bitcoin.PIN_CREATED_NAME, 0);
         }
 
         Intent intent = getIntent();
@@ -1273,13 +1274,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         // Add Wallet buttons
         ViewGroup walletsView = settingsView.findViewById(R.id.walletsSettings);
-        Button button;
+        TextButton button;
         int offset = 0;
 
         for(Wallet wallet : mBitcoin.wallets())
         {
             // Edit button
-            button = (Button)inflater.inflate(R.layout.button, walletsView, false);
+            button = (TextButton)inflater.inflate(R.layout.button, walletsView, false);
             button.setId(R.id.editWallet);
             button.setTag(offset);
             button.setText(wallet.name);

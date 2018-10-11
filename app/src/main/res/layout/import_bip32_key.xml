@@ -40,7 +40,7 @@
 
     </LinearLayout>
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/loadKey"
         style="@style/Button"
         android:text="@string/import_text"/>

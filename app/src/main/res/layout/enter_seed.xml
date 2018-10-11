@@ -119,7 +119,7 @@
 
     </RelativeLayout>
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/importSeed"
         style="@style/Button"
         android:text="@string/okay"/>

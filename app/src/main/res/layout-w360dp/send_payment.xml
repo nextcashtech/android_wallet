@@ -165,7 +165,7 @@
             android:layout_centerVertical="true"
             android:entries="@array/amount_units"/>
 
-        <tech.nextcash.nextcashwallet.Button
+        <tech.nextcash.nextcashwallet.TextButton
             android:id="@+id/sendMax"
             style="@style/Button"
             android:layout_alignParentEnd="true"
@@ -269,7 +269,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="5dp"/>
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/sendPayment"
         style="@style/Button"
         android:text="@string/continue_string"/>

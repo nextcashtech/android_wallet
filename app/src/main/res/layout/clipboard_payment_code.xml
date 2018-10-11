@@ -27,12 +27,12 @@
             android:layout_height="wrap_content"/>
     </HorizontalScrollView>
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/useClipBoardPaymentCode"
         style="@style/Button"
         android:text="@string/use_clipboard"/>
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/scanPaymentCode"
         style="@style/Button"
         android:text="@string/scan_payment_code"/>

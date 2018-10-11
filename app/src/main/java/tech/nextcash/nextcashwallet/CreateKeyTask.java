@@ -58,7 +58,10 @@ public class CreateKeyTask extends AsyncTask<String, Integer, Integer>
                 finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.success_create_wallet);
                 Settings settings = Settings.getInstance(mContext.getFilesDir());
                 if(!settings.containsValue(Bitcoin.PIN_CREATED_NAME))
+                {
                     settings.setLongValue(Bitcoin.PIN_CREATED_NAME, System.currentTimeMillis() / 1000L);
+                    mBitcoin.setName(0, mContext.getString(R.string.default_wallet_name));
+                }
                 break;
             }
             case 1: // Unknown error

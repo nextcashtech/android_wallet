@@ -1039,8 +1039,11 @@ extern "C"
             // Set name in java object
             jobjectArray wallets = (jobjectArray)pEnvironment->GetObjectField(pObject,
               sBitcoinWalletsID);
-            jobject wallet = pEnvironment->GetObjectArrayElement(wallets, pOffset);
-            pEnvironment->SetObjectField(wallet, sWalletNameID, pName);
+            if(pEnvironment->GetArrayLength(wallets) > pOffset)
+            {
+                jobject wallet = pEnvironment->GetObjectArrayElement(wallets, pOffset);
+                pEnvironment->SetObjectField(wallet, sWalletNameID, pName);
+            }
             daemon->monitor()->incrementChange();
         }
 

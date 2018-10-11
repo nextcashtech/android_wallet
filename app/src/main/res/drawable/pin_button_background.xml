@@ -7,4 +7,7 @@
         android:endColor="@color/colorPrimary"
         android:centerY="0.25"
         android:angle="90"/>
+    <stroke
+        android:width="1px"
+        android:color="#f000"/>
 </shape>

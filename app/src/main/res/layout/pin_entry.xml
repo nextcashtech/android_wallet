@@ -28,19 +28,19 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <tech.nextcash.nextcashwallet.Button
+                <tech.nextcash.nextcashwallet.TextButton
                     android:id="@+id/two"
                     android:layout_centerHorizontal="true"
                     style="@style/PINButton"
                     android:text="@string/two"/>
 
-                <tech.nextcash.nextcashwallet.Button
+                <tech.nextcash.nextcashwallet.TextButton
                     android:id="@+id/one"
                     android:layout_toLeftOf="@id/two"
                     style="@style/PINButton"
                     android:text="@string/one"/>
 
-                <tech.nextcash.nextcashwallet.Button
+                <tech.nextcash.nextcashwallet.TextButton
                     android:id="@+id/three"
                     android:layout_toRightOf="@id/two"
                     style="@style/PINButton"
@@ -52,19 +52,19 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <tech.nextcash.nextcashwallet.Button
+                <tech.nextcash.nextcashwallet.TextButton
                     android:id="@+id/five"
                     android:layout_centerHorizontal="true"
                     style="@style/PINButton"
                     android:text="@string/five"/>
 
-                <tech.nextcash.nextcashwallet.Button
+                <tech.nextcash.nextcashwallet.TextButton
                     android:id="@+id/four"
                     android:layout_toLeftOf="@id/five"
                     style="@style/PINButton"
                     android:text="@string/four"/>
 
-                <tech.nextcash.nextcashwallet.Button
+                <tech.nextcash.nextcashwallet.TextButton
                     android:id="@+id/six"
                     android:layout_toRightOf="@id/five"
                     style="@style/PINButton"
@@ -76,19 +76,19 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <tech.nextcash.nextcashwallet.Button
+                <tech.nextcash.nextcashwallet.TextButton
                     android:id="@+id/eight"
                     android:layout_centerHorizontal="true"
                     style="@style/PINButton"
                     android:text="@string/eight"/>
 
-                <tech.nextcash.nextcashwallet.Button
+                <tech.nextcash.nextcashwallet.TextButton
                     android:id="@+id/seven"
                     android:layout_toLeftOf="@id/eight"
                     style="@style/PINButton"
                     android:text="@string/seven"/>
 
-                <tech.nextcash.nextcashwallet.Button
+                <tech.nextcash.nextcashwallet.TextButton
                     android:id="@+id/nine"
                     android:layout_toRightOf="@id/eight"
                     style="@style/PINButton"
@@ -100,20 +100,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <tech.nextcash.nextcashwallet.Button
+                <tech.nextcash.nextcashwallet.TextButton
                     android:id="@+id/zero"
                     android:layout_centerHorizontal="true"
                     style="@style/PINButton"
                     android:text="@string/zero"/>
 
-                <ImageView
+                <tech.nextcash.nextcashwallet.ImageButton
                     android:id="@+id/backspace"
                     android:layout_toLeftOf="@id/zero"
                     style="@style/PINButton"
                     android:src="@drawable/baseline_backspace_white_36dp"
                     android:contentDescription="@string/backspace"/>
 
-                <ImageView
+                <tech.nextcash.nextcashwallet.ImageButton
                     android:id="@+id/authorize"
                     android:layout_toRightOf="@id/zero"
                     style="@style/PINButton"

@@ -28,7 +28,7 @@
 
     </LinearLayout>
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/updateWalletName"
         style="@style/Button"
         android:text="@string/update_name"/>
@@ -40,12 +40,12 @@
         android:layout_marginBottom="20dp"
         android:background="#ddd" />
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/backupWallet"
         style="@style/Button"
         android:text="@string/backup_wallet"/>
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/removeWallet"
         style="@style/Button"
         android:text="@string/remove_wallet"/>

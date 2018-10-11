@@ -32,7 +32,7 @@
             android:layout_centerVertical="true"
             android:inputType="text"/>
 
-        <tech.nextcash.nextcashwallet.Button
+        <tech.nextcash.nextcashwallet.TextButton
             android:id="@+id/updateWalletName"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
@@ -49,12 +49,12 @@
         android:layout_marginBottom="20dp"
         android:background="#ddd" />
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/backupWallet"
         style="@style/Button"
         android:text="@string/backup_wallet"/>
 
-    <tech.nextcash.nextcashwallet.Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/removeWallet"
         style="@style/Button"
         android:text="@string/remove_wallet"/>

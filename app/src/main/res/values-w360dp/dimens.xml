@@ -1,0 +1,10 @@
+<resources>
+    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="action_bar_height">50dp</dimen>
+    <dimen name="text_size_heading">22sp</dimen>
+    <dimen name="text_size_subheading">18sp</dimen>
+    <dimen name="text_size_smallheading">15sp</dimen>
+    <dimen name="text_size_small">15sp</dimen>
+    <dimen name="pin_button_size">60dp</dimen>
+    <dimen name="pin_button_text_size">25dp</dimen>
+</resources>
