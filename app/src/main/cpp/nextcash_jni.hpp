@@ -202,6 +202,10 @@ extern "C"
                                                                                              jbyteArray pPayingOutputScript,
                                                                                              jlong pAmount);
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isValidSeedWord(JNIEnv *pEnvironment,
+                                                                                         jobject pObject,
+                                                                                         jstring pWord);
+
     JNIEXPORT jobjectArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getMnemonicWords(JNIEnv *pEnvironment,
                                                                                               jobject pObject,
                                                                                               jstring pStartingWith);

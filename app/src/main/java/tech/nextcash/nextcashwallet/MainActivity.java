@@ -2599,6 +2599,153 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.RECOVER_WALLET;
     }
 
+    // When text is typed or modified while entering a seed to recover a wallet.
+    private synchronized void onSeedEntryModified(String pText)
+    {
+        LinearLayout wordButtons = findViewById(R.id.seedButtons);
+        EditText textField = findViewById(R.id.seedWordEntry);
+        TextView seed = findViewById(R.id.seed);
+        String[] matchingWords;
+        ArrayList<String> words = new ArrayList<>();
+        boolean seedModified = false;
+
+        if(wordButtons == null || textField == null || seed == null)
+            return;
+
+        wordButtons.removeAllViews();
+
+        if(pText.length() == 0)
+            return;
+
+        // Find all seed words that start with the text field
+        Collections.addAll(words, pText.split(" "));
+        if(words.size() == 1)
+        {
+            if(pText.endsWith(" "))
+            {
+                // One word with a space after.
+                // Add seed word if it matches.
+                if(mBitcoin.isValidSeedWord(words.get(0)))
+                {
+                    // Add word to seed.
+                    if(seed.getText().length() > 0)
+                        seed.setText(String.format("%s %s", seed.getText(), words.get(0)));
+                    else
+                        seed.setText(words.get(0));
+
+                    // Remove all word buttons.
+                    ((ViewGroup)findViewById(R.id.seedButtons)).removeAllViews();
+
+                    // Clear text entry.
+                    textField.setText("");
+
+                    seedModified = true;
+                }
+            }
+            else
+            {
+                // Check for partial matches and show buttons with matching words.
+                matchingWords = mBitcoin.getMnemonicWords(pText);
+                if(matchingWords.length < 20)
+                {
+                    // Put those words into the word buttons group
+                    LayoutInflater inflater = getLayoutInflater();
+                    TextButton wordButton;
+
+                    for(String word : matchingWords)
+                    {
+                        wordButton = (TextButton)inflater.inflate(R.layout.seed_word_button, wordButtons,
+                          false);
+                        wordButton.setText(word);
+                        wordButtons.addView(wordButton);
+                    }
+                }
+            }
+        }
+        else if(words.size() > 1)
+        {
+            boolean matchFound = false;
+            for(String word : words)
+            {
+                // Add seed word if it matches.
+                if(mBitcoin.isValidSeedWord(word))
+                {
+                    // Add word to seed.
+                    if(seed.getText().length() > 0)
+                        seed.setText(String.format("%s %s", seed.getText(), word));
+                    else
+                        seed.setText(word);
+
+                    matchFound = true;
+                }
+            }
+
+            if(matchFound)
+            {
+                // Clear text entry.
+                textField.setText("");
+
+                // Remove all word buttons.
+                ((ViewGroup)findViewById(R.id.seedButtons)).removeAllViews();
+
+                seedModified = true;
+            }
+        }
+
+        if(seedModified)
+        {
+            if(mMode == Mode.RECOVER_WALLET)
+            {
+                ((EditText)findViewById(R.id.seedWordEntry)).setText("");
+                if(mBitcoin.seedIsValid(seed.getText().toString()))
+                {
+                    findViewById(R.id.invalidDescription).setVisibility(View.GONE);
+                    findViewById(R.id.isValid).setVisibility(View.VISIBLE);
+                }
+                else
+                    findViewById(R.id.isValid).setVisibility(View.GONE);
+            }
+            else
+            {
+                ViewGroup wordsGroup = (ViewGroup)wordButtons.getParent();
+                int wordCount = 0;
+                for(int i = 0; i < wordsGroup.getChildCount(); i++)
+                    wordCount += ((ViewGroup)wordsGroup.getChildAt(i)).getChildCount();
+                if(wordCount == 0)
+                {
+                    // Verify seed matches
+                    String seedText = (String)seed.getText();
+                    if(seedText.equals(mSeed))
+                    {
+                        if(mSeedBackupOnly)
+                        {
+                            mSeed = null;
+                            mBitcoin.setIsBackedUp(mCurrentWalletIndex);
+                            showMessage(getString(R.string.seed_matches), 2000);
+                            displayWallets();
+                        }
+                        else
+                        {
+                            mAuthorizedTask = AuthorizedTask.ADD_KEY;
+                            mKeyToLoad = null;
+                            mSeedIsBackedUp = true;
+                            mRecoverDate = System.currentTimeMillis() / 1000L;
+                            displayAuthorize();
+                        }
+                    }
+                    else
+                    {
+                        showMessage(getString(R.string.seed_doesnt_match), 2000);
+                        if(mSeedBackupOnly)
+                            displayWallets();
+                        else
+                            displayCreateWallet();
+                    }
+                }
+            }
+        }
+    }
+
     public synchronized void displayEnterRecoverSeed()
     {
         LayoutInflater inflater = getLayoutInflater();
@@ -2634,33 +2781,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 @Override
                 public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
                 {
-                    LinearLayout wordButtons = findViewById(R.id.seedButtons);
-                    EditText textField = findViewById(R.id.seedWordEntry);
-
-                    if(wordButtons == null || textField == null)
-                        return;
-
-                    wordButtons.removeAllViews();
-
-                    if(pString.length() == 0)
-                        return;
-
-                    // Find all seed words that start with the text field
-                    String[] matchingWords = mBitcoin.getMnemonicWords(pString.toString());
-
-                    if(matchingWords.length > 20)
-                        return;
-
-                    // Put those words into the word buttons group
-                    LayoutInflater inflater = getLayoutInflater();
-                    TextView wordButton;
-
-                    for(String word : matchingWords)
-                    {
-                        wordButton = (TextView)inflater.inflate(R.layout.seed_word_button, wordButtons, false);
-                        wordButton.setText(word);
-                        wordButtons.addView(wordButton);
-                    }
+                    onSeedEntryModified(pString.toString().toLowerCase());
                 }
 
                 @Override

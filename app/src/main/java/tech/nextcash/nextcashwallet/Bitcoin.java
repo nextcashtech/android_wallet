@@ -351,6 +351,7 @@ public class Bitcoin
     public native int loadKey(String pPassCode, String pEncodedKey, int pDerivationPath, String pName,
       long pRecoverTime);
 
+    public native boolean isValidSeedWord(String pWord);
     public native String[] getMnemonicWords(String pStartingWith);
 
     // Add a key from a mnemonic seed.

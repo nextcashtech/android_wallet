@@ -1687,6 +1687,28 @@ extern "C"
         return result;
     }
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isValidSeedWord(JNIEnv *pEnvironment,
+                                                                                         jobject pObject,
+                                                                                         jstring pWord)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return NULL;
+
+        const char *word = pEnvironment->GetStringUTFChars(pWord, NULL);
+        for(unsigned int i = 0; i < BitCoin::Mnemonic::WORD_COUNT; ++i)
+        {
+            if(std::strcmp(word, BitCoin::Mnemonic::WORDS[BitCoin::Mnemonic::English][i]) == 0)
+            {
+                pEnvironment->ReleaseStringUTFChars(pWord, word);
+                return JNI_TRUE;
+            }
+        }
+
+        pEnvironment->ReleaseStringUTFChars(pWord, word);
+        return JNI_FALSE;
+    }
+
     JNIEXPORT jobjectArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getMnemonicWords(JNIEnv *pEnvironment,
                                                                                               jobject pObject,
                                                                                               jstring pStartingWith)
@@ -1700,7 +1722,7 @@ extern "C"
         const char *word, *wordPtr, *startPtr;
         const char *startingWith = pEnvironment->GetStringUTFChars(pStartingWith, NULL);
         bool matches;
-        for(unsigned int i=0;i<BitCoin::Mnemonic::WORD_COUNT;++i)
+        for(unsigned int i = 0; i < BitCoin::Mnemonic::WORD_COUNT; ++i)
         {
             word = BitCoin::Mnemonic::WORDS[BitCoin::Mnemonic::English][i];
             matches = true;
