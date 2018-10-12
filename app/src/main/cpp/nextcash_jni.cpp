@@ -1136,6 +1136,53 @@ extern "C"
         }
     }
 
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_addPrivateKey(JNIEnv *pEnvironment,
+                                                                                   jobject pObject,
+                                                                                   jstring pPassCode,
+                                                                                   jstring pPrivateKey,
+                                                                                   jstring pName,
+                                                                                   jlong pRecoverTime)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL)
+            return (jint)1;
+
+        if(!loadPrivateKeys(pEnvironment, daemon, pPassCode))
+            return (jint)5; // Invalid pass code
+
+        const char *encodedKey = pEnvironment->GetStringUTFChars(pPrivateKey, NULL);
+        int result = daemon->keyStore()->addKey(encodedKey,
+          BitCoin::Key::DerivationPathMethod::INDIVIDUAL, (int32_t)pRecoverTime);
+        pEnvironment->ReleaseStringUTFChars(pPrivateKey, encodedKey);
+        if(result != 0)
+        {
+            daemon->keyStore()->unloadPrivate();
+            return (jint)result;
+        }
+
+        unsigned int offset = daemon->keyStore()->size() - 1;
+        const char *name = pEnvironment->GetStringUTFChars(pName, NULL);
+        daemon->keyStore()->setName(offset, name);
+        daemon->resetKeysSynchronized();
+        daemon->keyStore()->setBackedUp(offset);
+        pEnvironment->ReleaseStringUTFChars(pName, name);
+
+        daemon->monitor()->refreshKeyStore();
+        daemon->monitor()->updatePasses(daemon->chain());
+        daemon->saveMonitor();
+
+        if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
+        {
+            daemon->keyStore()->unloadPrivate();
+            return (jint)0;
+        }
+        else
+        {
+            daemon->keyStore()->unloadPrivate();
+            return (jint)1;
+        }
+    }
+
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_removeKey(JNIEnv *pEnvironment,
                                                                                jobject pObject,
                                                                                jstring pPassCode,
@@ -1230,6 +1277,7 @@ extern "C"
         std::vector<BitCoin::Key *> *chainKeys = daemon->keyStore()->chainKeys((unsigned int)pKeyOffset);
 
         if(chainKeys != NULL && chainKeys->size() != 0)
+        {
             for(std::vector<BitCoin::Key *>::iterator chainKey = chainKeys->begin();
               chainKey != chainKeys->end(); ++chainKey)
                 if((*chainKey)->index() == pIndex)
@@ -1242,6 +1290,13 @@ extern "C"
                     NextCash::String result = unused->address();
                     return pEnvironment->NewStringUTF(result.text());
                 }
+
+            if(chainKeys->size() == 1 && chainKeys->front()->depth() == BitCoin::Key::NO_DEPTH)
+            {
+                NextCash::String result = chainKeys->front()->address();
+                return pEnvironment->NewStringUTF(result.text());
+            }
+        }
 
         return NULL;
     }
@@ -1411,6 +1466,24 @@ extern "C"
               pEnvironment->NewStringUTF(request.secureURL));
 
         return result;
+    }
+
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isValidPrivateKey(JNIEnv *pEnvironment,
+                                                                                       jobject pObject,
+                                                                                       jstring pPrivateKey)
+    {
+        const char *privateKeyText = pEnvironment->GetStringUTFChars(pPrivateKey, NULL);
+        BitCoin::Key key;
+        int result = 1;
+        if(key.decodePrivateKey(privateKeyText))
+        {
+            if(key.version() == BitCoin::Key::MAINNET_PRIVATE)
+                result = 0;
+            else
+                result = 2;
+        }
+        pEnvironment->ReleaseStringUTFChars(pPrivateKey, privateKeyText);
+        return (jint)result;
     }
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getTransaction(JNIEnv *pEnvironment,

@@ -94,6 +94,7 @@
     <string name="backup_wallet">Backup Wallet</string>
     <string name="remove_wallet">Remove Wallet</string>
     <string name="import_bip0032_key">Import BIP-0032 Key</string>
+    <string name="scan_private_key">Scan Private Key</string>
     <string name="title_import_bip0032_key">Enter BIP-0032 Encoded Key</string>
     <string name="derivation_path">Derive Path</string>
     <string name="import_text">Import</string>
@@ -123,6 +124,8 @@
     <string name="failed_camera_general">Failed to use camera</string>
     <string name="send_max">Send Max</string>
     <string name="invalid_payment_code">Invalid Payment Code</string>
+    <string name="invalid_private_key">Invalid Private Key</string>
+    <string name="invalid_private_network">Private key is not for mainnet</string>
     <string name="locked">View Only</string>
     <string name="locked_message">
         View Only. Wallet has a \"public only\" key and can not spend.

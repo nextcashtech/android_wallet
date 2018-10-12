@@ -2,5 +2,6 @@
 <resources>
     <item type="id" name="enterImportKey" />
     <item type="id" name="enterRecoverSeed" />
+    <item type="id" name="addPrivateKey" />
     <item type="id" name="editWallet" />
 </resources>

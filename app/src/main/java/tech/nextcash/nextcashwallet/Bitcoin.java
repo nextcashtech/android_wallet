@@ -259,6 +259,13 @@ public class Bitcoin
     public native String encodePaymentCode(String pAddressHash, int pFormat, int pProtocol);
     public native PaymentRequest decodePaymentCode(String pPaymentCode);
 
+    // Return true if this is a valid encoded private key
+    // Return values :
+    //   0 = valid main net private key
+    //   1 = invalid encoding
+    //   2 = not main net
+    public native int isValidPrivateKey(String pPrivateKey);
+
     public void onWalletsLoaded()
     {
         mWalletsLoaded = true;
@@ -357,6 +364,9 @@ public class Bitcoin
     // Add a key from a mnemonic seed.
     public native int addSeed(String pPassCode, String pMnemonicSeed, int pDerivationPath, String pName,
       boolean pIsBackedUp, long pRecoverTime);
+
+    // Add a key from an encoded private key.
+    public native int addPrivateKey(String pPassCode, String pPrivateKey, String pName, long pRecoverTime);
 
     public native int removeKey(String pPassCode, int pOffset);
 

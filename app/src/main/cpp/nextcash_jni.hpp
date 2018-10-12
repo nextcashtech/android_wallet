@@ -131,6 +131,13 @@ extern "C"
                                                                              jboolean pIsBackedUp,
                                                                              jlong pRecoverTime);
 
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_addPrivateKey(JNIEnv *pEnvironment,
+                                                                             jobject pObject,
+                                                                             jstring pPassCode,
+                                                                             jstring pPrivateKey,
+                                                                             jstring pName,
+                                                                             jlong pRecoverTime);
+
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_removeKey(JNIEnv *pEnvironment,
                                                                                jobject pObject,
                                                                                jstring pPassCode,
@@ -171,6 +178,10 @@ extern "C"
     JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_decodePaymentCode(JNIEnv *pEnvironment,
                                                                                           jobject pObject,
                                                                                           jstring pPaymentCode);
+
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isValidPrivateKey(JNIEnv *pEnvironment,
+                                                                                           jobject pObject,
+                                                                                           jstring pPrivateKey);
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getTransaction(JNIEnv *pEnvironment,
                                                                                         jobject pObject,

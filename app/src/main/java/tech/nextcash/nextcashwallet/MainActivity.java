@@ -91,13 +91,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
       mRequestExpiresUpdater, mRequestTransactionRunnable;
 
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
-      IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, SCAN, RECEIVE, ENTER_PAYMENT_CODE,
-      CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP, SETTINGS }
+      IMPORT_PRIVATE_KEY, IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, SCAN, RECEIVE,
+      ENTER_PAYMENT_CODE, CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP, SETTINGS }
     private Mode mMode, mPreviousMode;
     private boolean mWalletsNeedUpdated;
     private enum AuthorizedTask { NONE, INITIALIZE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
+    private enum ScanMode {SCAN_PAYMENT_CODE, SCAN_PRIVATE_KEY}
     private AuthorizedTask mAuthorizedTask;
-    private String mKeyToLoad, mSeed;
+    private String mKeyToLoad, mEncodedPrivateKey, mSeed;
     private int mSeedEntropyBytes;
     private long mRecoverDate;
     private boolean mSeedIsBackedUp;
@@ -126,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private ArrayList<String> mPersistentMessages;
     private Messages mMessages;
     private Scanner mScanner;
+    private ScanMode mScanMode;
     private String mPIN;
 
 
@@ -213,6 +215,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         refreshPersistentMessages();
         mScanner = new Scanner(this, new Handler(getMainLooper()));
         mPIN = null;
+        mEncodedPrivateKey = null;
+        mKeyToLoad = null;
+        mSeed = null;
 
         if(!settings.containsValue("beta_message"))
         {
@@ -590,6 +595,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case IMPORT_WALLET:
                 break;
+            case IMPORT_PRIVATE_KEY:
+                break;
             case VERIFY_SEED:
                 break;
             case BACKUP_WALLET:
@@ -722,6 +729,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case RECOVER_WALLET:
                 break;
             case IMPORT_WALLET:
+                break;
+            case IMPORT_PRIVATE_KEY:
                 break;
             case VERIFY_SEED:
                 break;
@@ -1385,7 +1394,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
         case CAMERA_PERMISSION_REQUEST_CODE:
             if(pGrantResults[0] == PackageManager.PERMISSION_GRANTED)
-                displayScanPaymentCode();
+                displayScanner(ScanMode.SCAN_PAYMENT_CODE);
             else
                 displayEnterPaymentCode();
             break;
@@ -1994,13 +2003,36 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onScannerResult(String pResult)
     {
-        mPaymentRequest = mBitcoin.decodePaymentCode(pResult);
-        if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
-            displayPaymentDetails();
+        if(mScanMode == ScanMode.SCAN_PAYMENT_CODE)
+        {
+            mPaymentRequest = mBitcoin.decodePaymentCode(pResult);
+            if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
+                displayPaymentDetails();
+            else
+            {
+                showMessage(getString(R.string.invalid_payment_code), 2000);
+                displayWallets();
+            }
+        }
         else
         {
-            showMessage(getString(R.string.invalid_payment_code), 2000);
-            displayWallets();
+            mEncodedPrivateKey = pResult;
+            switch(mBitcoin.isValidPrivateKey(mEncodedPrivateKey))
+            {
+                case 0: // Valid
+                    displaySelectRecoverDate();
+                    break;
+                case 1 : // Invalid
+                    showMessage(getString(R.string.invalid_private_key), 2000);
+                    mEncodedPrivateKey = null;
+                    displayWallets();
+                    break;
+                case 2: // Not mainnet
+                    showMessage(getString(R.string.invalid_private_network), 2000);
+                    mEncodedPrivateKey = null;
+                    displayWallets();
+                    break;
+            }
         }
     }
 
@@ -2020,10 +2052,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         }
 
-        displayEnterPaymentCode();
+        if(mScanMode == ScanMode.SCAN_PAYMENT_CODE)
+            displayEnterPaymentCode();
+        else
+            displayAddOptions();
     }
 
-    public synchronized void displayScanPaymentCode()
+    public synchronized void displayScanner(ScanMode pMode)
     {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
         {
@@ -2050,8 +2085,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
         {
-            actionBar.setIcon(R.drawable.ic_send_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.scan_payment_code));
+            if(pMode == ScanMode.SCAN_PAYMENT_CODE)
+            {
+                actionBar.setIcon(R.drawable.ic_send_black_36dp);
+                actionBar.setTitle(" " + getResources().getString(R.string.scan_payment_code));
+            }
+            else
+            {
+                actionBar.setIcon(R.drawable.ic_scan_black_36dp);
+                actionBar.setTitle(" " + getResources().getString(R.string.scan_private_key));
+            }
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -2063,6 +2106,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.SCAN;
+        mScanMode = pMode;
 
         cameraView.setCamera(mScanner);
         if(!mScanner.open(getApplicationContext(), cameraView.getHolder(), Scanner.FACING_BACK))
@@ -2280,6 +2324,36 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     public synchronized void displayImportWallet()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.main).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+        findViewById(R.id.controls).setVisibility(View.GONE);
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(null);
+            actionBar.setTitle(" " + getResources().getString(R.string.import_text));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        inflater.inflate(R.layout.select_recover_date, dialogView, true);
+
+        // Done button
+        dialogView.findViewById(R.id.dateSelected).setId(R.id.enterImportKey);
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+        mMode = Mode.IMPORT_WALLET;
+    }
+
+    public synchronized void displayScanKey()
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup dialogView = findViewById(R.id.dialog);
@@ -2561,6 +2635,36 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.VERIFY_SEED;
     }
 
+    public synchronized void displaySelectRecoverDate()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.main).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+        findViewById(R.id.controls).setVisibility(View.GONE);
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(null);
+            actionBar.setTitle(" " + getResources().getString(R.string.recover_wallet));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        inflater.inflate(R.layout.select_recover_date, dialogView, true);
+
+        // Done button
+        dialogView.findViewById(R.id.dateSelected).setId(R.id.addPrivateKey);
+
+        dialogView.setVisibility(View.VISIBLE);
+        findViewById(R.id.mainScroll).setScrollY(0);
+        mMode = Mode.IMPORT_PRIVATE_KEY;
+    }
+
     public synchronized void displayRecoverWallet()
     {
         LayoutInflater inflater = getLayoutInflater();
@@ -2720,6 +2824,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         {
                             mAuthorizedTask = AuthorizedTask.ADD_KEY;
                             mKeyToLoad = null;
+                            mEncodedPrivateKey = null;
                             mSeedIsBackedUp = true;
                             mRecoverDate = System.currentTimeMillis() / 1000L;
                             displayAuthorize();
@@ -3179,6 +3284,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 mAuthorizedTask = AuthorizedTask.ADD_KEY;
                 mKeyToLoad = null;
+                mEncodedPrivateKey = null;
                 mRecoverDate = System.currentTimeMillis() / 1000L;
                 displayAuthorize();
             }
@@ -3213,11 +3319,40 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayEnterRecoverSeed();
             break;
         }
+        case R.id.addPrivateKey:
+        {
+            // Get recover seed date
+            DatePicker picker = findViewById(R.id.date);
+            if(picker == null)
+            {
+                showMessage(getString(R.string.failed_to_get_recover_date), 2000);
+                displayWallets();
+                break;
+            }
+
+            Calendar date;
+            if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+            {
+                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
+                  picker.getDayOfMonth()).build();
+            }
+            else
+            {
+                date = Calendar.getInstance();
+                date.set(picker.getYear(), picker.getMonth(), picker.getDayOfMonth());
+            }
+
+            mRecoverDate = date.getTimeInMillis() / 1000L;
+            mAuthorizedTask = AuthorizedTask.ADD_KEY;
+            displayAuthorize();
+            break;
+        }
         case R.id.importSeed:
         {
             mSeed = ((TextView)findViewById(R.id.seed)).getText().toString();
             mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION; // TODO Add options to specify this
             mKeyToLoad = null;
+            mEncodedPrivateKey = null;
             mSeedIsBackedUp = true;
 
             View invalidDescription = findViewById(R.id.invalidDescription);
@@ -3232,6 +3367,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.importWallet:
             displayImportWallet();
+            break;
+        case R.id.scanPrivateKey:
+            displayScanner(ScanMode.SCAN_PRIVATE_KEY);
             break;
         case R.id.enterImportKey:
             // Get recover seed date
@@ -3263,6 +3401,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mAuthorizedTask = AuthorizedTask.ADD_KEY;
             mKeyToLoad = ((EditText)findViewById(R.id.importText)).getText().toString();
             mDerivationPathMethodToLoad = ((Spinner)findViewById(R.id.derivationMethodSpinner)).getSelectedItemPosition();
+            mEncodedPrivateKey = null;
             mSeed = null;
             displayAuthorize();
             break;
@@ -3397,6 +3536,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         {
                             mAuthorizedTask = AuthorizedTask.ADD_KEY;
                             mKeyToLoad = null;
+                            mEncodedPrivateKey = null;
                             mSeedIsBackedUp = true;
                             mRecoverDate = System.currentTimeMillis() / 1000L;
                             displayAuthorize();
@@ -3520,7 +3660,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
             }
 
-            displayScanPaymentCode();
+            displayScanner(ScanMode.SCAN_PAYMENT_CODE);
             break;
         }
         case R.id.walletBackup:
@@ -3533,7 +3673,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         }
         case R.id.scanPaymentCode:
-            displayScanPaymentCode();
+            displayScanner(ScanMode.SCAN_PAYMENT_CODE);
             break;
         case R.id.enterPaymentCode:
         {
@@ -3806,6 +3946,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         task.execute();
                         mKeyToLoad = null;
                     }
+                    else if(mEncodedPrivateKey != null)
+                    {
+                        ImportEncodedKeyTask task = new ImportEncodedKeyTask(getApplicationContext(), mBitcoin, pin,
+                          mEncodedPrivateKey, mRecoverDate);
+                        task.execute();
+                        mEncodedPrivateKey = null;
+                    }
                     else
                     {
                         CreateKeyTask task = new CreateKeyTask(getApplicationContext(), mBitcoin, pin, mSeed,
@@ -3925,14 +4072,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case ADD_WALLET:
             mSeed = null;
             mKeyToLoad = null;
+            mEncodedPrivateKey = null;
             mRecoverDate = 0L;
             mSeedEntropyBytes = 0;
             break;
         case CREATE_WALLET:
         case RECOVER_WALLET:
         case IMPORT_WALLET:
+        case IMPORT_PRIVATE_KEY:
             mSeed = null;
             mKeyToLoad = null;
+            mEncodedPrivateKey = null;
             mRecoverDate = 0L;
             mSeedEntropyBytes = 0;
             displayAddOptions();
@@ -3970,6 +4120,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case NONE:
                 mSeed = null;
                 mKeyToLoad = null;
+                mEncodedPrivateKey = null;
                 mRecoverDate = 0L;
                 mSeedEntropyBytes = 0;
                 break;
