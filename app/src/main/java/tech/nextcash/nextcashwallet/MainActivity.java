@@ -1212,6 +1212,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup dialogView = findViewById(R.id.dialog);
 
+        dialogView.setVisibility(View.GONE);
         dialogView.removeAllViews();
         findViewById(R.id.main).setVisibility(View.GONE);
         findViewById(R.id.progress).setVisibility(View.GONE);
@@ -2533,20 +2534,31 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         ViewGroup verifySeed = (ViewGroup)inflater.inflate(R.layout.verify_seed, dialogView, false);
-        LinearLayout wordButtons = verifySeed.findViewById(R.id.seedButtons);
-        ArrayList<String> words = new ArrayList<>();
-        TextView wordButton;
+        ViewGroup wordRows = verifySeed.findViewById(R.id.seedRows);
 
         dialogView.addView(verifySeed);
 
+        ArrayList<String> words = new ArrayList<>();
         Collections.addAll(words, mSeed.split(" "));
-        Collections.shuffle(words);
+        Collections.sort(words);
 
+        int rowCount = 0;
+        LinearLayout row = null;
+        TextButton wordButton;
         for(String word : words)
         {
-            wordButton = (TextView)inflater.inflate(R.layout.seed_word_button, wordButtons, false);
+            if(rowCount == 0)
+            {
+                // Create row
+                row = (LinearLayout)inflater.inflate(R.layout.seed_word_row, wordRows, false);
+                wordRows.addView(row);
+            }
+            wordButton = (TextButton)inflater.inflate(R.layout.seed_word_button, row, false);
             wordButton.setText(word);
-            wordButtons.addView(wordButton);
+            row.addView(wordButton);
+            rowCount++;
+            if(rowCount == 4)
+                rowCount = 0;
         }
 
         if(mSeedBackupOnly)
@@ -3225,20 +3237,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.seedWordButton:
         {
-            ViewGroup wordButtons = (ViewGroup)pView.getParent();
-            if(wordButtons == null)
+            ViewGroup wordRow = (ViewGroup)pView.getParent();
+            if(wordRow == null)
                 break;
 
             // Add word to seed
             TextView seed = findViewById(R.id.seed);
             if(seed.getText().length() > 0)
-                seed.setText(String.format("%s %s", seed.getText(), ((TextView)pView).getText()));
+                seed.setText(String.format("%s %s", seed.getText(), ((TextButton)pView).getText()));
             else
-                seed.setText(((TextView)pView).getText());
+                seed.setText(((TextButton)pView).getText());
+
+            wordRow.removeView(pView);
 
             if(mMode == Mode.RECOVER_WALLET)
             {
-                wordButtons.removeAllViews();
                 ((EditText)findViewById(R.id.seedWordEntry)).setText("");
                 if(mBitcoin.seedIsValid(seed.getText().toString()))
                 {
@@ -3250,9 +3263,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
             else
             {
-                wordButtons.removeView(pView);
-
-                if(wordButtons.getChildCount() == 0)
+                ViewGroup words = (ViewGroup)wordRow.getParent();
+                int wordCount = 0;
+                for(int i = 0; i < words.getChildCount(); i++)
+                    wordCount += ((ViewGroup)words.getChildAt(i)).getChildCount();
+                if(wordCount == 0)
                 {
                     // Verify seed matches
                     String seedText = (String)seed.getText();
@@ -3277,7 +3292,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     else
                     {
                         showMessage(getString(R.string.seed_doesnt_match), 2000);
-                        displayCreateWallet();
+                        if(mSeedBackupOnly)
+                            displayWallets();
+                        else
+                            displayCreateWallet();
                     }
                 }
             }
@@ -3302,12 +3320,22 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 {
                     // Add button
                     LayoutInflater inflater = getLayoutInflater();
-                    LinearLayout wordButtons = findViewById(R.id.seedButtons);
-                    TextView wordButton;
+                    LinearLayout wordRows = findViewById(R.id.seedRows);
+                    LinearLayout wordRow;
+                    TextButton wordButton;
 
-                    wordButton = (TextView)inflater.inflate(R.layout.seed_word_button, wordButtons, false);
-                    wordButton.setText(words[words.length - 1]);
-                    wordButtons.addView(wordButton);
+                    for(int i = wordRows.getChildCount() - 1; i >= 0; i--)
+                    {
+                        wordRow = (LinearLayout)wordRows.getChildAt(i);
+                        if(wordRow.getChildCount() < 4)
+                        {
+                            wordButton = (TextButton)inflater.inflate(R.layout.seed_word_button, wordRow,
+                              false);
+                            wordButton.setText(words[words.length - 1]);
+                            wordRow.addView(wordButton);
+                            break;
+                        }
+                    }
                 }
             }
             break;
