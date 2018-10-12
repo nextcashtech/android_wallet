@@ -1247,10 +1247,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             currentFrequency = 360; // Default to 6 hours
 
         Spinner syncFrequency = settingsView.findViewById(R.id.syncFrequencySpinner);
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-          R.array.sync_frequency_titles, android.R.layout.simple_spinner_item);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        syncFrequency.setAdapter(adapter);
         syncFrequency.setOnItemSelectedListener(this);
 
         boolean found = false;
@@ -2365,10 +2361,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mSeedBackupOnly = false;
 
         Spinner entropy = createWallet.findViewById(R.id.seedEntropy);
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-          R.array.mnemonic_seed_length_titles, android.R.layout.simple_spinner_item);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        entropy.setAdapter(adapter);
         entropy.setOnItemSelectedListener(this);
 
         int entropyPosition = 0;
