@@ -789,14 +789,14 @@ extern "C"
             daemon->keyStore()->setBackedUp(offset);
             daemon->monitor()->refreshKeyStore();
             daemon->monitor()->updatePasses(daemon->chain());
-
-            if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
-            {
-                daemon->saveMonitor();
-            }
-            else
-                result = 1; // Failed to save
         }
+
+        if(!daemon->saveMonitor() && result == 0)
+            result = 1;
+        if(!savePrivateKeys(pEnvironment, daemon, pPassCode) && result == 0)
+            result = 1;
+        if(!savePublicKeys(daemon) && result == 0)
+            result = 1;
 
         daemon->keyStore()->unloadPrivate();
         return (jint)result;
@@ -1122,18 +1122,16 @@ extern "C"
 
         daemon->monitor()->refreshKeyStore();
         daemon->monitor()->updatePasses(daemon->chain());
-        daemon->saveMonitor();
 
-        if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
-        {
-            daemon->keyStore()->unloadPrivate();
-            return (jint)0;
-        }
-        else
-        {
-            daemon->keyStore()->unloadPrivate();
-            return (jint)1;
-        }
+        if(!daemon->saveMonitor())
+            result = 1;
+        if(!savePrivateKeys(pEnvironment, daemon, pPassCode) && result == 0)
+            result = 1;
+        if(!savePublicKeys(daemon) && result == 0)
+            result = 1;
+
+        daemon->keyStore()->unloadPrivate();
+        return (jint)result;
     }
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_addPrivateKey(JNIEnv *pEnvironment,
@@ -1171,16 +1169,15 @@ extern "C"
         daemon->monitor()->updatePasses(daemon->chain());
         daemon->saveMonitor();
 
-        if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
-        {
-            daemon->keyStore()->unloadPrivate();
-            return (jint)0;
-        }
-        else
-        {
-            daemon->keyStore()->unloadPrivate();
-            return (jint)1;
-        }
+        if(!daemon->saveMonitor())
+            result = 1;
+        if(!savePrivateKeys(pEnvironment, daemon, pPassCode) && result == 0)
+            result = 1;
+        if(!savePublicKeys(daemon) && result == 0)
+            result = 1;
+
+        daemon->keyStore()->unloadPrivate();
+        return (jint)result;
     }
 
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_removeKey(JNIEnv *pEnvironment,
@@ -1195,26 +1192,20 @@ extern "C"
         if(!loadPrivateKeys(pEnvironment, daemon, pPassCode))
             return (jint)5; // Invalid pass code
 
-        bool result = daemon->keyStore()->remove((unsigned int)pOffset);
+        int result = 0;
+        if(!daemon->keyStore()->remove((unsigned int)pOffset))
+            result = 1;
 
-        if(!result)
-        {
-            daemon->keyStore()->unloadPrivate();
-            return (jint)1;
-        }
+        daemon->monitor()->resetKeyStore();
+        if(!daemon->saveMonitor() && result == 0)
+            result = 1;
+        if(!savePrivateKeys(pEnvironment, daemon, pPassCode) && result == 0)
+            result = 1;
+        if(!savePublicKeys(daemon) && result == 0)
+            result = 1;
 
-        if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
-        {
-            daemon->monitor()->resetKeyStore();
-            daemon->saveMonitor();
-            daemon->keyStore()->unloadPrivate();
-            return (jint)0;
-        }
-        else
-        {
-            daemon->keyStore()->unloadPrivate();
-            return (jint)1;
-        }
+        daemon->keyStore()->unloadPrivate();
+        return (jint)result;
     }
 
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_seed(JNIEnv *pEnvironment,
@@ -1677,14 +1668,14 @@ extern "C"
         int result = daemon->sendStandardPayment((unsigned int)pWalletOffset, type, hash,
           (uint64_t)pAmount, pFeeRate, pUsePending, pSendAll);
 
-        if(result == 0)
-        {
-            if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
-                daemon->saveMonitor();
-            else
-                result = 1; // Failed to save
-        }
+        if(!daemon->saveMonitor() && result == 0)
+            result = 1;
+        if(!savePrivateKeys(pEnvironment, daemon, pPassCode) && result == 0)
+            result = 1;
+        if(!savePublicKeys(daemon) && result == 0)
+            result = 1;
 
+        daemon->keyStore()->unloadPrivate();
         return (jint)result;
     }
 
@@ -1719,11 +1710,14 @@ extern "C"
         int result = daemon->sendSpecifiedOutputPayment((unsigned int)pWalletOffset, outputScript,
           (uint64_t)pAmount, pFeeRate, pUsePending, false);
 
-        if(savePrivateKeys(pEnvironment, daemon, pPassCode) && savePublicKeys(daemon))
-            daemon->saveMonitor();
-        else
-            result = 1; // Failed to save
+        if(!daemon->saveMonitor() && result == 0)
+            result = 1;
+        if(!savePrivateKeys(pEnvironment, daemon, pPassCode) && result == 0)
+            result = 1;
+        if(!savePublicKeys(daemon) && result == 0)
+            result = 1;
 
+        daemon->keyStore()->unloadPrivate();
         return (jint)result;
     }
 
