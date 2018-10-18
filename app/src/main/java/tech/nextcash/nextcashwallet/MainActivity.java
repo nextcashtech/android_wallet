@@ -91,9 +91,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
       mRequestExpiresUpdater, mRequestTransactionRunnable;
 
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
-      IMPORT_PRIVATE_KEY, IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, HISTORY, TRANSACTION, SCAN, RECEIVE,
-      ENTER_PAYMENT_CODE, CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP, SETTINGS }
-    private Mode mMode, mPreviousMode;
+      IMPORT_PRIVATE_KEY, IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, TRANSACTION_HISTORY, TRANSACTION,
+      SCAN, RECEIVE, ENTER_PAYMENT_CODE, CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP,
+      SETTINGS }
+    private Mode mMode, mPreviousMode, mPreviousTransactionMode;
     private boolean mWalletsNeedUpdated;
     private enum AuthorizedTask { NONE, INITIALIZE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private enum ScanMode {SCAN_PAYMENT_CODE, SCAN_PRIVATE_KEY}
@@ -182,11 +183,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             @Override
             public void run()
             {
-                openTransaction(mRequestedTransactionWalletIndex, mRequestedTransactionID);
+                openTransaction(mRequestedTransactionWalletIndex, mRequestedTransactionID, 0L);
             }
         };
         mMode = Mode.LOADING_WALLETS;
         mPreviousMode = Mode.LOADING_WALLETS;
+        mPreviousTransactionMode = Mode.LOADING_WALLETS;
         mAuthorizedTask = AuthorizedTask.NONE;
         mFinishOnBack = false;
         mCurrentWalletIndex = -1;
@@ -533,7 +535,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         updateWallets();
         updateStatus();
         if(mRequestedTransactionID != null)
-            openTransaction(mRequestedTransactionWalletIndex, mRequestedTransactionID);
+            openTransaction(mRequestedTransactionWalletIndex, mRequestedTransactionID, 0L);
         else if(mHistoryToShowWalletIndex != -1)
         {
             mCurrentWalletIndex = mHistoryToShowWalletIndex;
@@ -591,12 +593,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case EDIT_WALLET:
                 break;
-            case HISTORY:
+            case TRANSACTION_HISTORY:
                 displayWalletHistory(); // Reload
                 break;
             case TRANSACTION:
                 if(mTransaction != null)
-                    openTransaction(mTransactionWalletIndex, mTransaction.hash); // Reload
+                    openTransaction(mTransactionWalletIndex, mTransaction.hash, mTransaction.amount()); // Reload
                 break;
             case SCAN:
                 break;
@@ -677,7 +679,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
           extras != null && extras.containsKey("Wallet") && extras.containsKey("Transaction"))
         {
             if(mBitcoin.walletsAreLoaded())
-                openTransaction(extras.getInt("Wallet"), extras.getString("Transaction"));
+            {
+                if(extras.containsKey("Amount"))
+                    openTransaction(extras.getInt("Wallet"), extras.getString("Transaction"),
+                      extras.getLong("Amount"));
+                else
+                    openTransaction(extras.getInt("Wallet"), extras.getString("Transaction"), 0L);
+            }
             else
             {
                 mRequestedTransactionWalletIndex = extras.getInt("Wallet");
@@ -726,7 +734,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case EDIT_WALLET:
                 break;
-            case HISTORY:
+            case TRANSACTION_HISTORY:
                 pState.putString("State", "History");
                 pState.putInt("Wallet", mCurrentWalletIndex);
                 break;
@@ -1705,20 +1713,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.ENTER_PAYMENT_DETAILS;
     }
 
-    public synchronized void openTransaction(int pWalletOffset, String pTransactionHash)
+    public synchronized void openTransaction(int pWalletOffset, String pTransactionHash, long pAmount)
     {
         if(mRequestedTransactionID != null && !mRequestedTransactionID.equals(pTransactionHash))
             mRequestedTransactionAttempts = 0;
         mRequestedTransactionWalletIndex = pWalletOffset;
         mRequestedTransactionID = pTransactionHash;
 
+        mPreviousTransactionMode = mMode;
         if(mMode != Mode.TRANSACTION)
             displayProgress();
 
         mTransaction = new FullTransaction();
         mTransactionWalletIndex = pWalletOffset;
         GetTransactionTask task = new GetTransactionTask(getApplicationContext(), mBitcoin, pWalletOffset,
-          pTransactionHash, mTransaction);
+          pTransactionHash, pAmount, mTransaction);
         task.execute();
     }
 
@@ -3180,9 +3189,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             transactionViewGroup.addView(transactionView);
 
             transaction.updateView(getApplicationContext(), mBitcoin, transactionView);
-
-            // Set tag with transaction ID
-            transactionView.setTag(transaction.hash);
         }
 
         if(recentCount > 0)
@@ -3244,7 +3250,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
-        mMode = Mode.HISTORY;
+        mMode = Mode.TRANSACTION_HISTORY;
     }
 
     public void copyToClipBoard(View pView)
@@ -3786,7 +3792,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.walletTransaction:
         {
-            openTransaction(mCurrentWalletIndex, (String)pView.getTag());
+            TransactionData.ID id = (TransactionData.ID)pView.getTag();
+            openTransaction(mCurrentWalletIndex, id.hash, id.amount);
             break;
         }
         case R.id.paymentCode:
@@ -3851,6 +3858,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             mBitcoin.saveTransactionData();
             mBitcoin.triggerUpdate();
+            showMessage(getString(R.string.comment_updated), 2000);
             break;
         }
         case R.id.updateTransactionCostBasis:
@@ -3859,19 +3867,45 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(mTransaction == null || mTransaction.data == null || costBasis == null)
                 break;
 
-            try
+            String costText = costBasis.getText().toString();
+            if(costText.length() == 0)
             {
-                mTransaction.data.cost = Double.parseDouble(costBasis.getText().toString());
-                mTransaction.data.costType = mBitcoin.exchangeType();
+                mTransaction.data.cost = 0.0;
+                mTransaction.data.costType = null;
             }
-            catch(NumberFormatException pException)
+            else
             {
-                showMessage(getString(R.string.cost_must_be_number), 2000);
-                break;
+                switch(costText.charAt(0))
+                {
+                case '$':
+                case '€':
+                case '£':
+                case '¥':
+                case '₩':
+                    costText = costText.substring(1);
+                    break;
+                default:
+                    break;
+                }
+
+                try
+                {
+                    mTransaction.data.cost = Math.abs(Double.parseDouble(costText));
+                    mTransaction.data.costType = mBitcoin.exchangeType();
+                }
+                catch(NumberFormatException pException)
+                {
+                    showMessage(getString(R.string.cost_must_be_number), 2000);
+                    break;
+                }
             }
 
             costBasis.setText(Bitcoin.formatAmount(mTransaction.data.cost, mTransaction.data.costType));
             mBitcoin.saveTransactionData();
+            if(mTransaction.data.cost == 0.0)
+                showMessage(getString(R.string.cost_basis_cleared), 2000);
+            else
+                showMessage(getString(R.string.cost_basis_updated), 2000);
             break;
         }
         case R.id.closeMessage:
@@ -4186,9 +4220,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case EDIT_WALLET:
             displaySettings();
             return;
-        case HISTORY:
+        case TRANSACTION_HISTORY:
             break;
         case TRANSACTION:
+            if(mPreviousTransactionMode == Mode.TRANSACTION_HISTORY)
+            {
+                displayWalletHistory();
+                return;
+            }
             break;
         case SCAN:
             break;

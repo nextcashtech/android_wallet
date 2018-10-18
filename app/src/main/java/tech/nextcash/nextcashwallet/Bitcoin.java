@@ -154,10 +154,15 @@ public class Bitcoin
               Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)));
     }
 
-    public String amountText(long pAmount, TransactionData.ItemData pTransactionData)
+    public String amountText(long pAmount, TransactionData.Item pTransactionData)
     {
         if(pTransactionData != null)
-            return amountText(pAmount, pTransactionData.exchangeType, pTransactionData.exchangeRate);
+        {
+            if(pTransactionData.cost != 0.0)
+                return formatAmount(pTransactionData.cost, pTransactionData.costType);
+            else
+                return amountText(pAmount, pTransactionData.exchangeType, pTransactionData.exchangeRate);
+        }
         else
             return amountText(pAmount);
     }
@@ -169,21 +174,24 @@ public class Bitcoin
 
     public static String formatAmount(double pAmount, String pExchangeType)
     {
+        if(pExchangeType == null)
+            return null;
+
         switch(pExchangeType)
         {
-            default:
-            case "AUD":
-            case "CAD":
-            case "USD":
-                return String.format(Locale.getDefault(), "$%,.2f", pAmount);
-            case "EUR":
-                return String.format(Locale.getDefault(), "€%,.2f", pAmount);
-            case "GBP":
-                return String.format(Locale.getDefault(), "£%,.2f", pAmount);
-            case "JPY":
-                return String.format(Locale.getDefault(), "¥%,d", (int)pAmount);
-            case "KRW":
-                return String.format(Locale.getDefault(), "₩%,d", (int)pAmount);
+        default:
+        case "AUD":
+        case "CAD":
+        case "USD":
+            return String.format(Locale.getDefault(), "$%,.2f", pAmount);
+        case "EUR":
+            return String.format(Locale.getDefault(), "€%,.2f", pAmount);
+        case "GBP":
+            return String.format(Locale.getDefault(), "£%,.2f", pAmount);
+        case "JPY":
+            return String.format(Locale.getDefault(), "¥%,d", (int)pAmount);
+        case "KRW":
+            return String.format(Locale.getDefault(), "₩%,d", (int)pAmount);
         }
     }
 
@@ -364,11 +372,11 @@ public class Bitcoin
         return mWallets;
     }
 
-    public TransactionData.ItemData getTransactionData(String pTransactionID)
+    public TransactionData.Item getTransactionData(String pTransactionID, long pAmount)
     {
         if(mTransactionData == null)
             return null;
-        return mTransactionData.getData(pTransactionID);
+        return mTransactionData.getData(pTransactionID, pAmount);
     }
 
     public boolean saveTransactionData()

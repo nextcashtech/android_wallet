@@ -23,7 +23,7 @@ public class FullTransaction
     public Input[] inputs;
     public Output[] outputs;
     public int lockTime;
-    public TransactionData.ItemData data;
+    public TransactionData.Item data;
 
 
     public FullTransaction()

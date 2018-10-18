@@ -161,8 +161,11 @@
     <string name="amount_title">Amount</string>
     <string name="comment">Comment</string>
     <string name="comment_hint">Enter TX Comment</string>
+    <string name="comment_updated">Comment updated</string>
     <string name="cost_basis">Cost Basis</string>
     <string name="cost_basis_hint">Enter Manual Cost Basis</string>
+    <string name="cost_basis_cleared">Cost basis cleared</string>
+    <string name="cost_basis_updated">Cost basis updated</string>
     <string name="cost_must_be_number">Cost basis must be a valid number</string>
     <string name="fee">Fee</string>
     <string name="estimated_fee">Estimated Fee</string>

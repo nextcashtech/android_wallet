@@ -18,11 +18,11 @@ import java.util.Locale;
 public class Transaction
 {
     public String hash; // Transaction ID
-    public String block; // Block Hash in which transaction was confirmed
+    public String block; // Block Hash in which transaction was confirmed. Null when unconfirmed.
     public long date; // Date/Time in seconds since epoch of transaction
     public long amount; // Amount of transaction in satoshis. Negative for send.
-    public int count; // Pending = Number of validating nodes. Confirmed = Number of confirmations.
-    public TransactionData.ItemData data;
+    public int count; // Unconfirmed = Number of validating nodes. Confirmed = Number of confirmations.
+    public TransactionData.Item data;
 
     public Transaction()
     {
@@ -81,11 +81,11 @@ public class Transaction
             long diff = (System.currentTimeMillis() / 1000L) - dateToUse;
             if(diff < 60)
                 timeText.setText(pContext.getString(R.string.just_now));
-            else if(diff < 3600)
-                timeText.setText(String.format(Locale.getDefault(), "%d %s", diff / 60,
+            else if(diff < 3600L)
+                timeText.setText(String.format(Locale.getDefault(), "%d %s", diff / 60L,
                   pContext.getString(R.string.minutes_abbreviation)));
-            else if(diff < 86400)
-                timeText.setText(String.format(Locale.getDefault(), "%d %s", diff / 3600,
+            else if(diff < 86400L)
+                timeText.setText(String.format(Locale.getDefault(), "%d %s", diff / 3600L,
                   pContext.getString(R.string.hours_abbreviation)));
             else
                 timeText.setText(String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td",
@@ -110,6 +110,9 @@ public class Transaction
         }
         else
             commentView.setVisibility(View.GONE);
+
+        // Set tag with transaction ID
+        pView.setTag(new TransactionData.ID(hash, amount));
     }
 
     private static native void setupJNI();

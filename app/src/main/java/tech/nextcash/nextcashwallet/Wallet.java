@@ -48,7 +48,7 @@ public class Wallet
         boolean result = false;
         for(Transaction transaction : transactions)
         {
-            transaction.data = pData.getData(transaction.hash);
+            transaction.data = pData.getData(transaction.hash, transaction.amount);
             if(transaction.data.exchangeRate == 0.0 && pExchangeRate != 0.0)
             {
                 transaction.data.exchangeRate = pExchangeRate;

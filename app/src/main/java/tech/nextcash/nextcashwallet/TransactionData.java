@@ -43,19 +43,32 @@ public class TransactionData
     private static void writeString(DataOutputStream pStream, String pString) throws IOException
     {
         if(pString == null)
-        {
             pStream.writeInt(0);
-            return;
+        else
+        {
+            pStream.writeInt(pString.length());
+            pStream.writeBytes(pString);
         }
-        pStream.writeInt(pString.length());
-        pStream.writeBytes(pString);
     }
 
-    public class ItemData
+    public static class ID
+    {
+        public ID(String pHash, long pAmount)
+        {
+            hash = pHash;
+            amount = pAmount;
+        }
+
+        public String hash;
+        public long amount;
+    }
+
+    public class Item
     {
         String hash;
 
         long date; // Older of first seen or block time.
+        long amount; // For identification purposes if more than one wallet is affected.
         String comment; // User added message.
 
         // Exchange rate and type at time of first seen
@@ -71,9 +84,10 @@ public class TransactionData
         double cost;
         String costType;
 
-        public ItemData()
+        public Item()
         {
             hash = null;
+            amount = 0L;
             comment = null;
             date = 0;
             exchangeRate = 0.0;
@@ -82,9 +96,10 @@ public class TransactionData
             costType = null;
         }
 
-        public ItemData(String pTransactionID)
+        public Item(String pTransactionID, long pAmount)
         {
             hash = pTransactionID;
+            amount = pAmount;
             comment = null;
             date = System.currentTimeMillis() / 1000L;
             exchangeRate = 0.0;
@@ -93,9 +108,13 @@ public class TransactionData
             costType = null;
         }
 
-        public void read(DataInputStream pStream) throws IOException
+        public void read(DataInputStream pStream, int pVersion) throws IOException
         {
             hash = readString(pStream);
+            if(pVersion > 1)
+                amount = pStream.readLong();
+            else
+                amount = 0L;
             date = pStream.readLong();
             comment = readString(pStream);
             exchangeRate = pStream.readDouble();
@@ -107,6 +126,7 @@ public class TransactionData
         public void write(DataOutputStream pStream) throws IOException
         {
             writeString(pStream, hash);
+            pStream.writeLong(amount);
             pStream.writeLong(date);
             writeString(pStream, comment);
             pStream.writeDouble(exchangeRate);
@@ -116,7 +136,7 @@ public class TransactionData
         }
     }
 
-    private ArrayList<ItemData> mItems;
+    private ArrayList<Item> mItems;
     private boolean mItemsHaveBeenAdded;
 
     public boolean itemsAdded()
@@ -124,12 +144,25 @@ public class TransactionData
         return mItemsHaveBeenAdded;
     }
 
-    public ItemData getData(String pTransactionID)
+    public Item getData(String pTransactionID, long pAmount)
     {
-        for(ItemData item : mItems)
+        for(Item item : mItems)
             if(item.hash.equals(pTransactionID))
-                return item;
-        ItemData result = new ItemData(pTransactionID);
+            {
+                if(pAmount == 0)
+                    return item; // Allow get when amount is not known.
+                else if(item.amount == 0)
+                {
+                    // Backwards compatible to before amount was retained.
+                    item.amount = pAmount;
+                    return item;
+                }
+                else if(item.amount == pAmount)
+                    return item;
+            }
+
+        // Create new entry.
+        Item result = new Item(pTransactionID, pAmount);
         mItems.add(result);
         mItemsHaveBeenAdded = true;
         return result;
@@ -148,7 +181,7 @@ public class TransactionData
 
             // Version
             int version = stream.readInt();
-            if(version != 1)
+            if(version != 1 && version != 2)
             {
                 Log.e(logTag, String.format("Unknown version : %d", version));
                 return false;
@@ -159,11 +192,11 @@ public class TransactionData
 
             // Items
             mItems.ensureCapacity(count);
-            ItemData newItem;
+            Item newItem;
             for(int i = 0; i < count; i++)
             {
-                newItem = new ItemData();
-                newItem.read(stream);
+                newItem = new Item();
+                newItem.read(stream, version);
                 mItems.add(newItem);
             }
         }
@@ -187,13 +220,13 @@ public class TransactionData
             DataOutputStream stream = new DataOutputStream(fileOutputStream);
 
             // Version
-            stream.writeInt(1);
+            stream.writeInt(2);
 
             // Count
             stream.writeInt(mItems.size());
 
             // Items
-            for(ItemData item : mItems)
+            for(Item item : mItems)
                 item.write(stream);
 
             stream.close(); // Flush any buffered data

@@ -17,24 +17,26 @@ public class GetTransactionTask extends AsyncTask<String, Integer, Integer>
     private Context mContext;
     private Bitcoin mBitcoin;
     private int mWalletOffset;
-    private String mID;
+    private String mTransactionID;
+    private long mAmount;
     private FullTransaction mTransaction;
 
-    public GetTransactionTask(Context pContext, Bitcoin pBitcoin, int pWalletOffset, String pID,
-      FullTransaction pTransaction)
+    public GetTransactionTask(Context pContext, Bitcoin pBitcoin, int pWalletOffset, String pTransactionID,
+      long pAmount, FullTransaction pTransaction)
     {
         mContext = pContext;
         mBitcoin = pBitcoin;
         mWalletOffset = pWalletOffset;
-        mID = pID;
+        mTransactionID = pTransactionID;
+        mAmount = pAmount;
         mTransaction = pTransaction;
     }
 
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        mTransaction.data = mBitcoin.getTransactionData(mID);
-        if(mBitcoin.getTransaction(mWalletOffset, mID, mTransaction))
+        mTransaction.data = mBitcoin.getTransactionData(mTransactionID, mAmount);
+        if(mBitcoin.getTransaction(mWalletOffset, mTransactionID, mTransaction))
             return 0;
         else
             return 1;
