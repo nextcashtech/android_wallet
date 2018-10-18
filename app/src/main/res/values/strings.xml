@@ -159,6 +159,11 @@
     <string name="confirmed_transactions">Confirmed Transactions</string>
     <string name="no_transactions">No Transactions</string>
     <string name="amount_title">Amount</string>
+    <string name="comment">Comment</string>
+    <string name="comment_hint">Enter TX Comment</string>
+    <string name="cost_basis">Cost Basis</string>
+    <string name="cost_basis_hint">Enter Manual Cost Basis</string>
+    <string name="cost_must_be_number">Cost basis must be a valid number</string>
     <string name="fee">Fee</string>
     <string name="estimated_fee">Estimated Fee</string>
     <string name="bitcoins_amount_title">bitcoins</string>

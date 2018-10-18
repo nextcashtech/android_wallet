@@ -33,6 +33,7 @@ public class GetTransactionTask extends AsyncTask<String, Integer, Integer>
     @Override
     protected Integer doInBackground(String... pStrings)
     {
+        mTransaction.data = mBitcoin.getTransactionData(mID);
         if(mBitcoin.getTransaction(mWalletOffset, mID, mTransaction))
             return 0;
         else

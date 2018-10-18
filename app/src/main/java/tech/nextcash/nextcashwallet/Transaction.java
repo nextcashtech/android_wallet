@@ -9,6 +9,7 @@ package tech.nextcash.nextcashwallet;
 
 import android.content.Context;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.util.Locale;
@@ -21,15 +22,17 @@ public class Transaction
     public long date; // Date/Time in seconds since epoch of transaction
     public long amount; // Amount of transaction in satoshis. Negative for send.
     public int count; // Pending = Number of validating nodes. Confirmed = Number of confirmations.
+    public TransactionData.ItemData data;
 
     public Transaction()
     {
         date = 0;
         amount = 0;
         count = 0;
+        data = null;
     }
 
-    public String description(Context pContext, String pExchangeType, double pExchangeRate)
+    public String description(Context pContext, Bitcoin pBitcoin)
     {
         int startString, endString;
 
@@ -43,16 +46,16 @@ public class Transaction
         else
             endString = R.string.confirmed_notification_description_end;
 
-        return String.format(Locale.getDefault(), "%s %s %s",
-          pContext.getString(startString), Bitcoin.amountText(amount, pExchangeType, pExchangeRate),
-          pContext.getString(endString));
+        return String.format(Locale.getDefault(), "%s %s %s", pContext.getString(startString),
+          pBitcoin.amountText(amount, data), pContext.getString(endString));
     }
 
-    public void updateView(Context pContext, View pView, String pExchangeType, double pExchangeRate)
+    public void updateView(Context pContext, Bitcoin pBitcoin, ViewGroup pView)
     {
-        TextView amountText = pView.findViewById(R.id.amount);
-        TextView bitcoinAmountText = pView.findViewById(R.id.bitcoinAmount);
-        amountText.setText(Bitcoin.amountText(amount, pExchangeType, pExchangeRate));
+        ViewGroup basicGroup = (ViewGroup)pView.getChildAt(0);
+        TextView amountText = basicGroup.findViewById(R.id.amount);
+        TextView bitcoinAmountText = basicGroup.findViewById(R.id.bitcoinAmount);
+        amountText.setText(pBitcoin.amountText(amount, data));
         bitcoinAmountText.setText(Bitcoin.satoshiText(amount));
         if(amount > 0)
         {
@@ -65,23 +68,31 @@ public class Transaction
             bitcoinAmountText.setTextColor(pContext.getResources().getColor(R.color.colorNegative));
         }
 
-        TextView timeText = pView.findViewById(R.id.time);
-        if(count == -1)
+        TextView timeText = basicGroup.findViewById(R.id.time);
+        if(data == null && count == -1)
             timeText.setText(pContext.getString(R.string.not_available_abbreviation));
         else
         {
-            long diff = (System.currentTimeMillis() / 1000L) - date;
+            long dateToUse;
+            if(data != null)
+                dateToUse = data.date;
+            else
+                dateToUse = date;
+            long diff = (System.currentTimeMillis() / 1000L) - dateToUse;
             if(diff < 60)
                 timeText.setText(pContext.getString(R.string.just_now));
             else if(diff < 3600)
-                timeText.setText(String.format(Locale.getDefault(), "%d %s", diff / 60, pContext.getString(R.string.minutes_abbreviation)));
+                timeText.setText(String.format(Locale.getDefault(), "%d %s", diff / 60,
+                  pContext.getString(R.string.minutes_abbreviation)));
             else if(diff < 86400)
-                timeText.setText(String.format(Locale.getDefault(), "%d %s", diff / 3600, pContext.getString(R.string.hours_abbreviation)));
+                timeText.setText(String.format(Locale.getDefault(), "%d %s", diff / 3600,
+                  pContext.getString(R.string.hours_abbreviation)));
             else
-                timeText.setText(String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td", date * 1000L));
+                timeText.setText(String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td",
+                  dateToUse * 1000L));
         }
 
-        TextView countText = pView.findViewById(R.id.count);
+        TextView countText = basicGroup.findViewById(R.id.count);
         if(count == -1)
             countText.setText(pContext.getString(R.string.not_available_abbreviation));
         else if(block == null)
@@ -90,6 +101,15 @@ public class Transaction
             countText.setText(pContext.getString(R.string.nine_plus));
         else
             countText.setText(String.format(Locale.getDefault(), "%d", count));
+
+        TextView commentView = pView.findViewById(R.id.comment);
+        if(data != null && data.comment != null)
+        {
+            commentView.setText(data.comment);
+            commentView.setVisibility(View.VISIBLE);
+        }
+        else
+            commentView.setVisibility(View.GONE);
     }
 
     private static native void setupJNI();

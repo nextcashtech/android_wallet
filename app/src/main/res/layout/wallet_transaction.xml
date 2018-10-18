@@ -1,55 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginLeft="4dp"
-    android:layout_marginRight="4dp"
-    android:padding="5dp"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp"
     android:id="@+id/walletTransaction"
     android:onClick="onClick">
 
-    <LinearLayout
-        android:layout_width="wrap_content"
+    <RelativeLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_alignParentStart="true"
+            android:paddingEnd="5dp"
+            android:paddingStart="5dp">
+
+            <TextView
+                android:id="@+id/amount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/SubHeadingText"
+                android:textAlignment="textEnd"
+                android:text="$10.00"/>
+
+            <TextView
+                android:id="@+id/bitcoinAmount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="textEnd"
+                android:text="0 00 000 000"/>
+
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/amount"
-            android:layout_width="match_parent"
+            android:id="@+id/time"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
+            android:layout_toStartOf="@id/count"
+            android:layout_centerVertical="true"
+            android:paddingEnd="5dp"
+            android:paddingStart="5dp"
             style="@style/SubHeadingText"
-            android:textAlignment="textEnd"/>
+            android:text="just now"/>
 
         <TextView
-            android:id="@+id/bitcoinAmount"
-            android:layout_width="match_parent"
+            android:id="@+id/count"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:textAlignment="textEnd"/>
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:paddingEnd="5dp"
+            android:paddingStart="5dp"
+            style="@style/SubHeadingText"
+            android:textAlignment="textEnd"
+            android:text="5"/>
 
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/time"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_gravity="center_vertical"
-        style="@style/SubHeadingText"/>
+    </RelativeLayout>
 
     <TextView
-        android:id="@+id/count"
+        android:id="@+id/comment"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        style="@style/SubHeadingText"
-        android:textAlignment="textEnd"
-        android:layout_gravity="center_vertical"/>
+        android:layout_gravity="center_horizontal"
+        android:textStyle="bold"
+        android:text="comment"/>
 
 </LinearLayout>

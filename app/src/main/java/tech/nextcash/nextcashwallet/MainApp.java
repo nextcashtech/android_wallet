@@ -29,6 +29,7 @@ public class MainApp extends Application
     public void onCreate()
     {
         bitcoin = new Bitcoin();
+        bitcoin.initialize(getApplicationContext());
         super.onCreate();
     }
 

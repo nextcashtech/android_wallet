@@ -43,6 +43,27 @@ public class Wallet
         return false;
     }
 
+    public boolean updateTransactionData(TransactionData pData, double pExchangeRate, String pExchangeType)
+    {
+        boolean result = false;
+        for(Transaction transaction : transactions)
+        {
+            transaction.data = pData.getData(transaction.hash);
+            if(transaction.data.exchangeRate == 0.0 && pExchangeRate != 0.0)
+            {
+                transaction.data.exchangeRate = pExchangeRate;
+                transaction.data.exchangeType = pExchangeType;
+                result = true;
+            }
+            if(transaction.data.date > transaction.date)
+            {
+                transaction.data.date = transaction.date;
+                result = true;
+            }
+        }
+        return result;
+    }
+
     private static native void setupJNI();
 
     static

@@ -8,6 +8,7 @@
 package tech.nextcash.nextcashwallet;
 
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
 
@@ -18,6 +19,7 @@ import com.google.zxing.WriterException;
 import com.google.zxing.common.BitArray;
 import com.google.zxing.common.BitMatrix;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -28,6 +30,8 @@ public class Bitcoin
     public static final String LAST_SYNC_NAME = "last_sync"; // Time in seconds since epoch of last synchronization
     public static final String SYNC_FREQUENCY_NAME = "sync_frequency"; // Frequency in minutes for background sync jobs
     public static final String PIN_CREATED_NAME = "pin_created";
+    public static final String EXCHANGE_TYPE_NAME = "exchange_type";
+    public static final String EXCHANGE_RATE_NAME = "exchange_rate";
     public static final int QR_WIDTH = 200;
 
     private static final String logTag = "Bitcoin";
@@ -36,9 +40,15 @@ public class Bitcoin
     private static final long sSecondsPerBlock = 600;
 
     private long mHandle; // Used by JNI
+    private File mDirectory;
+    Settings mSettings;
+    private TransactionData mTransactionData;
     private boolean mWalletsLoaded, mChainLoaded;
     private boolean mNeedsUpdate;
     private int mChangeID;
+
+    private double mExchangeRate;
+    private String mExchangeType;
 
     public boolean appIsOpen;
     public boolean walletsModified;
@@ -55,6 +65,46 @@ public class Bitcoin
         mNeedsUpdate = false;
         mChangeID = -1;
         mWallets = new Wallet[0];
+        mDirectory = null;
+        mSettings = null;
+        mTransactionData = null;
+        mExchangeRate = 0.0;
+        mExchangeType = null;
+    }
+
+    public synchronized void initialize(Context pContext)
+    {
+        mDirectory = pContext.getFilesDir();
+        mTransactionData = new TransactionData(mDirectory);
+
+        mSettings = Settings.getInstance(mDirectory);
+        if(mSettings.containsValue(EXCHANGE_RATE_NAME))
+            mExchangeRate = mSettings.doubleValue(EXCHANGE_RATE_NAME);
+        if(mSettings.containsValue(EXCHANGE_TYPE_NAME))
+            mExchangeType = mSettings.value(EXCHANGE_TYPE_NAME);
+        else
+            mExchangeType = "USD";
+    }
+
+    public synchronized double exchangeRate()
+    {
+        return mExchangeRate;
+    }
+
+    public synchronized String exchangeType()
+    {
+        return mExchangeType;
+    }
+
+    public synchronized void setExchangeRate(double pRate, String pType)
+    {
+        mExchangeRate = pRate;
+        mExchangeType = pType;
+        if(mSettings != null)
+        {
+            mSettings.setDoubleValue(EXCHANGE_RATE_NAME, pRate);
+            mSettings.setValue(EXCHANGE_TYPE_NAME, pType);
+        }
     }
 
     // Units
@@ -87,35 +137,54 @@ public class Bitcoin
         return (long)(pBits * 100.0);
     }
 
-    public static String amountText(long pAmount, String pExchangeType, double pExchangeRate)
+    public String amountText(long pAmount, String pExchangeType, double pExchangeRate)
     {
-        if(pExchangeRate != 0.0)
+        double exchangeRate = pExchangeRate;
+        String exchangeType = pExchangeType;
+        if(exchangeRate == 0.0 && mExchangeRate != 0.0)
         {
-            switch(pExchangeType)
-            {
+            exchangeRate = mExchangeRate;
+            exchangeType = mExchangeType;
+        }
+
+        if(exchangeRate != 0.0)
+            return formatAmount(Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * exchangeRate, exchangeType);
+        else
+            return String.format(Locale.getDefault(), "%,.8f",
+              Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)));
+    }
+
+    public String amountText(long pAmount, TransactionData.ItemData pTransactionData)
+    {
+        if(pTransactionData != null)
+            return amountText(pAmount, pTransactionData.exchangeType, pTransactionData.exchangeRate);
+        else
+            return amountText(pAmount);
+    }
+
+    public String amountText(long pAmount)
+    {
+        return amountText(pAmount, null, 0.0);
+    }
+
+    public static String formatAmount(double pAmount, String pExchangeType)
+    {
+        switch(pExchangeType)
+        {
             default:
             case "AUD":
             case "CAD":
             case "USD":
-                return String.format(Locale.getDefault(), "$%,.2f",
-                  Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pExchangeRate);
+                return String.format(Locale.getDefault(), "$%,.2f", pAmount);
             case "EUR":
-                return String.format(Locale.getDefault(), "€%,.2f",
-                  Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pExchangeRate);
+                return String.format(Locale.getDefault(), "€%,.2f", pAmount);
             case "GBP":
-                return String.format(Locale.getDefault(), "£%,.2f",
-                  Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pExchangeRate);
+                return String.format(Locale.getDefault(), "£%,.2f", pAmount);
             case "JPY":
-                return String.format(Locale.getDefault(), "¥%,d",
-                  (int)(Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pExchangeRate));
+                return String.format(Locale.getDefault(), "¥%,d", (int)pAmount);
             case "KRW":
-                return String.format(Locale.getDefault(), "₩%,d",
-                  (int)(Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)) * pExchangeRate));
-            }
+                return String.format(Locale.getDefault(), "₩%,d", (int)pAmount);
         }
-        else
-            return String.format(Locale.getDefault(), "%,.8f",
-              Bitcoin.bitcoinsFromSatoshis(Math.abs(pAmount)));
     }
 
     public static String satoshiText(long pAmount)
@@ -295,6 +364,23 @@ public class Bitcoin
         return mWallets;
     }
 
+    public TransactionData.ItemData getTransactionData(String pTransactionID)
+    {
+        if(mTransactionData == null)
+            return null;
+        return mTransactionData.getData(pTransactionID);
+    }
+
+    public boolean saveTransactionData()
+    {
+        return mTransactionData.save(mDirectory);
+    }
+
+    public synchronized void triggerUpdate()
+    {
+        mNeedsUpdate = true;
+    }
+
     public synchronized boolean update(boolean pForce)
     {
         if(!mWalletsLoaded)
@@ -319,12 +405,23 @@ public class Bitcoin
 
         // Update wallets
         boolean result = true;
+        boolean dataUpdated = false;
         for(int offset = 0; offset < mWallets.length; offset++)
-            if(!updateWallet(mWallets[offset], offset))
+        {
+            if(updateWallet(mWallets[offset], offset))
+            {
+                if(mWallets[offset].updateTransactionData(mTransactionData, mExchangeRate, mExchangeType))
+                    dataUpdated = true;
+            }
+            else
             {
                 mNeedsUpdate = true;
                 result = false;
             }
+        }
+
+        if(mDirectory != null && mTransactionData != null && (dataUpdated || mTransactionData.itemsAdded()))
+            mTransactionData.save(mDirectory);
 
         if(result)
         {

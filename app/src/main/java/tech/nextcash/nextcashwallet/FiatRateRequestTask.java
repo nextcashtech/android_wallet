@@ -29,18 +29,16 @@ import javax.net.ssl.HttpsURLConnection;
 public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
 {
     public static final String logTag = "FiatRateRequestTask";
-    public static final String EXCHANGE_TYPE_NAME = "exchange_type";
-    public static final String EXCHANGE_RATE_NAME = "exchange_rate";
 
     private Context mContext;
+    private Bitcoin mBitcoin;
     private String mExchangeType;
-    private Settings mSettings;
 
-    public FiatRateRequestTask(Context pContext)
+    public FiatRateRequestTask(Context pContext, Bitcoin pBitcoin)
     {
         mContext = pContext;
-        mSettings = Settings.getInstance(pContext.getFilesDir());
-        mExchangeType = mSettings.value(FiatRateRequestTask.EXCHANGE_TYPE_NAME);
+        mBitcoin = pBitcoin;
+        mExchangeType = mBitcoin.exchangeType();
     }
 
     private double getCoinMarketCap()
@@ -236,7 +234,7 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
     {
         if(pRate != null && pRate != 0.0)
         {
-            mSettings.setDoubleValue(EXCHANGE_RATE_NAME, pRate);
+            mBitcoin.setExchangeRate(pRate, mExchangeType);
 
             Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
             finishIntent.setAction(MainActivity.ACTION_EXCHANGE_RATE_UPDATED);

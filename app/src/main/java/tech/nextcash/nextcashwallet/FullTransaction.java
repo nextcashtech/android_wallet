@@ -23,6 +23,7 @@ public class FullTransaction
     public Input[] inputs;
     public Output[] outputs;
     public int lockTime;
+    public TransactionData.ItemData data;
 
 
     public FullTransaction()
@@ -30,6 +31,7 @@ public class FullTransaction
         version = 0;
         lockTime = 0xffffffff;
         count = 0;
+        data = null;
     }
 
     long amount()
