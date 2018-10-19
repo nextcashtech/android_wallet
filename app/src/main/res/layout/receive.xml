@@ -50,6 +50,41 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <EditText
+            android:id="@+id/labelEdit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:inputType="textAutoComplete"
+            android:importantForAutofill="no"
+            android:hint="@string/address_label_hint"/>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@id/updateAddressLabel"
+                android:text="@string/address_label_description"
+                android:labelFor="@id/labelEdit"/>
+
+            <tech.nextcash.nextcashwallet.TextButton
+                android:id="@+id/updateAddressLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentEnd="true"
+                style="@style/SmallButton"
+                android:onClick="onClick"
+                android:text="@string/update"/>
+
+        </RelativeLayout>
+
         <TextView
             android:layout_marginTop="20dp"
             android:layout_width="match_parent"
@@ -58,25 +93,17 @@
             android:textAlignment="center"
             android:text="@string/optional"/>
 
-        <tech.nextcash.nextcashwallet.TextButton
-            android:id="@+id/updateRequestPaymentCode"
-            style="@style/Button"
-            android:text="@string/update"/>
-
         <TextView
-            android:id="@+id/amountLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/request_amount"
-            style="@style/SubHeadingText"
-            android:textAlignment="textStart"
-            android:labelFor="@id/requestAmount"
-            android:layout_marginTop="20dp"/>
+            android:textAlignment="center"
+            android:text="@string/optional_description"/>
 
         <RelativeLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
             android:layout_gravity="start">
 
             <EditText
@@ -87,6 +114,7 @@
                 android:layout_centerVertical="true"
                 android:layout_alignParentStart="true"
                 android:layout_toStartOf="@id/units"
+                android:hint="@string/request_amount_hint"
                 android:imeOptions="actionDone"/>
 
             <Spinner
@@ -99,57 +127,108 @@
 
         </RelativeLayout>
 
-        <LinearLayout
-            android:layout_width="wrap_content"
+        <RelativeLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
             android:layout_gravity="start">
+
             <TextView
                 android:id="@+id/satoshiAmountLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_below="@id/amountLabel"
+                android:layout_alignParentStart="true"
                 android:layout_marginEnd="10dp"
                 android:text="@string/bitcoins"
                 android:textStyle="bold"/>
+
             <TextView
                 android:id="@+id/satoshiAmount"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-        </LinearLayout>
+                android:layout_height="wrap_content"
+                android:layout_below="@id/amountLabel"
+                android:layout_toEndOf="@+id/satoshiAmountLabel"
+                android:text="0 00 000 000"/>
 
-        <TextView
-            android:id="@+id/labelLabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/label"
-            android:labelFor="@id/label"
-            style="@style/SubHeadingText"
-            android:textAlignment="textStart"
-            android:layout_marginTop="20dp"/>
+            <TextView
+                android:id="@+id/amountLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:text="@string/request_amount"
+                style="@style/SmallHeadingText"
+                android:labelFor="@id/requestAmount"/>
+
+            <tech.nextcash.nextcashwallet.TextButton
+                android:layout_alignParentEnd="true"
+                android:id="@+id/updateRequestPaymentCode"
+                style="@style/SmallButton"
+                android:text="@string/update"/>
+
+        </RelativeLayout>
 
         <EditText
             android:id="@+id/label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
             android:inputType="text"
-            android:imeOptions="actionDone"/>
+            android:imeOptions="actionDone"
+            android:hint="@string/request_label_hint"/>
 
-        <TextView
-            android:id="@+id/messageLabel"
+        <RelativeLayout
+            android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/message"
-            android:labelFor="@id/message"
-            style="@style/SubHeadingText"
-            android:textAlignment="textStart"
-            android:layout_marginTop="20dp"/>
+            android:layout_gravity="start">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_marginEnd="10dp"
+                style="@style/SmallHeadingText"
+                android:text="@string/label"/>
+
+            <tech.nextcash.nextcashwallet.TextButton
+                android:layout_alignParentEnd="true"
+                android:id="@id/updateRequestPaymentCode"
+                style="@style/SmallButton"
+                android:text="@string/update"/>
+
+        </RelativeLayout>
 
         <EditText
             android:id="@+id/message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
             android:inputType="text"
-            android:imeOptions="actionDone"/>
+            android:imeOptions="actionDone"
+            android:hint="@string/request_message_hint"/>
+
+        <RelativeLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_marginEnd="10dp"
+                style="@style/SmallHeadingText"
+                android:text="@string/message"/>
+
+            <tech.nextcash.nextcashwallet.TextButton
+                android:layout_alignParentEnd="true"
+                android:id="@id/updateRequestPaymentCode"
+                style="@style/SmallButton"
+                android:text="@string/update"/>
+
+        </RelativeLayout>
 
     </LinearLayout>
 

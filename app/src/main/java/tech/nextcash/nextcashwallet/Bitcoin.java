@@ -43,6 +43,7 @@ public class Bitcoin
     private File mDirectory;
     Settings mSettings;
     private TransactionData mTransactionData;
+    private AddressData mAddressData;
     private boolean mWalletsLoaded, mChainLoaded;
     private boolean mNeedsUpdate;
     private int mChangeID;
@@ -68,6 +69,7 @@ public class Bitcoin
         mDirectory = null;
         mSettings = null;
         mTransactionData = null;
+        mAddressData = null;
         mExchangeRate = 0.0;
         mExchangeType = null;
     }
@@ -76,6 +78,7 @@ public class Bitcoin
     {
         mDirectory = pContext.getFilesDir();
         mTransactionData = new TransactionData(mDirectory);
+        mAddressData = new AddressData(mDirectory);
 
         mSettings = Settings.getInstance(mDirectory);
         if(mSettings.containsValue(EXCHANGE_RATE_NAME))
@@ -299,6 +302,8 @@ public class Bitcoin
     public native String getNextReceiveAddress(int pWalletOffset, int pChainIndex);
     public native byte[] getNextReceiveOutput(int pWalletOffset, int pChainIndex);
 
+    public native boolean markAddressUsed(int pWalletOffset, String pAddress);
+
     public boolean generateQRCode(String pURI, Bitmap pBitmap)
     {
         MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
@@ -384,6 +389,23 @@ public class Bitcoin
         return mTransactionData.save(mDirectory);
     }
 
+    public AddressData.Item lookupAddress(String pAddress, long pAmount)
+    {
+        return mAddressData.lookup(pAddress, pAmount);
+    }
+
+    public boolean addAddressData(AddressData.Item pItem)
+    {
+        if(mAddressData == null)
+            return false;
+        return mAddressData.add(pItem);
+    }
+
+    public boolean saveAddressData()
+    {
+        return mAddressData.save(mDirectory);
+    }
+
     public synchronized void triggerUpdate()
     {
         mNeedsUpdate = true;
@@ -418,7 +440,7 @@ public class Bitcoin
         {
             if(updateWallet(mWallets[offset], offset))
             {
-                if(mWallets[offset].updateTransactionData(mTransactionData, mExchangeRate, mExchangeType))
+                if(mWallets[offset].updateTransactionData(this, offset))
                     dataUpdated = true;
             }
             else
@@ -429,7 +451,10 @@ public class Bitcoin
         }
 
         if(mDirectory != null && mTransactionData != null && (dataUpdated || mTransactionData.itemsAdded()))
+        {
             mTransactionData.save(mDirectory);
+            mAddressData.save(mDirectory);
+        }
 
         if(result)
         {

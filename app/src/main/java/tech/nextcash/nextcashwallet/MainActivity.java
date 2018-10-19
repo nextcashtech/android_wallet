@@ -2199,7 +2199,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 receiveView.findViewById(R.id.optionalReceive).setVisibility(View.VISIBLE);
 
-                // Set amount
+                // Address label
+                AddressData.Item addressLabel = mBitcoin.lookupAddress(mPaymentRequest.address, mPaymentRequest.amount);
+                if(addressLabel != null)
+                {
+                    EditText addressLabelText = receiveView.findViewById(R.id.labelEdit);
+                    addressLabelText.setText(addressLabel.comment);
+                }
+
+                // Amount
                 amount = receiveView.findViewById(R.id.requestAmount);
                 TextView satoshiAmount = receiveView.findViewById(R.id.satoshiAmount);
                 if(mPaymentRequest.amount != 0)
@@ -3908,6 +3916,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 showMessage(getString(R.string.cost_basis_updated), 2000);
             break;
         }
+        case R.id.updateAddressLabel:
+            // Update address label
+            EditText label = findViewById(R.id.labelEdit);
+            if(label != null)
+            {
+                AddressData.Item item = new AddressData.Item();
+                item.address = mPaymentRequest.address;
+                item.comment = label.getText().toString();
+                mBitcoin.addAddressData(item);
+                mBitcoin.markAddressUsed(mCurrentWalletIndex, mPaymentRequest.address);
+                showMessage(getString(R.string.address_label_updated), 2000);
+                mBitcoin.saveAddressData();
+            }
+            break;
         case R.id.closeMessage:
             synchronized(this)
             {

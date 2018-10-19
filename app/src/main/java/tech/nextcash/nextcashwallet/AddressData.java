@@ -12,15 +12,16 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
-
-public class TransactionData
+// Used to tag incoming addresses/payment requests with comments.
+// So when a payment is received on that address the comment is tagged to the transaction.
+public class AddressData
 {
-    private static String logTag = "TransactionData";
+    private static String logTag = "AddressData";
 
-    public TransactionData(File pDirectory)
+    public AddressData(File pDirectory)
     {
         mItems = new ArrayList<>();
-        mItemsHaveBeenAdded = false;
+        mIsModified = false;
         read(pDirectory);
     }
 
@@ -51,121 +52,77 @@ public class TransactionData
         }
     }
 
-    public static class ID
+    public static class Item
     {
-        public ID(String pHash, long pAmount)
-        {
-            hash = pHash;
-            amount = pAmount;
-        }
-
-        public String hash;
-        public long amount;
-    }
-
-    public class Item
-    {
-        String hash;
-
-        long date; // Older of first seen or block time.
-        long amount; // For identification purposes if more than one wallet is affected.
-        String comment; // User added message.
-
-        // Exchange rate and type at time of first seen
-        double exchangeRate;
-        String exchangeType;
-
-        // Cost basis
-        //   Not a rate.
-        //   Amount for whole transaction.
-        //   Always positive.
-        //   For "receives" represents original cost.
-        //   For "sends" represents value sent.
-        double cost;
-        String costType;
+        String address;
+        long amount; // For specific amount requests. Amount of zero means all payments on that address are tagged.
+        String comment;
 
         public Item()
         {
-            hash = null;
+            address = null;
             amount = 0L;
             comment = null;
-            date = 0;
-            exchangeRate = 0.0;
-            exchangeType = null;
-            cost = 0.0;
-            costType = null;
         }
 
-        public Item(String pTransactionID, long pAmount)
+        public void assign(Item pItem)
         {
-            hash = pTransactionID;
-            amount = pAmount;
-            comment = null;
-            date = System.currentTimeMillis() / 1000L;
-            exchangeRate = 0.0;
-            exchangeType = null;
-            cost = 0.0;
-            costType = null;
+            address = pItem.address;
+            amount = pItem.amount;
+            comment = pItem.comment;
         }
 
         public void read(DataInputStream pStream, int pVersion) throws IOException
         {
-            hash = readString(pStream);
-            if(pVersion > 1)
-                amount = pStream.readLong();
-            else
-                amount = 0L;
-            date = pStream.readLong();
+            address = readString(pStream);
+            amount = pStream.readLong();
             comment = readString(pStream);
-            exchangeRate = pStream.readDouble();
-            exchangeType = readString(pStream);
-            cost = pStream.readDouble();
-            costType = readString(pStream);
         }
 
         public void write(DataOutputStream pStream) throws IOException
         {
-            writeString(pStream, hash);
+            writeString(pStream, address);
             pStream.writeLong(amount);
-            pStream.writeLong(date);
             writeString(pStream, comment);
-            pStream.writeDouble(exchangeRate);
-            writeString(pStream, exchangeType);
-            pStream.writeDouble(cost);
-            writeString(pStream, costType);
         }
     }
 
     private ArrayList<Item> mItems;
-    private boolean mItemsHaveBeenAdded;
+    private boolean mIsModified;
 
-    public boolean itemsAdded()
+    public boolean isModified()
     {
-        return mItemsHaveBeenAdded;
+        return mIsModified;
     }
 
-    public synchronized Item getData(String pTransactionID, long pAmount)
+    // Returns true if an item was replaced.
+    // Only allow one item per address.
+    public synchronized boolean add(Item pItem)
     {
         for(Item item : mItems)
-            if(item.hash.equals(pTransactionID))
+            if(item.address.equals(pItem.address))
             {
-                if(pAmount == 0)
-                    return item; // Allow get when amount is not known.
-                else if(item.amount == 0)
-                {
-                    // Backwards compatible to before amount was retained.
-                    item.amount = pAmount;
-                    return item;
-                }
-                else if(item.amount == pAmount)
-                    return item;
+                item.assign(pItem);
+                mIsModified = true;
+                return true;
             }
 
-        // Create new entry.
-        Item result = new Item(pTransactionID, pAmount);
-        mItems.add(result);
-        mItemsHaveBeenAdded = true;
-        return result;
+        mItems.add(pItem);
+        mIsModified = true;
+        return false;
+    }
+
+    public synchronized Item lookup(String pAddress, long pAmount)
+    {
+        for(Item item : mItems)
+            if(item.address.equals(pAddress))
+            {
+                if(item.amount == 0 || item.amount == pAmount)
+                    return item;
+                else
+                    return null;
+            }
+        return null;
     }
 
     private synchronized boolean read(File pDirectory)
@@ -174,14 +131,14 @@ public class TransactionData
 
         try
         {
-            File file = new File(pDirectory, "transactions.data");
+            File file = new File(pDirectory, "addresses.data");
             FileInputStream fileInputStream = new FileInputStream(file);
             BufferedInputStream buffer = new BufferedInputStream(fileInputStream);
             DataInputStream stream = new DataInputStream(buffer);
 
             // Version
             int version = stream.readInt();
-            if(version != 1 && version != 2)
+            if(version != 1)
             {
                 Log.e(logTag, String.format("Unknown version : %d", version));
                 return false;
@@ -206,13 +163,13 @@ public class TransactionData
             return false;
         }
 
-        mItemsHaveBeenAdded = false;
+        mIsModified = false;
         return true;
     }
 
     private synchronized boolean write(File pDirectory)
     {
-        File tempFile = new File(pDirectory, "transactions.data.temp");
+        File tempFile = new File(pDirectory, "addresses.data.temp");
 
         try
         {
@@ -220,7 +177,7 @@ public class TransactionData
             DataOutputStream stream = new DataOutputStream(fileOutputStream);
 
             // Version
-            stream.writeInt(2);
+            stream.writeInt(1);
 
             // Count
             stream.writeInt(mItems.size());
@@ -237,14 +194,14 @@ public class TransactionData
             return false;
         }
 
-        File actualFile = new File(pDirectory, "transactions.data");
+        File actualFile = new File(pDirectory, "addresses.data");
         if(!tempFile.renameTo(actualFile))
         {
             Log.e(logTag, "Failed to rename temp file");
             return false;
         }
 
-        mItemsHaveBeenAdded = false;
+        mIsModified = false;
         return true;
     }
 }

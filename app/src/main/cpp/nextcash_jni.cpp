@@ -1324,6 +1324,36 @@ extern "C"
         return NULL;
     }
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_markAddressUsed(JNIEnv *pEnvironment,
+                                                                                         jobject pObject,
+                                                                                         jint pKeyOffset,
+                                                                                         jstring pAddress)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL || daemon->keyStore()->size() <= pKeyOffset)
+            return JNI_FALSE;
+
+        const char *address = pEnvironment->GetStringUTFChars(pAddress, NULL);
+        BitCoin::PaymentRequest request = BitCoin::decodePaymentCode(address);
+        pEnvironment->ReleaseStringUTFChars(pAddress, address);
+
+        if(request.network != BitCoin::MAINNET)
+            return JNI_FALSE;
+
+        std::vector<BitCoin::Key *> *chainKeys = daemon->keyStore()->chainKeys((unsigned int)pKeyOffset);
+
+        if(chainKeys == NULL || chainKeys->size() == 0)
+            return JNI_FALSE;
+
+        bool newAddress = false;
+        for(std::vector<BitCoin::Key *>::iterator chainKey = chainKeys->begin();
+          chainKey != chainKeys->end(); ++chainKey)
+            if((*chainKey)->markUsed(request.pubKeyHash, 0, newAddress) != NULL)
+                return JNI_TRUE;
+
+        return JNI_FALSE;
+    }
+
     JNIEXPORT jstring JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_encodePaymentCode(JNIEnv *pEnvironment,
                                                                                           jobject pObject,
                                                                                           jstring pAddress,

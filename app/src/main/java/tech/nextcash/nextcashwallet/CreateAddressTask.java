@@ -26,8 +26,6 @@ public class CreateAddressTask extends AsyncTask<String, Integer, Integer>
         mBitcoin = pBitcoin;
         mPaymentRequest = pPaymentRequest;
         mQRCode = pQRCode;
-
-        mPaymentRequest.clear();
     }
 
     @Override

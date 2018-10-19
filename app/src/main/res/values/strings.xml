@@ -167,6 +167,12 @@
     <string name="cost_basis_cleared">Cost basis cleared</string>
     <string name="cost_basis_updated">Cost basis updated</string>
     <string name="cost_must_be_number">Cost basis must be a valid number</string>
+    <string name="address_label">Label</string>
+    <string name="address_label_hint">Enter Address Label</string>
+    <string name="address_label_description">
+        Automatically apply a comment to any transactions received to this address.
+    </string>
+    <string name="address_label_updated">Address label updated</string>
     <string name="fee">Fee</string>
     <string name="estimated_fee">Estimated Fee</string>
     <string name="bitcoins_amount_title">bitcoins</string>
@@ -231,9 +237,15 @@
 
     <string name="payment_code_clipboard">Payment code copied to clipboard</string>
     <string name="tap_to_copy">Tap to copy</string>
-    <string name="optional">Optional</string>
+    <string name="optional">Optional Information</string>
+    <string name="optional_description">
+        Provide optional payment request information in the QR code.
+    </string>
     <string name="payment_code_qr">Payment Code QR</string>
     <string name="request_amount">Request Amount</string>
+    <string name="request_amount_hint">Enter requested amount</string>
+    <string name="request_label_hint">Enter request label</string>
+    <string name="request_message_hint">Enter request message</string>
     <string name="failed_receive_address">Failed to generate receive address.</string>
     <string name="failed_receive_address_qr">Failed to generate QR Code.</string>
     <string name="failed_url">Invalid URL</string>

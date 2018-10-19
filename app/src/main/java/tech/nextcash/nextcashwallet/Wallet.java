@@ -43,16 +43,31 @@ public class Wallet
         return false;
     }
 
-    public boolean updateTransactionData(TransactionData pData, double pExchangeRate, String pExchangeType)
+    public boolean updateTransactionData(Bitcoin pBitcoin, int pWalletOffset)
     {
         boolean result = false;
         for(Transaction transaction : transactions)
         {
-            transaction.data = pData.getData(transaction.hash, transaction.amount);
-            if(transaction.data.exchangeRate == 0.0 && pExchangeRate != 0.0)
+            transaction.data = pBitcoin.getTransactionData(transaction.hash, transaction.amount);
+            if(transaction.data.exchangeRate == 0.0 && pBitcoin.exchangeRate() != 0.0)
             {
-                transaction.data.exchangeRate = pExchangeRate;
-                transaction.data.exchangeType = pExchangeType;
+                // First time this transaction has been seen.
+                transaction.data.exchangeRate = pBitcoin.exchangeRate();
+                transaction.data.exchangeType = pBitcoin.exchangeType();
+
+                // Check if it pays to any labeled addresses.
+                FullTransaction fullTransaction = new FullTransaction();
+                if(pBitcoin.getTransaction(pWalletOffset, transaction.hash, fullTransaction))
+                {
+                    AddressData.Item addressItem;
+                    for(Output output : fullTransaction.outputs)
+                    {
+                        addressItem = pBitcoin.lookupAddress(output.address, output.amount);
+                        if(addressItem != null)
+                            transaction.data.comment = addressItem.comment;
+                    }
+                }
+
                 result = true;
             }
             if(transaction.data.date > transaction.date)

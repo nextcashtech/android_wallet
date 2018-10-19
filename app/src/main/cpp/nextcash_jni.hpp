@@ -164,6 +164,11 @@ extern "C"
                                                                                               jint pKeyOffset,
                                                                                               jint pIndex);
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_markAddressUsed(JNIEnv *pEnvironment,
+                                                                                         jobject pObject,
+                                                                                         jint pKeyOffset,
+                                                                                         jstring pAddress);
+
     JNIEXPORT jbyteArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getNextReceiveOutput(JNIEnv *pEnvironment,
                                                                                                 jobject pObject,
                                                                                                 jint pKeyOffset,
