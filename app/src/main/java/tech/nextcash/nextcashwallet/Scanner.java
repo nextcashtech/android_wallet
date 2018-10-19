@@ -237,14 +237,15 @@ public class Scanner
 
                         // Settings below this depend on this setting.
                         requestBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
-
-                        // Turn on continuous auto focus.
-                        requestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_MACRO);
-
-                        // Turn on auto flash in torch (continuous) mode.
-                        requestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-                        requestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
                     }
+
+                    // Turn on continuous auto focus.
+                    requestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                      CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+
+                    // Turn on auto flash in torch (continuous) mode.
+                    requestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+                    requestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
 
                     int[] edgeModes = mCameraCharacteristics.get(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES);
                     if(contains(edgeModes, CameraCharacteristics.EDGE_MODE_FAST))
