@@ -3,6 +3,7 @@
     <color name="colorPrimary">#f3b5</color>
     <color name="colorPrimaryDark">#f082</color>
     <color name="colorPrimaryDarkEnd">#f0a2</color>
+    <color name="colorStatusBackground">#fddd</color>
     <color name="colorButton">#f13b</color>
     <color name="colorButtonEnd">#f46d</color>
     <color name="buttonText">#ffff</color>
@@ -14,6 +15,7 @@
     <color name="colorPositive">#f4b4</color>
     <color name="colorNegative">#fc66</color>
     <color name="rowShade">#feee</color>
+    <color name="rowNotShade">#0000</color>
     <color name="warningBackground">#6ee1</color>
     <color name="warningText">#fc66</color>
     <color name="messageBackground">#ffff</color>

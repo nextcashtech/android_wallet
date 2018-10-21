@@ -112,7 +112,14 @@ public class Transaction
             commentView.setVisibility(View.GONE);
 
         // Set tag with transaction ID
-        pView.setTag(new TransactionData.ID(hash, amount));
+        TransactionData.ID tag = (TransactionData.ID)pView.getTag();
+        if(tag == null || !tag.hash.equals(hash) || tag.amount != amount)
+            pView.setTag(new TransactionData.ID(hash, amount));
+    }
+
+    public TransactionData.ID tag()
+    {
+        return new TransactionData.ID(hash, amount);
     }
 
     private static native void setupJNI();

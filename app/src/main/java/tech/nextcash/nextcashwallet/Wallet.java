@@ -61,11 +61,12 @@ public class Wallet
                 {
                     AddressData.Item addressItem;
                     for(Output output : fullTransaction.outputs)
-                    {
-                        addressItem = pBitcoin.lookupAddress(output.address, output.amount);
-                        if(addressItem != null)
-                            transaction.data.comment = addressItem.comment;
-                    }
+                        if(output.related)
+                        {
+                            addressItem = pBitcoin.lookupAddress(output.address, output.amount);
+                            if(addressItem != null)
+                                transaction.data.comment = addressItem.comment;
+                        }
                 }
 
                 result = true;

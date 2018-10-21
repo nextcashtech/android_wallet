@@ -198,6 +198,27 @@ public class Bitcoin
         }
     }
 
+    public static double parseAmount(String pAmountText) throws NumberFormatException
+    {
+        if(pAmountText.length() == 0)
+            return 0.0;
+
+        switch(pAmountText.charAt(0))
+        {
+            case '$':
+            case '€':
+            case '£':
+            case '¥':
+            case '₩':
+                pAmountText = pAmountText.substring(1);
+                break;
+            default:
+                break;
+        }
+
+        return Math.abs(Double.parseDouble(pAmountText));
+    }
+
     public static String satoshiText(long pAmount)
     {
         long remaining = Math.abs(pAmount);

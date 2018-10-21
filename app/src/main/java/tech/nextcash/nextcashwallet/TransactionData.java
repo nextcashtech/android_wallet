@@ -59,6 +59,14 @@ public class TransactionData
             amount = pAmount;
         }
 
+        @Override
+        public boolean equals(Object pOtherID)
+        {
+            if(pOtherID == null || pOtherID.getClass() != this.getClass())
+                return false;
+            return hash.equals(((ID)pOtherID).hash) && amount == ((ID)pOtherID).amount;
+        }
+
         public String hash;
         public long amount;
     }
