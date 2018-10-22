@@ -1324,6 +1324,27 @@ extern "C"
         return NULL;
     }
 
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_containsAddress(JNIEnv *pEnvironment,
+                                                                                         jobject pObject,
+                                                                                         jint pKeyOffset,
+                                                                                         jstring pAddress)
+    {
+        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
+        if(daemon == NULL || daemon->keyStore()->size() <= pKeyOffset)
+            return JNI_FALSE;
+
+        const char *address = pEnvironment->GetStringUTFChars(pAddress, NULL);
+        BitCoin::PaymentRequest request = BitCoin::decodePaymentCode(address);
+        pEnvironment->ReleaseStringUTFChars(pAddress, address);
+
+        if(request.format == BitCoin::PaymentRequest::Format::INVALID ||
+          request.type == BitCoin::AddressType::UNKNOWN)
+            return JNI_FALSE;
+
+        return (jboolean)(daemon->keyStore()->findAddress((unsigned int)pKeyOffset,
+          request.pubKeyHash) != NULL);
+    }
+
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_markAddressUsed(JNIEnv *pEnvironment,
                                                                                          jobject pObject,
                                                                                          jint pKeyOffset,
@@ -1790,7 +1811,7 @@ extern "C"
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL)
-            return NULL;
+            return JNI_FALSE;
 
         const char *word = pEnvironment->GetStringUTFChars(pWord, NULL);
         for(unsigned int i = 0; i < BitCoin::Mnemonic::WORD_COUNT; ++i)

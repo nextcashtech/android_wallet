@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/HeadingText"
+        android:gravity="center"
+        android:textAlignment="center"
+        android:text="@string/labeled_addresses"/>
+
+    <TextView
+        android:id="@+id/walletName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/SmallHeadingText"
+        android:gravity="center"
+        android:textAlignment="center"/>
+
+    <LinearLayout
+        android:id="@+id/addressLabelItems"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="10dp">
+
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        style="@style/SmallHeadingText"
+        android:text="@string/add_manual_address_label"/>
+
+    <EditText
+        android:id="@+id/manualAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:imeOptions="actionDone"
+        android:hint="@string/enter_address_hint"/>
+
+    <RelativeLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginEnd="10dp"
+            style="@style/SmallHeadingText"
+            android:labelFor="@id/manualAddress"
+            android:text="@string/address"/>
+
+    </RelativeLayout>
+
+    <EditText
+        android:id="@+id/manualAddressLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:imeOptions="actionDone"
+        android:hint="@string/enter_address_label_hint"/>
+
+    <RelativeLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginEnd="10dp"
+            style="@style/SmallHeadingText"
+            android:labelFor="@id/manualAddressLabel"
+            android:text="@string/label"/>
+
+        <tech.nextcash.nextcashwallet.TextButton
+            android:id="@+id/addManualAddressLabel"
+            android:layout_alignParentEnd="true"
+            style="@style/SmallButton"
+            android:text="@string/add"/>
+
+    </RelativeLayout>
+
+</LinearLayout>

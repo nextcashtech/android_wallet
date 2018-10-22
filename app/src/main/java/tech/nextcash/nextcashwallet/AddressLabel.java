@@ -13,12 +13,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 // Used to tag incoming addresses/payment requests with comments.
-// So when a payment is received on that address the comment is tagged to the transaction.
-public class AddressData
+// So when a payment is received on that address the label is tagged to the transaction.
+public class AddressLabel
 {
-    private static String logTag = "AddressData";
+    private static String logTag = "AddressLabel";
 
-    public AddressData(File pDirectory)
+    public AddressLabel(File pDirectory)
     {
         mItems = new ArrayList<>();
         mIsModified = false;
@@ -56,34 +56,34 @@ public class AddressData
     {
         String address;
         long amount; // For specific amount requests. Amount of zero means all payments on that address are tagged.
-        String comment;
+        String label;
 
         public Item()
         {
             address = null;
             amount = 0L;
-            comment = null;
+            label = null;
         }
 
         public void assign(Item pItem)
         {
             address = pItem.address;
             amount = pItem.amount;
-            comment = pItem.comment;
+            label = pItem.label;
         }
 
         public void read(DataInputStream pStream, int pVersion) throws IOException
         {
             address = readString(pStream);
             amount = pStream.readLong();
-            comment = readString(pStream);
+            label = readString(pStream);
         }
 
         public void write(DataOutputStream pStream) throws IOException
         {
             writeString(pStream, address);
             pStream.writeLong(amount);
-            writeString(pStream, comment);
+            writeString(pStream, label);
         }
     }
 
@@ -123,6 +123,23 @@ public class AddressData
                     return null;
             }
         return null;
+    }
+
+    public synchronized Item lookup(String pAddress)
+    {
+        for(Item item : mItems)
+            if(item.address.equals(pAddress))
+                return item;
+        return null;
+    }
+
+    public ArrayList<Item> getAll()
+    {
+        ArrayList<Item> result = new ArrayList<>();
+        result.ensureCapacity(mItems.size());
+        for(Item item : mItems)
+            result.add(item);
+        return result;
     }
 
     private synchronized boolean read(File pDirectory)

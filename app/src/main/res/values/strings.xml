@@ -173,6 +173,14 @@
         Automatically apply a comment to any transactions received to this address.
     </string>
     <string name="address_label_updated">Address label updated</string>
+    <string name="labeled_addresses">Labeled Addresses</string>
+    <string name="any_amount">Any amount</string>
+    <string name="add_manual_address_label">Manually Add Address Label</string>
+    <string name="enter_address_hint">Enter Address</string>
+    <string name="enter_address_label_hint">Enter Label</string>
+    <string name="add">Add</string>
+    <string name="must_specify_address_label">Address and label must be specified</string>
+    <string name="address_not_found">Address not found in current wallet</string>
     <string name="fee">Fee</string>
     <string name="estimated_fee">Estimated Fee</string>
     <string name="bitcoins_amount_title">bitcoins</string>

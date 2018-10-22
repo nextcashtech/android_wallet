@@ -59,13 +59,13 @@ public class Wallet
                 FullTransaction fullTransaction = new FullTransaction();
                 if(pBitcoin.getTransaction(pWalletOffset, transaction.hash, fullTransaction))
                 {
-                    AddressData.Item addressItem;
+                    AddressLabel.Item addressItem;
                     for(Output output : fullTransaction.outputs)
                         if(output.related)
                         {
                             addressItem = pBitcoin.lookupAddress(output.address, output.amount);
                             if(addressItem != null)
-                                transaction.data.comment = addressItem.comment;
+                                transaction.data.comment = addressItem.label;
                         }
                 }
 

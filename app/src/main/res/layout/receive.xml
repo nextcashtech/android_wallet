@@ -85,6 +85,13 @@
 
         </RelativeLayout>
 
+        <tech.nextcash.nextcashwallet.TextButton
+            android:id="@+id/openAddressLabels"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Button"
+            android:text="@string/labeled_addresses"/>
+
         <TextView
             android:layout_marginTop="20dp"
             android:layout_width="match_parent"

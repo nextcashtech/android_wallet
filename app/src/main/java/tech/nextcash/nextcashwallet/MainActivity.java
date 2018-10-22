@@ -93,8 +93,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
       IMPORT_PRIVATE_KEY, IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, TRANSACTION_HISTORY, TRANSACTION,
       SCAN, RECEIVE, ENTER_PAYMENT_CODE, CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP,
-      SETTINGS }
-    private Mode mMode, mPreviousMode, mPreviousTransactionMode;
+      SETTINGS, ADDRESS_LABELS }
+    private Mode mMode, mPreviousMode, mPreviousTransactionMode, mPreviousReceiveMode;
     private boolean mWalletsNeedUpdated;
     private enum AuthorizedTask { NONE, INITIALIZE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
     private enum ScanMode {SCAN_PAYMENT_CODE, SCAN_PRIVATE_KEY}
@@ -604,6 +604,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case RECEIVE:
                 break;
+            case ADDRESS_LABELS:
+                break;
             case ENTER_PAYMENT_CODE:
                 break;
             case CLIPBOARD_PAYMENT_CODE:
@@ -746,6 +748,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case SCAN:
                 break;
             case RECEIVE:
+                break;
+            case ADDRESS_LABELS:
                 break;
             case ENTER_PAYMENT_CODE:
                 break;
@@ -2203,11 +2207,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 receiveView.findViewById(R.id.optionalReceive).setVisibility(View.VISIBLE);
 
                 // Address label
-                AddressData.Item addressLabel = mBitcoin.lookupAddress(mPaymentRequest.address, mPaymentRequest.amount);
+                AddressLabel.Item addressLabel = mBitcoin.lookupAddress(mPaymentRequest.address, mPaymentRequest.amount);
                 if(addressLabel != null)
                 {
                     EditText addressLabelText = receiveView.findViewById(R.id.labelEdit);
-                    addressLabelText.setText(addressLabel.comment);
+                    addressLabelText.setText(addressLabel.label);
                 }
 
                 // Amount
@@ -2361,6 +2365,58 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 findViewById(R.id.mainScroll).setScrollY(0);
             mMode = Mode.RECEIVE;
         }
+    }
+
+    public synchronized void displayAddressLabels()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.main).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+        findViewById(R.id.controls).setVisibility(View.GONE);
+
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_add_black_36dp);
+            actionBar.setTitle(" " + getResources().getString(R.string.title_add_wallet));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup addressLabels = (ViewGroup)inflater.inflate(R.layout.address_labels, dialogView, false);
+        dialogView.addView(addressLabels);
+
+        ((TextView)addressLabels.findViewById(R.id.walletName)).setText(mBitcoin.wallet(mCurrentWalletIndex).name);
+
+        ViewGroup itemsView = addressLabels.findViewById(R.id.addressLabelItems);
+        ArrayList<AddressLabel.Item> items = mBitcoin.getAddressLabels(mCurrentWalletIndex);
+        ViewGroup itemView;
+        boolean shade = true;
+
+        Collections.reverse(items); // Most recent first
+
+        for(AddressLabel.Item item : items)
+        {
+            itemView = (ViewGroup)inflater.inflate(R.layout.address_label_item, itemsView, false);
+            itemsView.addView(itemView);
+
+            ((TextView)itemView.findViewById(R.id.addressLabel)).setText(item.label);
+            if(item.amount == 0)
+                ((TextView)itemView.findViewById(R.id.addressLabelAmount)).setText(getString(R.string.any_amount));
+            else
+                ((TextView)itemView.findViewById(R.id.addressLabelAmount)).setText(mBitcoin.amountText(item.amount));
+            ((TextView)itemView.findViewById(R.id.addressLabelAddress)).setText(item.address);
+
+            if(shade)
+                itemView.setBackgroundColor(getResources().getColor(R.color.rowShade));
+            shade = !shade;
+        }
+
+        dialogView.setVisibility(View.VISIBLE);
+        mMode = Mode.ADDRESS_LABELS;
     }
 
     public synchronized void displayAddOptions()
@@ -3407,6 +3463,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.supportNextCash:
         {
+            mPreviousReceiveMode = mMode;
             displayProgress();
 
             // Some wallets don't support BIP-0021 ?message=Support%20NextCash");
@@ -3611,7 +3668,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.updateRequestPaymentCode:
         {
             if(mMode != Mode.RECEIVE)
+            {
+                mPreviousReceiveMode = mMode;
                 displayProgress();
+            }
 
             String label = ((EditText)findViewById(R.id.label)).getText().toString();
             String message = ((EditText)findViewById(R.id.message)).getText().toString();
@@ -3848,6 +3908,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case R.id.walletReceive:
         {
+            mPreviousReceiveMode = mMode;
             displayProgress();
 
             ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
@@ -3982,20 +4043,84 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         }
         case R.id.updateAddressLabel:
+        {
             // Update address label
             EditText label = findViewById(R.id.labelEdit);
             if(label != null)
             {
-                AddressData.Item item = new AddressData.Item();
+                AddressLabel.Item item = new AddressLabel.Item();
                 item.address = mPaymentRequest.address;
-                item.comment = label.getText().toString();
+                item.label = label.getText().toString();
                 item.amount = mPaymentRequest.amount;
-                mBitcoin.addAddressData(item);
+                mBitcoin.addAddressLabel(item);
                 mBitcoin.markAddressUsed(mCurrentWalletIndex, mPaymentRequest.address);
                 showMessage(getString(R.string.address_label_updated), 2000);
-                mBitcoin.saveAddressData();
+                mBitcoin.saveAddressLabels();
             }
             break;
+        }
+        case R.id.openAddressLabels:
+            displayAddressLabels();
+            break;
+        case R.id.addressLabelItem:
+        {
+            TextView address = pView.findViewById(R.id.addressLabelAddress);
+            if(address != null)
+            {
+                AddressLabel.Item item = mBitcoin.lookupAddress(address.getText().toString());
+                if(item != null)
+                {
+                    mPreviousReceiveMode = mMode;
+                    displayProgress();
+
+                    mPaymentRequest = new PaymentRequest();
+                    mPaymentRequest.address = item.address;
+                    mPaymentRequest.amount = item.amount;
+                    if(mQRCode == null)
+                        mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
+                    CreatePaymentRequestTask task = new CreatePaymentRequestTask(getApplicationContext(), mBitcoin,
+                      mPaymentRequest, mQRCode);
+                    task.execute();
+                }
+            }
+            break;
+        }
+        case R.id.addManualAddressLabel:
+        {
+            EditText addressView = findViewById(R.id.manualAddress);
+            EditText labelView = findViewById(R.id.manualAddressLabel);
+            if(addressView != null && labelView != null)
+            {
+                AddressLabel.Item item = new AddressLabel.Item();
+                item.address = addressView.getText().toString();
+                item.label = labelView.getText().toString();
+
+                if(item.address.length() == 0 || item.label.length() == 0)
+                {
+                    showMessage(getString(R.string.must_specify_address_label), 2000);
+                    break;
+                }
+
+                PaymentRequest request = mBitcoin.decodePaymentCode(item.address);
+                if(request.format == PaymentRequest.FORMAT_INVALID || request.type == PaymentRequest.TYPE_NONE)
+                {
+                    showMessage(getString(R.string.failed_invalid_address), 2000);
+                    break;
+                }
+
+                item.address = request.address;
+                if(!mBitcoin.containsAddress(mCurrentWalletIndex, item.address))
+                {
+                    showMessage(getString(R.string.address_not_found), 2000);
+                    break;
+                }
+
+                mBitcoin.addAddressLabel(item);
+                mBitcoin.saveAddressLabels();
+                displayAddressLabels();
+            }
+            break;
+        }
         case R.id.closeMessage:
             synchronized(this)
             {
@@ -4320,7 +4445,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case SCAN:
             break;
         case RECEIVE:
-            mPaymentRequest = null;
+            if(mPreviousReceiveMode == Mode.ADDRESS_LABELS)
+            {
+                mPaymentRequest = null;
+                displayAddressLabels();
+                return;
+            }
+            break;
+        case ADDRESS_LABELS:
             break;
         case ENTER_PAYMENT_CODE:
             break;

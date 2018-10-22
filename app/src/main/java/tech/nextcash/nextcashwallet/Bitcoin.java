@@ -20,6 +20,7 @@ import com.google.zxing.common.BitArray;
 import com.google.zxing.common.BitMatrix;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -43,7 +44,7 @@ public class Bitcoin
     private File mDirectory;
     Settings mSettings;
     private TransactionData mTransactionData;
-    private AddressData mAddressData;
+    private AddressLabel mAddressLabels;
     private boolean mWalletsLoaded, mChainLoaded;
     private boolean mNeedsUpdate;
     private int mChangeID;
@@ -69,7 +70,7 @@ public class Bitcoin
         mDirectory = null;
         mSettings = null;
         mTransactionData = null;
-        mAddressData = null;
+        mAddressLabels = null;
         mExchangeRate = 0.0;
         mExchangeType = null;
     }
@@ -78,7 +79,7 @@ public class Bitcoin
     {
         mDirectory = pContext.getFilesDir();
         mTransactionData = new TransactionData(mDirectory);
-        mAddressData = new AddressData(mDirectory);
+        mAddressLabels = new AddressLabel(mDirectory);
 
         mSettings = Settings.getInstance(mDirectory);
         if(mSettings.containsValue(EXCHANGE_RATE_NAME))
@@ -323,6 +324,8 @@ public class Bitcoin
     public native String getNextReceiveAddress(int pWalletOffset, int pChainIndex);
     public native byte[] getNextReceiveOutput(int pWalletOffset, int pChainIndex);
 
+    public native boolean containsAddress(int pWalletOffset, String pAddress);
+
     public native boolean markAddressUsed(int pWalletOffset, String pAddress);
 
     public boolean generateQRCode(String pURI, Bitmap pBitmap)
@@ -410,21 +413,36 @@ public class Bitcoin
         return mTransactionData.save(mDirectory);
     }
 
-    public AddressData.Item lookupAddress(String pAddress, long pAmount)
+    public AddressLabel.Item lookupAddress(String pAddress, long pAmount)
     {
-        return mAddressData.lookup(pAddress, pAmount);
+        return mAddressLabels.lookup(pAddress, pAmount);
     }
 
-    public boolean addAddressData(AddressData.Item pItem)
+    public AddressLabel.Item lookupAddress(String pAddress)
     {
-        if(mAddressData == null)
+        return mAddressLabels.lookup(pAddress);
+    }
+
+    public boolean addAddressLabel(AddressLabel.Item pItem)
+    {
+        if(mAddressLabels == null)
             return false;
-        return mAddressData.add(pItem);
+        return mAddressLabels.add(pItem);
     }
 
-    public boolean saveAddressData()
+    public ArrayList<AddressLabel.Item> getAddressLabels(int pWalletOffset)
     {
-        return mAddressData.save(mDirectory);
+        ArrayList<AddressLabel.Item> allItems = mAddressLabels.getAll();
+        ArrayList<AddressLabel.Item> result = new ArrayList<>();
+        for(AddressLabel.Item item : allItems)
+            if(containsAddress(pWalletOffset, item.address))
+                result.add(item);
+        return result;
+    }
+
+    public boolean saveAddressLabels()
+    {
+        return mAddressLabels.save(mDirectory);
     }
 
     public synchronized void triggerUpdate()
@@ -474,7 +492,7 @@ public class Bitcoin
         if(mDirectory != null && mTransactionData != null && (dataUpdated || mTransactionData.itemsAdded()))
         {
             mTransactionData.save(mDirectory);
-            mAddressData.save(mDirectory);
+            mAddressLabels.save(mDirectory);
         }
 
         if(result)
