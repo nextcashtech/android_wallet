@@ -49,6 +49,7 @@ public class Wallet
         for(Transaction transaction : transactions)
         {
             transaction.data = pBitcoin.getTransactionData(transaction.hash, transaction.amount);
+
             if(transaction.data.exchangeRate == 0.0 && pBitcoin.exchangeRate() != 0.0)
             {
                 // First time this transaction has been seen.
@@ -71,12 +72,19 @@ public class Wallet
 
                 result = true;
             }
-            if(transaction.data.date > transaction.date)
+
+            if(transaction.date != 0 && transaction.data.date > transaction.date)
             {
                 transaction.data.date = transaction.date;
                 result = true;
             }
+
+            // TODO Temporary Fix for issue with bad date being tagged on transaction.
+            if(transaction.date != 0 && transaction.block != null &&
+              Math.abs(transaction.date - transaction.data.date) > 864000) // One day
+                transaction.data.date = transaction.date;
         }
+
         return result;
     }
 

@@ -1571,11 +1571,9 @@ extern "C"
         // Count and Date
         if(!daemon->chainIsLoaded())
         {
-            pEnvironment->SetIntField(pTransaction, sFullTransactionCountID,
-              (jint)-1);
+            pEnvironment->SetIntField(pTransaction, sFullTransactionCountID, (jint)-1);
 
-            pEnvironment->SetLongField(pTransaction, sFullTransactionDateID,
-              (jlong)0);
+            pEnvironment->SetLongField(pTransaction, sFullTransactionDateID, (jlong)0);
         }
         else if(transaction.blockHash.isEmpty())
         {
@@ -1592,8 +1590,7 @@ extern "C"
               daemon->chain()->hashHeight(transaction.blockHash)));
 
             pEnvironment->SetLongField(pTransaction, sFullTransactionDateID,
-              (jlong)daemon->chain()->time(
-              (unsigned int)daemon->chain()->hashHeight(transaction.blockHash)));
+              (jlong)daemon->chain()->time(daemon->chain()->hashHeight(transaction.blockHash)));
         }
 
         // Size
