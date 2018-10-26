@@ -2141,13 +2141,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup scanView = (ViewGroup)inflater.inflate(R.layout.scan, dialogView, false);
         dialogView.addView(scanView);
 
-        ScannerView cameraView = scanView.findViewById(R.id.camera);
+        if(pMode != ScanMode.SCAN_PAYMENT_CODE)
+            scanView.findViewById(R.id.enterPaymentCode).setVisibility(View.GONE);
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.SCAN;
         mScanMode = pMode;
 
+        ScannerView cameraView = scanView.findViewById(R.id.camera);
         cameraView.setCamera(mScanner);
         if(!mScanner.open(getApplicationContext(), cameraView.getHolder(), Scanner.FACING_BACK))
         {
