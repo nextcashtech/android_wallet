@@ -422,7 +422,26 @@
     <string name="title_network">Network</string>
     <string name="title_pricing">Pricing Sources</string>
     <string name="pricing_description">
-        Prices (Exchange Rates) are averaged from the sources below.
+        Prices (Exchange Rates) are averaged from all the sources below by default.
+        You can turn on and off specific sources from the settings view.
+    </string>
+    <string name="coinbase">
+        CoinBase
+    </string>
+    <string name="coinmarketcap">
+        CoinMarketCap
+    </string>
+    <string name="coinlib">
+        CoinLib
+    </string>
+    <string name="coinbase_address">
+        https://www.coinbase.com/charts
+    </string>
+    <string name="coinmarketcap_address">
+        https://coinmarketcap.com/
+    </string>
+    <string name="coinlib_address">
+        https://coinlib.io/
     </string>
     <string name="pricing_coinbase">
         CoinBase https://www.coinbase.com/charts

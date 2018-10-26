@@ -17,7 +17,7 @@
         android:layout_marginTop="20dp"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="20dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
+        style="@style/HeadingText"/>
 
     <Spinner
         android:id="@+id/exchangeCurrency"
@@ -26,6 +26,12 @@
         android:layout_marginTop="20dp"
         android:layout_marginStart="20dp"
         android:entries="@array/exchange_names"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_marginTop="20dp"
+        android:background="#ddd" />
 
     <TextView
         android:id="@+id/notifyTitle"
@@ -37,25 +43,95 @@
         android:layout_marginTop="20dp"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="20dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
+        style="@style/HeadingText"/>
 
     <Switch
         android:id="@+id/notifyTransactionsToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
+        android:layout_marginStart="40dp"
         android:layout_marginEnd="10dp"
         android:switchPadding="10dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        style="@style/SubHeadingText"
         android:text="@string/title_transactions"/>
 
     <Button
         android:id="@+id/systemNotificationSettings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
+        android:layout_marginStart="40dp"
         android:text="@string/system_settings"
         android:onClick="onClick"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_marginTop="20dp"
+        android:background="#ddd" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/baseline_attach_money_black_36dp"
+        android:drawablePadding="5dp"
+        android:text="@string/title_pricing"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        style="@style/HeadingText"/>
+
+    <Switch
+        android:id="@+id/coinBasePriceToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="10dp"
+        android:switchPadding="10dp"
+        style="@style/SubHeadingText"
+        android:text="@string/coinbase"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:autoLink="web"
+        android:text="@string/coinbase_address"/>
+
+    <Switch
+        android:id="@+id/coinMarketCapPriceToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="10dp"
+        android:switchPadding="10dp"
+        style="@style/SubHeadingText"
+        android:text="@string/coinmarketcap"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:autoLink="web"
+        android:text="@string/coinmarketcap_address"/>
+
+    <Switch
+        android:id="@+id/coinLibPriceToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="10dp"
+        android:switchPadding="10dp"
+        style="@style/SubHeadingText"
+        android:text="@string/coinlib"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:autoLink="web"
+        android:text="@string/coinlib_address"/>
 
     <View
         android:layout_width="match_parent"
@@ -73,7 +149,7 @@
         android:layout_marginTop="20dp"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
+        style="@style/HeadingText"/>
 
     <TextView
         android:id="@+id/syncFrequencyDescription"
@@ -83,8 +159,7 @@
         android:layout_marginStart="20dp"
         android:layout_marginEnd="10dp"
         android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"/>
+        android:layout_marginBottom="10dp"/>
 
     <Spinner
         android:id="@+id/syncFrequencySpinner"
@@ -112,7 +187,7 @@
         android:layout_marginTop="20dp"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="20dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
+        style="@style/HeadingText"/>
 
     <LinearLayout
         android:id="@+id/walletsSettings"

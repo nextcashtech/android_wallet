@@ -827,7 +827,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         mDelayHandler.removeCallbacks(mRateUpdateRunnable); // Ensure we don't get multiple scheduled
 
-        new FiatRateRequestTask(getApplicationContext(), mBitcoin).execute();
+        new ExchangeRateRequestTask(getApplicationContext(), mBitcoin).execute();
         mDelayHandler.postDelayed(mRateUpdateRunnable, 60000); // Run again in 60 seconds
     }
 
@@ -1198,14 +1198,36 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onCheckedChanged(CompoundButton pButtonView, boolean pIsChecked)
     {
+        Settings settings = Settings.getInstance(getFilesDir());
         switch(pButtonView.getId())
         {
         case R.id.notifyTransactionsToggle:
-            Settings.getInstance(getFilesDir()).setBoolValue("notify_transactions", pIsChecked);
+            settings.setBoolValue("notify_transactions", pIsChecked);
             if(pIsChecked)
                 Log.i(logTag, "Transaction notifications turned on");
             else
                 Log.i(logTag, "Transaction notifications turned off");
+            break;
+        case R.id.coinBasePriceToggle:
+            settings.setBoolValue(ExchangeRateRequestTask.USE_COINBASE_RATE_NAME, pIsChecked);
+            if(pIsChecked)
+                Log.i(logTag, "CoinBase pricing turned on");
+            else
+                Log.i(logTag, "CoinBase pricing turned off");
+            break;
+        case R.id.coinMarketCapPriceToggle:
+            settings.setBoolValue(ExchangeRateRequestTask.USE_COINMARKETCAP_RATE_NAME, pIsChecked);
+            if(pIsChecked)
+                Log.i(logTag, "CoinMarketCap pricing turned on");
+            else
+                Log.i(logTag, "CoinMarketCap pricing turned off");
+            break;
+        case R.id.coinLibPriceToggle:
+            settings.setBoolValue(ExchangeRateRequestTask.USE_COINLIB_RATE_NAME, pIsChecked);
+            if(pIsChecked)
+                Log.i(logTag, "CoinLib pricing turned on");
+            else
+                Log.i(logTag, "CoinLib pricing turned off");
             break;
         }
     }
@@ -1276,6 +1298,28 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Hide system notification settings for versions before 26
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
             settingsView.findViewById(R.id.systemNotificationSettings).setVisibility(View.GONE);
+
+        // Configure pricing source toggles
+        Switch coinBaseToggle = settingsView.findViewById(R.id.coinBasePriceToggle);
+        coinBaseToggle.setOnCheckedChangeListener(this);
+        if(settings.containsValue(ExchangeRateRequestTask.USE_COINBASE_RATE_NAME))
+            coinBaseToggle.setChecked(settings.boolValue(ExchangeRateRequestTask.USE_COINBASE_RATE_NAME));
+        else
+            coinBaseToggle.setChecked(true);
+
+        Switch coinMarketCapToggle = settingsView.findViewById(R.id.coinMarketCapPriceToggle);
+        coinMarketCapToggle.setOnCheckedChangeListener(this);
+        if(settings.containsValue(ExchangeRateRequestTask.USE_COINMARKETCAP_RATE_NAME))
+            coinMarketCapToggle.setChecked(settings.boolValue(ExchangeRateRequestTask.USE_COINMARKETCAP_RATE_NAME));
+        else
+            coinMarketCapToggle.setChecked(true);
+
+        Switch coinLibToggle = settingsView.findViewById(R.id.coinLibPriceToggle);
+        coinLibToggle.setOnCheckedChangeListener(this);
+        if(settings.containsValue(ExchangeRateRequestTask.USE_COINLIB_RATE_NAME))
+            coinLibToggle.setChecked(settings.boolValue(ExchangeRateRequestTask.USE_COINLIB_RATE_NAME));
+        else
+            coinLibToggle.setChecked(true);
 
         // Add Wallet buttons
         ViewGroup walletsView = settingsView.findViewById(R.id.walletsSettings);

@@ -200,7 +200,7 @@ public class BitcoinJob extends JobService
             return false;
         }
 
-        new FiatRateRequestTask(getApplicationContext(), mBitcoin).execute();
+        new ExchangeRateRequestTask(getApplicationContext(), mBitcoin).execute();
 
         return true;
     }

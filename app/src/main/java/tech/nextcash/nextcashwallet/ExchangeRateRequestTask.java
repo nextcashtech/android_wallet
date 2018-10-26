@@ -26,15 +26,19 @@ import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
+public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
 {
     public static final String logTag = "FiatRateRequestTask";
+
+    public static final String USE_COINBASE_RATE_NAME = "use_coinbase_rate";
+    public static final String USE_COINMARKETCAP_RATE_NAME = "use_coinmarketcap_rate";
+    public static final String USE_COINLIB_RATE_NAME = "use_coinlib_rate";
 
     private Context mContext;
     private Bitcoin mBitcoin;
     private String mExchangeType;
 
-    public FiatRateRequestTask(Context pContext, Bitcoin pBitcoin)
+    public ExchangeRateRequestTask(Context pContext, Bitcoin pBitcoin)
     {
         mContext = pContext;
         mBitcoin = pBitcoin;
@@ -196,17 +200,38 @@ public class FiatRateRequestTask extends AsyncTask<String, Integer, Double>
     @Override
     protected Double doInBackground(String... pValues)
     {
-        double coinMarketCap = getCoinMarketCap();
-        double coinBase = getCoinBase();
-        double coinLib = getCoinLib();
+        Settings settings = Settings.getInstance(mContext.getFilesDir());
+        double coinBase = 0.0;
+        double coinMarketCap = 0.0;
+        double coinLib = 0.0;
+        boolean usingCoinMarketCap = false;
+        boolean usingCoinLib = false;
+
+        if(!settings.containsValue(USE_COINBASE_RATE_NAME) || settings.boolValue(USE_COINBASE_RATE_NAME))
+            coinBase = getCoinBase();
+
+        if(!settings.containsValue(USE_COINMARKETCAP_RATE_NAME) || settings.boolValue(USE_COINMARKETCAP_RATE_NAME))
+        {
+            usingCoinMarketCap = true;
+            coinMarketCap = getCoinMarketCap();
+        }
+
+        if(!settings.containsValue(USE_COINLIB_RATE_NAME) || settings.boolValue(USE_COINLIB_RATE_NAME))
+        {
+            usingCoinLib = true;
+            coinLib = getCoinLib();
+        }
+
+        if(!usingCoinMarketCap && !usingCoinLib && coinBase == 0.0)
+            coinBase = getCoinBase();
 
         ArrayList<Double> prices = new ArrayList<>();
 
-        if(coinMarketCap != 0.0)
-            prices.add(coinMarketCap);
-
         if(coinBase != 0.0)
             prices.add(coinBase);
+
+        if(coinMarketCap != 0.0)
+            prices.add(coinMarketCap);
 
         if(coinLib != 0.0)
             prices.add(coinLib);
