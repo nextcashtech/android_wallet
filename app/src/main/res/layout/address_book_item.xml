@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/addressBookItem"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_margin="5dp"
+    android:padding="5dp"
+    android:onClick="onClick">
+
+    <TextView
+        android:id="@+id/addressBookName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/SmallHeadingText"/>
+
+    <TextView
+        android:id="@+id/addressBookAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"/>
+
+</LinearLayout>

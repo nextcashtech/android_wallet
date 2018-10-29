@@ -9,6 +9,7 @@ package tech.nextcash.nextcashwallet;
 
 import android.app.Application;
 import android.content.res.Configuration;
+import android.os.AsyncTask;
 import android.util.Log;
 
 import java.util.Locale;
@@ -29,7 +30,18 @@ public class MainApp extends Application
     public void onCreate()
     {
         bitcoin = new Bitcoin();
-        bitcoin.initialize(getApplicationContext());
+
+        AsyncTask initializeTask = new AsyncTask()
+        {
+            @Override
+            protected Object doInBackground(Object[] objects)
+            {
+                bitcoin.initialize(getApplicationContext());
+                return null;
+            }
+        };
+        initializeTask.execute();
+
         super.onCreate();
     }
 

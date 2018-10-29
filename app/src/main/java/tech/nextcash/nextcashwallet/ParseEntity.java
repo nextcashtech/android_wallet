@@ -940,7 +940,7 @@ public class ParseEntity implements Iterable<ParseEntity>
     public static ParseEntity readFromFile(File pDirectory, String pFilePathName) throws TypeException, ParseException,
       IOException
     {
-        Log.i(logTag, String.format("Reading file %s", pFilePathName));
+        Log.d(logTag, String.format("Reading file %s", pFilePathName));
         ParseEntity result = new ParseEntity();
         lock(pFilePathName);
 

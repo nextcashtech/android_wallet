@@ -56,18 +56,30 @@ public class Wallet
                 transaction.data.exchangeRate = pBitcoin.exchangeRate();
                 transaction.data.exchangeType = pBitcoin.exchangeType();
 
-                // Check if it pays to any labeled addresses.
                 FullTransaction fullTransaction = new FullTransaction();
                 if(pBitcoin.getTransaction(pWalletOffset, transaction.hash, fullTransaction))
                 {
-                    AddressLabel.Item addressItem;
+                    // Check if it pays to any labeled addresses.
+                    AddressLabel.Item addressLabel;
                     for(Output output : fullTransaction.outputs)
                         if(output.related)
                         {
-                            addressItem = pBitcoin.lookupAddress(output.address, output.amount);
-                            if(addressItem != null)
-                                transaction.data.comment = addressItem.label;
+                            addressLabel = pBitcoin.lookupAddressLabel(output.address, output.amount);
+                            if(addressLabel != null)
+                                transaction.data.comment = addressLabel.label;
                         }
+
+                    // Check if it pays to any address book entries.
+                    AddressBook.Item addressItem;
+                    for(Output output : fullTransaction.outputs)
+                    {
+                        addressItem = pBitcoin.lookupAddress(output.address);
+                        if(addressItem != null)
+                        {
+                            transaction.data.comment = addressItem.name;
+                            break;
+                        }
+                    }
                 }
 
                 result = true;

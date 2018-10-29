@@ -26,4 +26,5 @@
     <color name="textWarning">#ff93</color>
     <color name="textPositive">#f180</color>
     <color name="heading">#f666</color>
+    <color name="dialogBackground">#9000</color>
 </resources>

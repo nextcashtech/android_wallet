@@ -50,15 +50,29 @@
         android:padding="40dp"
         android:src="@drawable/scan_box"
         android:layout_centerInParent="true"
-        android:translationZ="1dp"/>
+        android:translationZ="1dp"
+        android:contentDescription="@string/scan"/>
 
-    <tech.nextcash.nextcashwallet.TextButton
+    <tech.nextcash.nextcashwallet.ImageButton
         android:id="@+id/enterPaymentCode"
-        style="@style/Button"
         app:layout_constraintTop_toBottomOf="@id/camera"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/openAddressBook"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        style="@style/SmallButton"
+        android:src="@drawable/ic_cursor_white_36dp"
+        android:contentDescription="@string/enter_payment_code"/>
+
+    <tech.nextcash.nextcashwallet.ImageButton
+        android:id="@+id/openAddressBook"
+        app:layout_constraintTop_toBottomOf="@id/camera"
+        app:layout_constraintStart_toEndOf="@id/enterPaymentCode"
         app:layout_constraintEnd_toEndOf="parent"
-        android:text="@string/enter_payment_code"/>
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        style="@style/SmallButton"
+        android:src="@drawable/baseline_list_white_36dp"
+        android:contentDescription="@string/address_book"/>
 
 </android.support.constraint.ConstraintLayout>

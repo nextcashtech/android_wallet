@@ -175,12 +175,20 @@
     <string name="address_label_updated">Address label updated</string>
     <string name="labeled_addresses">Labeled Addresses</string>
     <string name="any_amount">Any amount</string>
-    <string name="add_manual_address_label">Manually Add Address Label</string>
+    <string name="add_manual_address_label">Manually Add</string>
     <string name="enter_address_hint">Enter Address</string>
     <string name="enter_address_label_hint">Enter Label</string>
     <string name="add">Add</string>
     <string name="must_specify_address_label">Address and label must be specified</string>
+    <string name="must_specify_address_name">Address and name must be specified</string>
     <string name="address_not_found">Address not found in current wallet</string>
+    <string name="address_book">Address Book</string>
+    <string name="address_book_description">
+        When using saved addresses please ensure the recipient still has access to the address.
+        If sending a large amount it is best to request a new payment address.
+    </string>
+    <string name="add_manual_address_book">Manually Add</string>
+    <string name="enter_address_name_hint">Enter Address Name</string>
     <string name="fee">Fee</string>
     <string name="estimated_fee">Estimated Fee</string>
     <string name="bitcoins_amount_title">bitcoins</string>
@@ -361,6 +369,9 @@
     <string name="address">Address</string>
     <string name="pub_key_hash">Public Key Hash</string>
     <string name="script_hash">Script Hash</string>
+    <string name="save">Save</string>
+    <string name="must_enter_name">A name is required</string>
+    <string name="save_address_hint">Enter Address Name</string>
     <string name="amount_request">Amount Request</string>
     <string name="secure">Secure</string>
     <string name="payment_code">Payment Code</string>

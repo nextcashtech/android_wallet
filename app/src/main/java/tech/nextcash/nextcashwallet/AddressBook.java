@@ -1,5 +1,6 @@
 package tech.nextcash.nextcashwallet;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
@@ -12,13 +13,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
-// Used to tag incoming addresses/payment requests with comments.
-// So when a payment is received on that address the label is tagged to the transaction.
-public class AddressLabel
-{
-    private static String logTag = "AddressLabel";
 
-    public AddressLabel(File pDirectory)
+// Used to store outgoing addresses with names so they can be reused.
+public class AddressBook
+{
+    private static String logTag = "AddressBook";
+
+    public AddressBook(File pDirectory)
     {
         mItems = new ArrayList<>();
         mIsModified = false;
@@ -52,38 +53,46 @@ public class AddressLabel
         }
     }
 
-    public static class Item
+    // Do not change the order or Type enumeration. The file format depends on the ordinals not changing.
+    public enum Type { NONE, ADDRESS, CHAIN_KEY }
+
+    public class Item implements Comparable
     {
+        Type type;
         String address;
-        long amount; // For specific amount requests. Amount of zero means all payments on that address are tagged.
-        String label;
+        String name;
 
         public Item()
         {
+            type = Type.NONE;
             address = null;
-            amount = 0L;
-            label = null;
-        }
-
-        public void assign(Item pItem)
-        {
-            address = pItem.address;
-            amount = pItem.amount;
-            label = pItem.label;
+            name = null;
         }
 
         public void read(DataInputStream pStream, int pVersion) throws IOException
         {
+            int typeValue = pStream.readByte();
+            if(typeValue >= Type.values().length)
+                type = Type.NONE;
+            else
+                type = Type.values()[typeValue];
             address = readString(pStream);
-            amount = pStream.readLong();
-            label = readString(pStream);
+            name = readString(pStream);
         }
 
         public void write(DataOutputStream pStream) throws IOException
         {
+            pStream.writeByte(type.ordinal());
             writeString(pStream, address);
-            pStream.writeLong(amount);
-            writeString(pStream, label);
+            writeString(pStream, name);
+        }
+
+        @Override
+        public int compareTo(@NonNull Object pOther)
+        {
+            if(pOther == null || pOther.getClass() != Item.class)
+                return 0;
+            return name.compareTo(((Item)pOther).name);
         }
     }
 
@@ -95,34 +104,23 @@ public class AddressLabel
         return mIsModified;
     }
 
-    // Returns true if an item was replaced.
-    // Only allow one item per address.
-    public synchronized boolean add(Item pItem)
-    {
-        for(Item item : mItems)
-            if(item.address.equals(pItem.address))
-            {
-                item.assign(pItem);
-                mIsModified = true;
-                return true;
-            }
-
-        mItems.add(pItem);
-        mIsModified = true;
-        return false;
-    }
-
-    public synchronized Item lookup(String pAddress, long pAmount)
+    public synchronized void addAddress(String pAddress, String pName)
     {
         for(Item item : mItems)
             if(item.address.equals(pAddress))
             {
-                if(item.amount == 0 || item.amount == pAmount)
-                    return item;
-                else
-                    return null;
+                item.type = Type.ADDRESS;
+                item.name = pName;
+                mIsModified = true;
+                return;
             }
-        return null;
+
+        Item result = new Item();
+        result.type = Type.ADDRESS;
+        result.address = pAddress;
+        result.name = pName;
+        mItems.add(result);
+        mIsModified = true;
     }
 
     public synchronized Item lookup(String pAddress)
@@ -144,7 +142,7 @@ public class AddressLabel
 
         try
         {
-            File file = new File(pDirectory, "addresses.data");
+            File file = new File(pDirectory, "address_book.data");
             FileInputStream fileInputStream = new FileInputStream(file);
             BufferedInputStream buffer = new BufferedInputStream(fileInputStream);
             DataInputStream stream = new DataInputStream(buffer);
@@ -182,7 +180,7 @@ public class AddressLabel
 
     private synchronized boolean write(File pDirectory)
     {
-        File tempFile = new File(pDirectory, "addresses.data.temp");
+        File tempFile = new File(pDirectory, "address_book.data.temp");
 
         try
         {
@@ -207,7 +205,7 @@ public class AddressLabel
             return false;
         }
 
-        File actualFile = new File(pDirectory, "addresses.data");
+        File actualFile = new File(pDirectory, "address_book.data");
         if(!tempFile.renameTo(actualFile))
         {
             Log.e(logTag, "Failed to rename temp file");

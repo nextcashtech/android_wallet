@@ -42,13 +42,13 @@ public class Bitcoin
 
     private long mHandle; // Used by JNI
     private File mDirectory;
-    Settings mSettings;
+    private Settings mSettings;
     private TransactionData mTransactionData;
     private AddressLabel mAddressLabels;
+    private AddressBook mAddressBook;
     private boolean mWalletsLoaded, mChainLoaded;
     private boolean mNeedsUpdate;
     private int mChangeID;
-
     private double mExchangeRate;
     private String mExchangeType;
 
@@ -71,6 +71,7 @@ public class Bitcoin
         mSettings = null;
         mTransactionData = null;
         mAddressLabels = null;
+        mAddressBook = null;
         mExchangeRate = 0.0;
         mExchangeType = null;
     }
@@ -80,6 +81,7 @@ public class Bitcoin
         mDirectory = pContext.getFilesDir();
         mTransactionData = new TransactionData(mDirectory);
         mAddressLabels = new AddressLabel(mDirectory);
+        mAddressBook = new AddressBook(mDirectory);
 
         mSettings = Settings.getInstance(mDirectory);
         if(mSettings.containsValue(EXCHANGE_RATE_NAME))
@@ -413,12 +415,12 @@ public class Bitcoin
         return mTransactionData.save(mDirectory);
     }
 
-    public AddressLabel.Item lookupAddress(String pAddress, long pAmount)
+    public AddressLabel.Item lookupAddressLabel(String pAddress, long pAmount)
     {
         return mAddressLabels.lookup(pAddress, pAmount);
     }
 
-    public AddressLabel.Item lookupAddress(String pAddress)
+    public AddressLabel.Item lookupAddressLabel(String pAddress)
     {
         return mAddressLabels.lookup(pAddress);
     }
@@ -443,6 +445,27 @@ public class Bitcoin
     public boolean saveAddressLabels()
     {
         return mAddressLabels.save(mDirectory);
+    }
+
+    public void addAddress(String pAddress, String pName)
+    {
+        mAddressBook.addAddress(pAddress, pName);
+        mAddressBook.save(mDirectory);
+    }
+
+    public AddressBook.Item lookupAddress(String pAddress)
+    {
+        return mAddressBook.lookup(pAddress);
+    }
+
+    public ArrayList<AddressBook.Item> getAddresses()
+    {
+        return mAddressBook.getAll();
+    }
+
+    public boolean saveAddressBook()
+    {
+        return mAddressBook.save(mDirectory);
     }
 
     public synchronized void triggerUpdate()

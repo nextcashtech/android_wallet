@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -122,7 +123,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true"
         android:orientation="vertical"
         android:padding="10dp"
         android:background="@color/colorStatusBackground">
@@ -192,32 +192,22 @@
 
     </LinearLayout>
 
-    <LinearLayout
+    <ProgressBar
         android:id="@+id/progress"
-        android:orientation="vertical"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center">
-        <ProgressBar
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:indeterminateTint="@color/colorProgress"
-            android:indeterminateTintMode="src_atop"
-            style="@android:style/Widget.ProgressBar.Large"/>
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/pin"
-        android:orientation="vertical"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-    </LinearLayout>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:indeterminateTint="@color/colorProgress"
+        android:indeterminateTintMode="src_atop"
+        style="@android:style/Widget.ProgressBar.Large"/>
 
     <LinearLayout
         android:id="@+id/notification"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
         android:layout_marginTop="60dp"
         android:layout_marginStart="20dp"
         android:layout_marginEnd="20dp"

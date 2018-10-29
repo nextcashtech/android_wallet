@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -34,5 +35,31 @@
         android:id="@+id/enterPaymentDetails"
         style="@style/Button"
         android:text="@string/continue_string"/>
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <tech.nextcash.nextcashwallet.ImageButton
+            android:id="@+id/scanPaymentCode"
+            app:layout_constraintEnd_toStartOf="@id/openAddressBook"
+            app:layout_constraintStart_toStartOf="parent"
+            style="@style/SmallButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_scan_white_36dp"
+            android:contentDescription="@string/scan"/>
+
+        <tech.nextcash.nextcashwallet.ImageButton
+            android:id="@+id/openAddressBook"
+            app:layout_constraintStart_toEndOf="@id/scanPaymentCode"
+            app:layout_constraintEnd_toEndOf="parent"
+            style="@style/SmallButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/baseline_list_white_36dp"
+            android:contentDescription="@string/address_book"/>
+
+    </android.support.constraint.ConstraintLayout>
 
 </LinearLayout>

@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
       IMPORT_PRIVATE_KEY, IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, TRANSACTION_HISTORY, TRANSACTION,
       SCAN, RECEIVE, ENTER_PAYMENT_CODE, CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP,
-      SETTINGS, ADDRESS_LABELS }
+      SETTINGS, ADDRESS_LABELS, ADDRESS_BOOK, SAVE_ADDRESS }
     private Mode mMode, mPreviousMode, mPreviousTransactionMode, mPreviousReceiveMode;
     private boolean mWalletsNeedUpdated;
     private enum AuthorizedTask { NONE, INITIALIZE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
@@ -427,10 +427,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         filter.addAction(ACTION_EXCHANGE_RATE_UPDATED);
         registerReceiver(mReceiver, filter);
 
-        LinearLayout pinLayout = findViewById(R.id.pin);
         LayoutInflater inflater = getLayoutInflater();
-        inflater.inflate(R.layout.pin_entry, pinLayout, true);
-        pinLayout.setVisibility(View.GONE);
+
+        RelativeLayout root = findViewById(R.id.root);
+
+        View pinView = inflater.inflate(R.layout.pin_entry, root, false);
+        pinView.setVisibility(View.GONE);
+        root.addView(pinView);
+
+        View textDialog = inflater.inflate(R.layout.text_dialog, root, false);
+        textDialog.setVisibility(View.GONE);
+        root.addView(textDialog);
 
         findViewById(R.id.main).setVisibility(View.GONE);
         findViewById(R.id.dialog).setVisibility(View.GONE);
@@ -606,6 +613,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case ADDRESS_LABELS:
                 break;
+            case ADDRESS_BOOK:
+                break;
             case ENTER_PAYMENT_CODE:
                 break;
             case CLIPBOARD_PAYMENT_CODE:
@@ -750,6 +759,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case RECEIVE:
                 break;
             case ADDRESS_LABELS:
+                break;
+            case ADDRESS_BOOK:
                 break;
             case ENTER_PAYMENT_CODE:
                 break;
@@ -991,7 +1002,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(null);
-            actionBar.setTitle(getResources().getString(R.string.app_name));
+            actionBar.setTitle(getString(R.string.app_name));
             actionBar.setDisplayHomeAsUpEnabled(false); // Show the Up button in the action bar.
         }
 
@@ -1017,7 +1028,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(null);
-            actionBar.setTitle(getResources().getString(R.string.app_name));
+            actionBar.setTitle(getString(R.string.app_name));
             actionBar.setDisplayHomeAsUpEnabled(false); // Show the Up button in the action bar.
         }
 
@@ -1249,7 +1260,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_settings_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.title_settings));
+            actionBar.setTitle(" " + getString(R.string.title_settings));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -1359,7 +1370,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_info_outline_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.instructions));
+            actionBar.setTitle(" " + getString(R.string.instructions));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -1386,7 +1397,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_info_outline_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.information));
+            actionBar.setTitle(" " + getString(R.string.information));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -1545,7 +1556,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_send_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.send_payment));
+            actionBar.setTitle(" " + getString(R.string.send_payment));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -1810,7 +1821,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(actionBar != null)
             {
                 actionBar.setIcon(null);
-                actionBar.setTitle(" " + getResources().getString(R.string.transaction));
+                actionBar.setTitle(" " + getString(R.string.transaction));
                 actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
             }
 
@@ -2017,7 +2028,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_send_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.send_payment));
+            actionBar.setTitle(" " + getString(R.string.send_payment));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -2067,7 +2078,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_send_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.send_payment));
+            actionBar.setTitle(" " + getString(R.string.send_payment));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -2172,12 +2183,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(pMode == ScanMode.SCAN_PAYMENT_CODE)
             {
                 actionBar.setIcon(R.drawable.ic_send_black_36dp);
-                actionBar.setTitle(" " + getResources().getString(R.string.scan_payment_code));
+                actionBar.setTitle(" " + getString(R.string.scan_payment_code));
             }
             else
             {
                 actionBar.setIcon(R.drawable.ic_scan_black_36dp);
-                actionBar.setTitle(" " + getResources().getString(R.string.scan_private_key));
+                actionBar.setTitle(" " + getString(R.string.scan_private_key));
             }
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
@@ -2186,7 +2197,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         dialogView.addView(scanView);
 
         if(pMode != ScanMode.SCAN_PAYMENT_CODE)
+        {
+            ((TextView)scanView.findViewById(R.id.scanTitle)).setText(R.string.scan_private_key);
             scanView.findViewById(R.id.enterPaymentCode).setVisibility(View.GONE);
+            scanView.findViewById(R.id.openAddressBook).setVisibility(View.GONE);
+        }
 
         dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2227,7 +2242,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 if(actionBar != null)
                 {
                     actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
-                    actionBar.setTitle(" " + getResources().getString(R.string.receive));
+                    actionBar.setTitle(" " + getString(R.string.receive));
                     actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
                 }
 
@@ -2253,7 +2268,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 receiveView.findViewById(R.id.optionalReceive).setVisibility(View.VISIBLE);
 
                 // Address label
-                AddressLabel.Item addressLabel = mBitcoin.lookupAddress(mPaymentRequest.address, mPaymentRequest.amount);
+                AddressLabel.Item addressLabel = mBitcoin.lookupAddressLabel(mPaymentRequest.address,
+                  mPaymentRequest.amount);
                 if(addressLabel != null)
                 {
                     EditText addressLabelText = receiveView.findViewById(R.id.labelEdit);
@@ -2428,7 +2444,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_add_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.title_add_wallet));
+            actionBar.setTitle(" " + getString(R.string.title_add_wallet));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -2465,6 +2481,52 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.ADDRESS_LABELS;
     }
 
+    public synchronized void displayAddressBook()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+        findViewById(R.id.main).setVisibility(View.GONE);
+        findViewById(R.id.progress).setVisibility(View.GONE);
+        findViewById(R.id.statusBar).setVisibility(View.GONE);
+        findViewById(R.id.controls).setVisibility(View.GONE);
+
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.ic_add_black_36dp);
+            actionBar.setTitle(" " + getString(R.string.title_add_wallet));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup addressLabels = (ViewGroup)inflater.inflate(R.layout.address_book, dialogView, false);
+        dialogView.addView(addressLabels);
+
+        ViewGroup itemsView = addressLabels.findViewById(R.id.addressBookItems);
+        ArrayList<AddressBook.Item> items = mBitcoin.getAddresses();
+        ViewGroup itemView;
+        boolean shade = true;
+
+        Collections.sort(items); // Most recent first
+
+        for(AddressBook.Item item : items)
+        {
+            itemView = (ViewGroup)inflater.inflate(R.layout.address_book_item, itemsView, false);
+            itemsView.addView(itemView);
+
+            ((TextView)itemView.findViewById(R.id.addressBookName)).setText(item.name);
+            ((TextView)itemView.findViewById(R.id.addressBookAddress)).setText(item.address);
+
+            if(shade)
+                itemView.setBackgroundColor(getResources().getColor(R.color.rowShade));
+            shade = !shade;
+        }
+
+        dialogView.setVisibility(View.VISIBLE);
+        mMode = Mode.ADDRESS_BOOK;
+    }
+
     public synchronized void displayAddOptions()
     {
         // Display options for adding wallets
@@ -2481,7 +2543,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_add_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.title_add_wallet));
+            actionBar.setTitle(" " + getString(R.string.title_add_wallet));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -2508,7 +2570,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(null);
-            actionBar.setTitle(" " + getResources().getString(R.string.import_text));
+            actionBar.setTitle(" " + getString(R.string.import_text));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -2538,7 +2600,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(null);
-            actionBar.setTitle(" " + getResources().getString(R.string.import_text));
+            actionBar.setTitle(" " + getString(R.string.import_text));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -2592,7 +2654,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.create_wallet));
+            actionBar.setTitle(" " + getString(R.string.create_wallet));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -2760,7 +2822,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.verify_seed));
+            actionBar.setTitle(" " + getString(R.string.verify_seed));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -2816,7 +2878,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(null);
-            actionBar.setTitle(" " + getResources().getString(R.string.recover_wallet));
+            actionBar.setTitle(" " + getString(R.string.recover_wallet));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -2846,7 +2908,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(null);
-            actionBar.setTitle(" " + getResources().getString(R.string.recover_wallet));
+            actionBar.setTitle(" " + getString(R.string.recover_wallet));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -3024,7 +3086,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(null);
-            actionBar.setTitle(" " + getResources().getString(R.string.recover_wallet));
+            actionBar.setTitle(" " + getString(R.string.recover_wallet));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -3081,7 +3143,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_add_circle_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.backup_wallet));
+            actionBar.setTitle(" " + getString(R.string.backup_wallet));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -3106,9 +3168,40 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.BACKUP_WALLET;
     }
 
+    public synchronized void displayTextDialog(Mode pMode)
+    {
+        RelativeLayout textDialogView = findViewById(R.id.textDialog);
+        textDialogView.setVisibility(View.VISIBLE);
+
+        EditText entry = textDialogView.findViewById(R.id.enteredText);
+        entry.setText(null);
+        TextView.OnEditorActionListener paymentCodeListener = new TextView.OnEditorActionListener()
+        {
+            @Override
+            public boolean onEditorAction(TextView pView, int pActionId, KeyEvent pEvent)
+            {
+                if(pActionId == EditorInfo.IME_NULL || pActionId == EditorInfo.IME_ACTION_DONE ||
+                  pActionId == EditorInfo.IME_ACTION_SEND ||
+                  (pEvent != null && pEvent.getAction() == KeyEvent.ACTION_DOWN &&
+                    pEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER))
+                {
+                    processClick(pView, R.id.textDialogOkay);
+                    return true;
+                }
+                return false;
+            }
+        };
+        entry.setOnEditorActionListener(paymentCodeListener);
+        if(pMode == Mode.SAVE_ADDRESS)
+            entry.setHint(R.string.save_address_hint);
+
+        focusOnText(entry);
+        mMode = pMode;
+    }
+
     public synchronized void displayAuthorize()
     {
-        LinearLayout pinLayout = findViewById(R.id.pin);
+        LinearLayout pinLayout = findViewById(R.id.pinEntry);
         pinLayout.setVisibility(View.VISIBLE);
 
         mPIN = "";
@@ -3165,7 +3258,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_edit_black_36dp);
-            actionBar.setTitle(" " + getResources().getString(R.string.title_edit_wallet));
+            actionBar.setTitle(" " + getString(R.string.title_edit_wallet));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
@@ -3432,7 +3525,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(actionBar != null)
             {
                 actionBar.setIcon(R.drawable.ic_history_black_36dp);
-                actionBar.setTitle(" " + getResources().getString(R.string.title_wallet_history));
+                actionBar.setTitle(" " + getString(R.string.title_wallet_history));
                 actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
             }
 
@@ -4113,7 +4206,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             TextView address = pView.findViewById(R.id.addressLabelAddress);
             if(address != null)
             {
-                AddressLabel.Item item = mBitcoin.lookupAddress(address.getText().toString());
+                AddressLabel.Item item = mBitcoin.lookupAddressLabel(address.getText().toString());
                 if(item != null)
                 {
                     mPreviousReceiveMode = mMode;
@@ -4164,6 +4257,85 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 mBitcoin.addAddressLabel(item);
                 mBitcoin.saveAddressLabels();
                 displayAddressLabels();
+            }
+            break;
+        }
+        case R.id.saveAddress:
+            // Ask for name for address book entry.
+            displayTextDialog(Mode.SAVE_ADDRESS);
+            break;
+        case R.id.openAddressBook:
+            displayAddressBook();
+            break;
+        case R.id.addressBookItem:
+        {
+            // Open payment view for specified address
+            TextView address = pView.findViewById(R.id.addressBookAddress);
+            if(address != null)
+            {
+                AddressBook.Item item = mBitcoin.lookupAddress(address.getText().toString());
+                if(item != null)
+                {
+                    mPreviousReceiveMode = mMode;
+                    displayProgress();
+
+                    mPaymentRequest = new PaymentRequest();
+                    mPaymentRequest.address = item.address;
+                    mPaymentRequest.label = item.name;
+                    mPaymentRequest.encode();
+                    displayPaymentDetails();
+                }
+            }
+            break;
+        }
+        case R.id.addManualAddressBook:
+        {
+            EditText addressView = findViewById(R.id.manualAddressBookAddress);
+            EditText nameView = findViewById(R.id.manualAddressBookName);
+            if(addressView != null && nameView != null)
+            {
+                String address = addressView.getText().toString();
+                String name = nameView.getText().toString();
+
+                if(address.length() == 0 || name.length() == 0)
+                {
+                    showMessage(getString(R.string.must_specify_address_name), 2000);
+                    break;
+                }
+
+                mBitcoin.addAddress(address, name);
+                mBitcoin.saveAddressBook();
+                displayAddressBook();
+            }
+            break;
+        }
+        case R.id.textDialogOkay:
+        {
+            EditText textView = findViewById(R.id.enteredText);
+            if(textView == null)
+                break;
+
+            String text = textView.getText().toString();
+
+            if(text.length() == 0)
+                showMessage(getString(R.string.must_enter_name), 2000);
+            else
+            {
+                if(mMode == Mode.SAVE_ADDRESS)
+                {
+                    TextView addressView = findViewById(R.id.address);
+                    if(addressView != null)
+                    {
+                        String address = addressView.getText().toString();
+                        if(address.length() != 0)
+                        {
+                            mBitcoin.addAddress(address, text);
+                            mBitcoin.saveAddressBook();
+                        }
+                    }
+                }
+
+                findViewById(R.id.textDialog).setVisibility(View.GONE);
             }
             break;
         }
@@ -4293,7 +4465,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             }
 
-            findViewById(R.id.pin).setVisibility(View.GONE);
+            findViewById(R.id.pinEntry).setVisibility(View.GONE);
             ((ViewGroup)findViewById(R.id.entryDots)).removeAllViews();
             String pin = mPIN;
             mPIN = null;
@@ -4500,6 +4672,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case ADDRESS_LABELS:
             break;
+        case ADDRESS_BOOK:
+            break;
         case ENTER_PAYMENT_CODE:
             break;
         case CLIPBOARD_PAYMENT_CODE:
@@ -4540,7 +4714,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             }
 
-            findViewById(R.id.pin).setVisibility(View.GONE);
+            findViewById(R.id.pinEntry).setVisibility(View.GONE);
             mMode = mPreviousMode;
             return;
         case INFO:

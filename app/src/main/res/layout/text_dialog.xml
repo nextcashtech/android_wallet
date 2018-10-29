@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/textDialog"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dialogBackground"
+    android:padding="20dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_centerVertical="true"
+        android:padding="10dp"
+        android:background="#ffff">
+
+        <EditText
+            android:id="@+id/enteredText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:imeOptions="actionDone"
+            android:hint="Enter Text"/>
+
+        <tech.nextcash.nextcashwallet.TextButton
+            android:id="@+id/textDialogOkay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/enteredText"
+            android:layout_alignParentEnd="true"
+            style="@style/SmallButton"
+            android:text="@string/okay"/>
+
+    </RelativeLayout>
+
+</RelativeLayout>
