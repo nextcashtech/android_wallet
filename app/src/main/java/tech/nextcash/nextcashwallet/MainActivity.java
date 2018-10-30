@@ -565,11 +565,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         View chainLoadingView = headerView.findViewById(R.id.blockChainLoading);
         if(chainLoadingView != null)
             headerView.removeView(chainLoadingView);
-
-        // Update wallets
-        mWalletsNeedUpdated = false; // Force rebuild of wallets
-
-        onUpdate();
     }
 
     private void onUpdate()
