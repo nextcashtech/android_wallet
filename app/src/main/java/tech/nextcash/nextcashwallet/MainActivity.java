@@ -3664,7 +3664,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             Calendar date;
-            if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             {
                 date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
                   picker.getDayOfMonth()).build();
@@ -3691,7 +3691,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             Calendar date;
-            if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             {
                 date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
                   picker.getDayOfMonth()).build();
@@ -3742,7 +3742,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             Calendar date;
-            if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             {
                 date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
                   picker.getDayOfMonth()).setTimeOfDay(0, 0, 0).build();
@@ -4040,12 +4040,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayScanner(ScanMode.SCAN_PAYMENT_CODE);
             break;
         case R.id.enterPaymentCode:
-        {
             mScanner.close();
             displayEnterPaymentCode();
             break;
-        }
         case R.id.useClipBoardPaymentCode:
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            {
+                ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+                if(manager != null)
+                    manager.clearPrimaryClip();
+            }
             displayPaymentDetails();
             break;
         case R.id.walletReceive:
@@ -4126,7 +4130,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         }
         case R.id.systemNotificationSettings:
-        {
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             {
                 Intent settingsIntent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
@@ -4136,7 +4139,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 startActivity(settingsIntent);
             }
             break;
-        }
         case R.id.updateTransactionComment:
         {
             EditText comment = findViewById(R.id.commentEdit);
