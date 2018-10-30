@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -40,16 +41,18 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
     private PaymentRequestBufferProtocols.Payment mProtocolPayment;
     private PaymentRequestBufferProtocols.PaymentACK mProtocolAcknowledge;
     private String mMessage;
+    private byte mRawTransaction[];
 
 
     public FinishPaymentRequestTask(Context pContext, Bitcoin pBitcoin, int pWalletOffset,
-      PaymentRequest pPaymentRequest)
+      PaymentRequest pPaymentRequest, byte pRawTransaction[])
     {
         mContext = pContext;
         mBitcoin = pBitcoin;
         mWalletOffset = pWalletOffset;
         mPaymentRequest = pPaymentRequest;
         mMessage = null;
+        mRawTransaction = pRawTransaction;
     }
 
     private boolean sendPayment()
@@ -65,33 +68,14 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
             if(mPaymentRequest.protocolDetails.hasMerchantData())
                 paymentBuilder.setMerchantData(mPaymentRequest.protocolDetails.getMerchantData());
 
-            // Get sent transaction
-            byte paymentScript[] = null;
-            long amount = 0;
-            for(PaymentRequestBufferProtocols.Output output : mPaymentRequest.protocolDetails.getOutputsList())
-                if(output.hasAmount() && output.hasScript())
-                {
-                    paymentScript = output.getScript().toByteArray();
-                    amount = output.getAmount();
-                    break;
-                }
-
-            if(paymentScript == null)
-            {
-                mMessage = mContext.getString(R.string.failed_transaction);
-                Log.e(logTag, "Failed to find payment output");
-                return false;
-            }
-
-            byte rawTransaction[] = mBitcoin.getRawTransaction(paymentScript, amount);
-            if(rawTransaction == null)
+            if(mRawTransaction == null)
             {
                 mMessage = mContext.getString(R.string.failed_transaction);
                 Log.e(logTag, "Failed to find payment transaction");
                 return false;
             }
 
-            paymentBuilder.addTransactions(ByteString.copyFrom(rawTransaction));
+            paymentBuilder.addTransactions(ByteString.copyFrom(mRawTransaction));
 
             // Build refund output
             byte refundOutput[] = mBitcoin.getNextReceiveOutput(mWalletOffset, 0);
@@ -104,7 +88,7 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
 
             PaymentRequestBufferProtocols.Output.Builder refundBuilder =
               PaymentRequestBufferProtocols.Output.newBuilder();
-            refundBuilder.setAmount(amount);
+            refundBuilder.setAmount(mPaymentRequest.amount);
             refundBuilder.setScript(ByteString.copyFrom(refundOutput));
 
             paymentBuilder.addRefundTo(refundBuilder.build());

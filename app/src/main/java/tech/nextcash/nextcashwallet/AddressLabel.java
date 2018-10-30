@@ -72,6 +72,11 @@ public class AddressLabel
             label = pItem.label;
         }
 
+        public boolean isEmpty()
+        {
+            return label == null || label.length() == 0;
+        }
+
         public void read(DataInputStream pStream, int pVersion) throws IOException
         {
             address = readString(pStream);
@@ -102,10 +107,21 @@ public class AddressLabel
         for(Item item : mItems)
             if(item.address.equals(pItem.address))
             {
-                item.assign(pItem);
                 mIsModified = true;
-                return true;
+                if(pItem.isEmpty())
+                {
+                    mItems.remove(item);
+                    return false;
+                }
+                else
+                {
+                    item.assign(pItem);
+                    return true;
+                }
             }
+
+        if(pItem.isEmpty())
+            return false;
 
         mItems.add(pItem);
         mIsModified = true;

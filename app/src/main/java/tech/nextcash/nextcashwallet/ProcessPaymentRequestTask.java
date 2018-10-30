@@ -23,6 +23,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -232,20 +233,30 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
             return false;
         }
 
-        boolean paymentMethodSpecified = false;
+        Output newOutput;
+        mPaymentRequest.amount = 0;
+        mPaymentRequest.specifiedOutputs = null;
+        ArrayList<Output> outputs = new ArrayList<>();
         for(PaymentRequestBufferProtocols.Output output : mPaymentRequest.protocolDetails.getOutputsList())
             if(output.hasAmount() && output.hasScript())
             {
-                mPaymentRequest.amount = output.getAmount();
+                mPaymentRequest.amount += output.getAmount();
                 mPaymentRequest.amountSpecified = true;
-                mPaymentRequest.paymentScript = output.getScript().toByteArray();
-                paymentMethodSpecified = true;
+                newOutput = new Output();
+                newOutput.amount = output.getAmount();
+                newOutput.scriptData = output.getScript().toByteArray();
+                outputs.add(newOutput);
                 break;
             }
 
-        if(!paymentMethodSpecified)
+        if(outputs.size() > 0)
         {
-            Log.e(logTag, "Payment request does not contain payment method");
+            mPaymentRequest.specifiedOutputs = new Output[outputs.size()];
+            outputs.toArray(mPaymentRequest.specifiedOutputs);
+        }
+        else
+        {
+            Log.e(logTag, "Payment request does not contain supported payment method");
             mIsFailed = true;
             mMessage = mContext.getString(R.string.failed_invalid_request);
             return false;

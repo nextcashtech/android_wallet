@@ -119,6 +119,7 @@
     <string name="failed_change_address">Change Address Not Found</string>
     <string name="failed_signing">Failed to Sign Transaction</string>
     <string name="failed_dust">Failed. Amount too small</string>
+    <string name="failed_outputs">Invalid outputs specified</string>
     <string name="failed_camera_create">Failed to initialize camera</string>
     <string name="failed_camera_access">Failed to access camera</string>
     <string name="failed_camera_general">Failed to use camera</string>

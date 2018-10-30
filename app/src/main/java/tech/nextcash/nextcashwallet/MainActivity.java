@@ -27,6 +27,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -75,6 +76,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static final String ACTION_SHOW_MESSAGE = "SHOW_MESSAGE";
     public static final String ACTION_DISPLAY_WALLETS = "DISPLAY_WALLETS";
     public static final String ACTION_DISPLAY_TRANSACTION = "DISPLAY_TRANSACTION";
+    public static final String ACTION_RAW_TRANSACTION_FIELD = "RAW_TRANSACTION";
     public static final String ACTION_TRANSACTION_NOT_FOUND = "TRANSACTION_NOT_FOUND";
     public static final String ACTION_DISPLAY_DIALOG = "DISPLAY_DIALOG";
     public static final String ACTION_DISPLAY_SETTINGS = "DISPLAY_SETTINGS";
@@ -386,9 +388,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     if(mPaymentRequest != null && mPaymentRequest.protocolDetails != null &&
                       mPaymentRequest.protocolDetails.hasPaymentUrl())
                     {
+                        byte rawTransaction[] = pIntent.getExtras().getByteArray(ACTION_RAW_TRANSACTION_FIELD);
                         FinishPaymentRequestTask finishPaymentRequestTask =
                           new FinishPaymentRequestTask(getApplicationContext(), mBitcoin, mCurrentWalletIndex,
-                            mPaymentRequest);
+                            mPaymentRequest, rawTransaction);
                         finishPaymentRequestTask.execute();
                     }
                     else
@@ -1513,7 +1516,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             return;
         }
 
-        if(mPaymentRequest.secureURL != null && mPaymentRequest.paymentScript == null)
+        if(mPaymentRequest.secureURL != null && mPaymentRequest.protocolDetails == null)
         {
             displayProgress();
 
@@ -3201,7 +3204,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public synchronized void displayAuthorize()
     {
-        LinearLayout pinLayout = findViewById(R.id.pinEntry);
+        ConstraintLayout pinLayout = findViewById(R.id.pinEntry);
         pinLayout.setVisibility(View.VISIBLE);
 
         mPIN = "";

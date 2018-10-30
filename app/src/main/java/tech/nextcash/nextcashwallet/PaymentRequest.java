@@ -10,6 +10,7 @@ package tech.nextcash.nextcashwallet;
 import android.net.Uri;
 
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
 import java.util.Locale;
 
 
@@ -40,7 +41,7 @@ public class PaymentRequest
     public boolean secure;
     public String secureURL;
     public String site;
-    public byte[] paymentScript;
+    public Output specifiedOutputs[];
     public String transactionID;
     public long expires;
 
@@ -61,9 +62,16 @@ public class PaymentRequest
         expires = 0;
         sendMax = false;
         feeRate = 1.0;
+        specifiedOutputs = null;
+        protocolDetails = null;
     }
 
     public String description()
+    {
+        return description("\n");
+    }
+
+    public String description(String pDelimiter)
     {
         String result = "";
 
@@ -73,7 +81,7 @@ public class PaymentRequest
         if(message != null && message.length() > 0)
         {
             if(result.length() > 0)
-                result += "\n";
+                result += pDelimiter;
             result += message;
         }
 
@@ -94,7 +102,8 @@ public class PaymentRequest
         message = null;
         secureURL = null;
         site = null;
-        paymentScript = null;
+        specifiedOutputs = null;
+        protocolDetails = null;
         expires = 0;
         transactionID = null;
         sendMax = false;

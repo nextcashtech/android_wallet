@@ -12,7 +12,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 
 
-public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
+public class CreateTransactionTask extends AsyncTask<String, Integer, SendResult>
 {
     private Context mContext;
     private Bitcoin mBitcoin;
@@ -31,33 +31,55 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
     }
 
     @Override
-    protected Integer doInBackground(String... pStrings)
+    protected SendResult doInBackground(String... pStrings)
     {
-        int result;
-        if(mRequest.paymentScript != null)
-            result = mBitcoin.sendOutputPayment(mWalletOffset, mPassCode, mRequest.paymentScript, mRequest.amount,
-              mRequest.feeRate, mRequest.requiresPending());
+        SendResult result;
+        if(mRequest.protocolDetails != null && mRequest.specifiedOutputs != null)
+            result = mBitcoin.sendOutputsPayment(mWalletOffset, mPassCode, mRequest.specifiedOutputs, mRequest.feeRate,
+              mRequest.requiresPending(), !mRequest.protocolDetails.hasPaymentUrl());
         else if(mRequest.type == PaymentRequest.TYPE_PUB_KEY_HASH || mRequest.type == PaymentRequest.TYPE_SCRIPT_HASH)
             result = mBitcoin.sendStandardPayment(mWalletOffset, mPassCode, mRequest.address, mRequest.amount,
               mRequest.feeRate, mRequest.requiresPending(), mRequest.sendMax);
         else
-            result = 3;
+            result = new SendResult(3);
+
+        if(result.result == 0 && result.transaction != null)
+        {
+            boolean updated = mBitcoin.updateTransactionData(result.transaction, mWalletOffset);
+
+            String description = mRequest.description(" : ");
+            if(description != null && description.length() > 0)
+            {
+                if(result.transaction.data.comment == null)
+                {
+                    result.transaction.data.comment = description;
+                    updated = true;
+                }
+            }
+
+            if(updated)
+                mBitcoin.saveTransactionData();
+        }
 
         return result;
     }
 
     @Override
-    protected void onPostExecute(Integer pResult)
+    protected void onPostExecute(SendResult pResult)
     {
         Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
 
-        if(pResult == 0 && mRequest.protocolDetails != null && mRequest.protocolDetails.hasPaymentUrl())
+        if(pResult.result == 0 && pResult.rawTransaction != null && mRequest.protocolDetails != null &&
+          mRequest.protocolDetails.hasPaymentUrl())
+        {
             finishIntent.setAction(MainActivity.ACTION_ACKNOWLEDGE_PAYMENT);
+            finishIntent.putExtra(MainActivity.ACTION_RAW_TRANSACTION_FIELD, pResult.rawTransaction);
+        }
         else
             finishIntent.setAction(MainActivity.ACTION_DISPLAY_WALLETS); // Return from "in progress"
 
         // Send intent back to activity
-        switch(pResult)
+        switch(pResult.result)
         {
             case 0: // Success
                 finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.sent_payment);
@@ -80,6 +102,9 @@ public class CreateTransactionTask extends AsyncTask<String, Integer, Integer>
                 break;
             case 6: // Below dust
                 finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_dust);
+                break;
+            case 7: // Invalid outputs specified
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_outputs);
                 break;
         }
 

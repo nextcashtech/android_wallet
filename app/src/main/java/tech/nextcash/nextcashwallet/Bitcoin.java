@@ -502,8 +502,9 @@ public class Bitcoin
         {
             if(updateWallet(mWallets[offset], offset))
             {
-                if(mWallets[offset].updateTransactionData(this, offset))
-                    dataUpdated = true;
+                for(Transaction transaction : mWallets[offset].transactions)
+                    if(updateTransactionData(transaction, offset))
+                        dataUpdated = true;
             }
             else
             {
@@ -523,6 +524,61 @@ public class Bitcoin
             mNeedsUpdate = false;
             mChangeID = changeID;
         }
+
+        return result;
+    }
+
+    public synchronized boolean updateTransactionData(Transaction pTransaction, int pWalletOffset)
+    {
+        boolean result = false;
+
+        pTransaction.data = getTransactionData(pTransaction.hash, pTransaction.amount);
+
+        if(pTransaction.data.exchangeRate == 0.0 && exchangeRate() != 0.0)
+        {
+            // First time this transaction has been seen.
+            pTransaction.data.exchangeRate = exchangeRate();
+            pTransaction.data.exchangeType = exchangeType();
+
+            FullTransaction fullTransaction = new FullTransaction();
+            if(getTransaction(pWalletOffset, pTransaction.hash, fullTransaction))
+            {
+                // Check if it pays to any labeled addresses.
+                AddressLabel.Item addressLabel;
+                for(Output output : fullTransaction.outputs)
+                    if(output.related)
+                    {
+                        addressLabel = lookupAddressLabel(output.address, output.amount);
+                        if(addressLabel != null)
+                            pTransaction.data.comment = addressLabel.label;
+                    }
+
+                // Check if it pays to any address book entries.
+                AddressBook.Item addressItem;
+                for(Output output : fullTransaction.outputs)
+                {
+                    addressItem = lookupAddress(output.address);
+                    if(addressItem != null)
+                    {
+                        pTransaction.data.comment = addressItem.name;
+                        break;
+                    }
+                }
+            }
+
+            result = true;
+        }
+
+        if(pTransaction.date != 0 && pTransaction.data.date > pTransaction.date)
+        {
+            pTransaction.data.date = pTransaction.date;
+            result = true;
+        }
+
+        // TODO Temporary Fix for issue with bad date being tagged on transaction.
+        if(pTransaction.date != 0 && pTransaction.block != null &&
+          Math.abs(pTransaction.date - pTransaction.data.date) > 864000) // One day
+            pTransaction.data.date = pTransaction.date;
 
         return result;
     }
@@ -571,17 +627,16 @@ public class Bitcoin
     // Send a P2PKH (Pay to Public Key Hash) payment
     // Amount in satoshis
     // Fee rate in satoshis per byte of transaction size
-    public native int sendStandardPayment(int pWalletOffset, String pPassCode, String pAddress, long pAmount,
+    public native SendResult sendStandardPayment(int pWalletOffset, String pPassCode, String pAddress, long pAmount,
       double pFeeRate, boolean pUsePending, boolean pSendAll);
 
-    // Send a payment given a specific output script to pay
-    // Amount in satoshis
-    // Fee rate in satoshis per byte of transaction size
-    public native int sendOutputPayment(int pWalletOffset, String pPassCode, byte[] pOutputScript, long pAmount,
-      double pFeeRate, boolean pUsePending);
-
-    // Get the raw data for the transaction paying the specified output script
-    public native byte[] getRawTransaction(byte[] pPayingOutputScript, long pAmount);
+    // Send a payment given specific output(s) to pay.
+    // pFeeRate is satoshis per byte of transaction size.
+    // pUsePending allows spending of unconfirmed UTXOs.
+    // pTransmit specifies if the transaction should be sent directly to the Bitcoin node network.
+    //   If not then it will be transmitted directly to the recipient for them to transmit on approval.
+    public native SendResult sendOutputsPayment(int pWalletOffset, String pPassCode, Output[] pOutputs, double pFeeRate,
+      boolean pUsePending, boolean pTransmit);
 
     //TODO Generate a mnemonic sentence that can be used to create an HD key.
     //public native String generateMnemonic();

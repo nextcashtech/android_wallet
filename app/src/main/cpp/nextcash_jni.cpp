@@ -23,96 +23,6 @@
 
 extern "C"
 {
-    // Static Class/Field IDs
-    // Bitcoin
-    jclass sBitcoinClass = NULL;
-    jfieldID sBitcoinHandleID = NULL;
-    jfieldID sBitcoinWalletsID = NULL;
-    jfieldID sBitcoinWalletsLoadedID = NULL;
-    jfieldID sBitcoinChainLoadedID = NULL;
-
-    // Wallet
-    jclass sWalletClass = NULL;
-    jfieldID sWalletLastUpdatedID = NULL;
-    jfieldID sWalletTransactionsID = NULL;
-    jfieldID sWalletUpdatedTransactionsID = NULL;
-    jfieldID sWalletIsPrivateID = NULL;
-    jfieldID sWalletNameID = NULL;
-    jfieldID sWalletIsSynchronizedID = NULL;
-    jfieldID sWalletIsBackedUpID = NULL;
-    jfieldID sWalletBalanceID = NULL;
-    jfieldID sWalletPendingBalanceID = NULL;
-    jfieldID sWalletBlockHeightID = NULL;
-
-    // Transaction
-    jclass sTransactionClass = NULL;
-    jmethodID sTransactionConstructor = NULL;
-    jfieldID sTransactionHashID = NULL;
-    jfieldID sTransactionBlockID = NULL;
-    jfieldID sTransactionDateID = NULL;
-    jfieldID sTransactionAmountID = NULL;
-    jfieldID sTransactionCountID = NULL;
-
-    // Block
-    jclass sBlockClass = NULL;
-    jmethodID sBlockConstructor = NULL;
-    jfieldID sBlockHeightID = NULL;
-    jfieldID sBlockHashID = NULL;
-    jfieldID sBlockTimeID = NULL;
-
-    // PaymentRequest
-    jclass sPaymentRequestClass = NULL;
-    jmethodID sPaymentRequestConstructor = NULL;
-    jfieldID sPaymentRequestURIID = NULL;
-    jfieldID sPaymentRequestFormatID = NULL;
-    jfieldID sPaymentRequestTypeID = NULL;
-    jfieldID sPaymentRequestAddressID = NULL;
-    jfieldID sPaymentRequestAmountID = NULL;
-    jfieldID sPaymentRequestAmountSpecifiedID = NULL;
-    jfieldID sPaymentRequestLabelID = NULL;
-    jfieldID sPaymentRequestMessageID = NULL;
-    jfieldID sPaymentRequestSecureID = NULL;
-    jfieldID sPaymentRequestSecureURLID = NULL;
-
-    // Input
-    jclass sInputClass = NULL;
-    jmethodID sInputConstructor = NULL;
-    jfieldID sInputOutpointID = NULL;
-    jfieldID sInputOutpointIndexID = NULL;
-    jfieldID sInputScriptID = NULL;
-    jfieldID sInputSequenceID = NULL;
-    jfieldID sInputAddressID = NULL;
-    jfieldID sInputAmountID = NULL;
-
-    // Output
-    jclass sOutputClass = NULL;
-    jmethodID sOutputConstructor = NULL;
-    jfieldID sOutputAmountID = NULL;
-    jfieldID sOutputScriptID = NULL;
-    jfieldID sOutputAddressID = NULL;
-    jfieldID sOutputRelatedID = NULL;
-
-    // Full Transaction
-    jclass sFullTransactionClass = NULL;
-    jmethodID sFullTransactionConstructor = NULL;
-    jfieldID sFullTransactionHashID = NULL;
-    jfieldID sFullTransactionBlockID = NULL;
-    jfieldID sFullTransactionCountID = NULL;
-    jfieldID sFullTransactionVersionID = NULL;
-    jfieldID sFullTransactionInputsID = NULL;
-    jfieldID sFullTransactionOutputsID = NULL;
-    jfieldID sFullTransactionLockTimeID = NULL;
-    jfieldID sFullTransactionDateID = NULL;
-    jfieldID sFullTransactionSizeID = NULL;
-
-    // Outpoint
-    jclass sOutpointClass = NULL;
-    jmethodID sOutpointConstructor = NULL;
-    jfieldID sOutpointTransactionID = NULL;
-    jfieldID sOutpointIndexID = NULL;
-    jfieldID sOutpointOutputID = NULL;
-    jfieldID sOutpointConfirmationsID = NULL;
-
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_NextCash_test(JNIEnv *pEnvironment,
                                                                                jclass pObject)
@@ -146,172 +56,459 @@ extern "C"
         }
     }
 
-    void setupTransactionClass(JNIEnv *pEnvironment)
-    {
-        sTransactionClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Transaction");
-        sTransactionConstructor = pEnvironment->GetMethodID(sTransactionClass, "<init>", "()V");
-        sTransactionHashID = pEnvironment->GetFieldID(sTransactionClass, "hash",
-          "Ljava/lang/String;");
-        sTransactionBlockID = pEnvironment->GetFieldID(sTransactionClass, "block",
-          "Ljava/lang/String;");
-        sTransactionDateID = pEnvironment->GetFieldID(sTransactionClass, "date", "J");
-        sTransactionAmountID = pEnvironment->GetFieldID(sTransactionClass, "amount", "J");
-        sTransactionCountID = pEnvironment->GetFieldID(sTransactionClass, "count", "I");
-    }
-
-    void setupBlockClass(JNIEnv *pEnvironment)
-    {
-        sBlockClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Block");
-        sBlockConstructor = pEnvironment->GetMethodID(sBlockClass, "<init>", "()V");
-        sBlockHeightID = pEnvironment->GetFieldID(sBlockClass, "height", "I");
-        sBlockHashID = pEnvironment->GetFieldID(sBlockClass, "hash", "Ljava/lang/String;");
-        sBlockTimeID = pEnvironment->GetFieldID(sBlockClass, "time", "J");
-    }
-
-    void setupPaymentRequestClass(JNIEnv *pEnvironment)
-    {
-        sPaymentRequestClass =
-          pEnvironment->FindClass("tech/nextcash/nextcashwallet/PaymentRequest");
-        sPaymentRequestConstructor = pEnvironment->GetMethodID(sPaymentRequestClass, "<init>",
-          "()V");
-        sPaymentRequestURIID = pEnvironment->GetFieldID(sPaymentRequestClass, "uri",
-          "Ljava/lang/String;");
-        sPaymentRequestFormatID = pEnvironment->GetFieldID(sPaymentRequestClass, "format", "I");
-        sPaymentRequestTypeID = pEnvironment->GetFieldID(sPaymentRequestClass, "type", "I");
-        sPaymentRequestAddressID = pEnvironment->GetFieldID(sPaymentRequestClass, "address",
-          "Ljava/lang/String;");
-        sPaymentRequestAmountID = pEnvironment->GetFieldID(sPaymentRequestClass, "amount", "J");
-        sPaymentRequestAmountSpecifiedID = pEnvironment->GetFieldID(sPaymentRequestClass,
-          "amountSpecified", "Z");
-        sPaymentRequestLabelID = pEnvironment->GetFieldID(sPaymentRequestClass, "label",
-          "Ljava/lang/String;");
-        sPaymentRequestMessageID = pEnvironment->GetFieldID(sPaymentRequestClass, "message",
-          "Ljava/lang/String;");
-        sPaymentRequestSecureID = pEnvironment->GetFieldID(sPaymentRequestClass, "secure", "Z");
-        sPaymentRequestSecureURLID = pEnvironment->GetFieldID(sPaymentRequestClass, "secureURL",
-          "Ljava/lang/String;");
-    }
-
-    void setupFullTransactionClass(JNIEnv *pEnvironment)
-    {
-        // Input
-        sInputClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Input");
-        sInputConstructor = pEnvironment->GetMethodID(sInputClass, "<init>", "()V");
-        sInputOutpointID = pEnvironment->GetFieldID(sInputClass, "outpointID",
-          "Ljava/lang/String;");
-        sInputOutpointIndexID = pEnvironment->GetFieldID(sInputClass, "outpointIndex", "I");
-        sInputScriptID = pEnvironment->GetFieldID(sInputClass, "script", "Ljava/lang/String;");
-        sInputSequenceID = pEnvironment->GetFieldID(sInputClass, "sequence", "I");
-        sInputAddressID = pEnvironment->GetFieldID(sInputClass, "address",
-          "Ljava/lang/String;");
-        sInputAmountID = pEnvironment->GetFieldID(sInputClass, "amount", "J");
-
-        // Output
-        sOutputClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Output");
-        sOutputConstructor = pEnvironment->GetMethodID(sOutputClass, "<init>", "()V");
-        sOutputAmountID = pEnvironment->GetFieldID(sOutputClass, "amount", "J");
-        sOutputScriptID = pEnvironment->GetFieldID(sOutputClass, "script", "Ljava/lang/String;");
-        sOutputAddressID = pEnvironment->GetFieldID(sOutputClass, "address", "Ljava/lang/String;");
-        sOutputRelatedID = pEnvironment->GetFieldID(sOutputClass, "related", "Z");
-
-        // Full Transaction
-        sFullTransactionClass =
-          pEnvironment->FindClass("tech/nextcash/nextcashwallet/FullTransaction");
-        sFullTransactionConstructor = pEnvironment->GetMethodID(sFullTransactionClass, "<init>", "()V");
-        sFullTransactionHashID = pEnvironment->GetFieldID(sFullTransactionClass, "hash",
-          "Ljava/lang/String;");
-        sFullTransactionBlockID = pEnvironment->GetFieldID(sFullTransactionClass, "block",
-          "Ljava/lang/String;");
-        sFullTransactionCountID = pEnvironment->GetFieldID(sFullTransactionClass, "count", "I");
-        sFullTransactionVersionID = pEnvironment->GetFieldID(sFullTransactionClass, "version", "I");
-        sFullTransactionInputsID = pEnvironment->GetFieldID(sFullTransactionClass, "inputs",
-          "[Ltech/nextcash/nextcashwallet/Input;");
-        sFullTransactionOutputsID = pEnvironment->GetFieldID(sFullTransactionClass, "outputs",
-          "[Ltech/nextcash/nextcashwallet/Output;");
-        sFullTransactionLockTimeID = pEnvironment->GetFieldID(sFullTransactionClass, "lockTime",
-          "I");
-        sFullTransactionDateID = pEnvironment->GetFieldID(sFullTransactionClass, "date",
-          "J");
-        sFullTransactionSizeID = pEnvironment->GetFieldID(sFullTransactionClass, "size",
-          "I");
-    }
-
-    void setupOutputClass(JNIEnv *pEnvironment)
-    {
-        sOutputClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Output");
-        sOutputConstructor = pEnvironment->GetMethodID(sOutputClass, "<init>", "()V");
-        sOutputAmountID = pEnvironment->GetFieldID(sOutputClass, "amount", "J");
-        sOutputScriptID = pEnvironment->GetFieldID(sOutputClass, "script", "Ljava/lang/String;");
-        sOutputAddressID = pEnvironment->GetFieldID(sOutputClass, "address", "Ljava/lang/String;");
-        sOutputRelatedID = pEnvironment->GetFieldID(sOutputClass, "related", "Z");
-    }
-
-    void setupOutpointClass(JNIEnv *pEnvironment)
-    {
-        sOutpointClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Outpoint");
-        sOutpointConstructor = pEnvironment->GetMethodID(sOutpointClass, "<init>", "()V");
-        sOutpointTransactionID = pEnvironment->GetFieldID(sOutpointClass, "transactionID",
-          "Ljava/lang/String;");
-        sOutpointIndexID = pEnvironment->GetFieldID(sOutpointClass, "index", "I");
-        sOutpointOutputID = pEnvironment->GetFieldID(sOutpointClass, "output",
-          "Ltech/nextcash/nextcashwallet/Output;");
-        sOutpointConfirmationsID = pEnvironment->GetFieldID(sOutpointClass, "confirmations", "I");
-    }
+    static jfieldID sBitcoinHandleID = NULL;
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setupJNI(JNIEnv *pEnvironment,
-                                                                              jclass pObject)
+                                                                              jclass pClass)
     {
+        sBitcoinHandleID = pEnvironment->GetFieldID(pClass, "mHandle", "J");
+    }
+
+    class Instance
+    {
+    public:
+        BitCoin::Daemon *daemon;
+
+        // Static Class/Field IDs
         // Bitcoin
-        sBitcoinClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Bitcoin");
-        sBitcoinHandleID = pEnvironment->GetFieldID(sBitcoinClass, "mHandle", "J");
-        sBitcoinWalletsID = pEnvironment->GetFieldID(sBitcoinClass, "mWallets",
-          "[Ltech/nextcash/nextcashwallet/Wallet;");
-        sBitcoinWalletsLoadedID = pEnvironment->GetFieldID(sBitcoinClass, "mWalletsLoaded", "Z");
-        sBitcoinChainLoadedID = pEnvironment->GetFieldID(sBitcoinClass, "mChainLoaded", "Z");
-    }
+        jclass jBitcoinClass;
+        jfieldID jBitcoinWalletsLoadedID;
+        jfieldID jBitcoinWalletsID;
+        jfieldID jBitcoinChainLoadedID;
 
-    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Wallet_setupJNI(JNIEnv *pEnvironment,
-                                                                             jclass pObject)
-    {
-        sWalletClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Wallet");
-        sWalletLastUpdatedID = pEnvironment->GetFieldID(sWalletClass, "lastUpdated", "J");
-        sWalletTransactionsID = pEnvironment->GetFieldID(sWalletClass, "transactions",
-          "[Ltech/nextcash/nextcashwallet/Transaction;");
-        sWalletUpdatedTransactionsID = pEnvironment->GetFieldID(sWalletClass, "updatedTransactions",
-          "[Ltech/nextcash/nextcashwallet/Transaction;");
-        sWalletIsPrivateID = pEnvironment->GetFieldID(sWalletClass, "isPrivate", "Z");
-        sWalletNameID = pEnvironment->GetFieldID(sWalletClass, "name", "Ljava/lang/String;");
-        sWalletIsSynchronizedID = pEnvironment->GetFieldID(sWalletClass, "isSynchronized", "Z");
-        sWalletIsBackedUpID = pEnvironment->GetFieldID(sWalletClass, "isBackedUp", "Z");
-        sWalletBalanceID = pEnvironment->GetFieldID(sWalletClass, "balance", "J");
-        sWalletPendingBalanceID = pEnvironment->GetFieldID(sWalletClass, "pendingBalance", "J");
-        sWalletBlockHeightID = pEnvironment->GetFieldID(sWalletClass, "blockHeight", "I");
-    }
+        // Wallet
+        jclass jWalletClass;
+        jfieldID jWalletLastUpdatedID;
+        jfieldID jWalletTransactionsID;
+        jfieldID jWalletUpdatedTransactionsID;
+        jfieldID jWalletIsPrivateID;
+        jfieldID jWalletNameID;
+        jfieldID jWalletIsSynchronizedID;
+        jfieldID jWalletIsBackedUpID;
+        jfieldID jWalletBalanceID;
+        jfieldID jWalletPendingBalanceID;
+        jfieldID jWalletBlockHeightID;
 
-    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Transaction_setupJNI(JNIEnv *pEnvironment,
-                                                                                  jclass pObject)
-    {
-        // This function gets called, but seems to be "unloaded" or invalidated somehow before any
-        //   transactions are created with NewObject JNI function.
-        // setupTransaction has to be called immediately before creating transactions.
+        // Transaction
+        jclass jTransactionClass;
+        jmethodID jTransactionConstructor;
+        jfieldID jTransactionHashID;
+        jfieldID jTransactionBlockID;
+        jfieldID jTransactionDateID;
+        jfieldID jTransactionAmountID;
+        jfieldID jTransactionCountID;
 
-//        sTransactionClass = pEnvironment->FindClass("tech/nextcash/nextcashwallet/Transaction");
-//        sTransactionConstructor = pEnvironment->GetMethodID(sTransactionClass, "<init>",
-//          "()V");
-//        sTransactionHashID = pEnvironment->GetFieldID(sTransactionClass, "hash",
-//          "Ljava/lang/String;");
-//        sTransactionBlockID = pEnvironment->GetFieldID(sTransactionClass, "block",
-//          "Ljava/lang/String;");
-//        sTransactionDateID = pEnvironment->GetFieldID(sTransactionClass, "date", "J");
-//        sTransactionAmountID = pEnvironment->GetFieldID(sTransactionClass, "amount", "J");
-    }
+        // Block
+        jclass jBlockClass;
+        jmethodID jBlockConstructor;
+        jfieldID jBlockHeightID;
+        jfieldID jBlockHashID;
+        jfieldID jBlockTimeID;
 
-    BitCoin::Daemon *getDaemon(JNIEnv *pEnvironment, jobject pBitcoinObject, bool pCreate = false)
+        // PaymentRequest
+        jclass jPaymentRequestClass;
+        jmethodID jPaymentRequestConstructor;
+        jfieldID jPaymentRequestURIID;
+        jfieldID jPaymentRequestFormatID;
+        jfieldID jPaymentRequestTypeID;
+        jfieldID jPaymentRequestAddressID;
+        jfieldID jPaymentRequestAmountID;
+        jfieldID jPaymentRequestAmountSpecifiedID;
+        jfieldID jPaymentRequestLabelID;
+        jfieldID jPaymentRequestMessageID;
+        jfieldID jPaymentRequestSecureID;
+        jfieldID jPaymentRequestSecureURLID;
+
+        // Input
+        jclass jInputClass;
+        jmethodID jInputConstructor;
+        jfieldID jInputOutpointID;
+        jfieldID jInputOutpointIndexID;
+        jfieldID jInputScriptID;
+        jfieldID jInputSequenceID;
+        jfieldID jInputAddressID;
+        jfieldID jInputAmountID;
+
+        // Output
+        jclass jOutputClass;
+        jmethodID jOutputConstructor;
+        jfieldID jOutputAmountID;
+        jfieldID jOutputScriptID;
+        jfieldID jOutputScriptDataID;
+        jfieldID jOutputAddressID;
+        jfieldID jOutputRelatedID;
+
+        // Full Transaction
+        jclass jFullTransactionClass;
+        jmethodID jFullTransactionConstructor;
+        jfieldID jFullTransactionHashID;
+        jfieldID jFullTransactionBlockID;
+        jfieldID jFullTransactionCountID;
+        jfieldID jFullTransactionVersionID;
+        jfieldID jFullTransactionInputsID;
+        jfieldID jFullTransactionOutputsID;
+        jfieldID jFullTransactionLockTimeID;
+        jfieldID jFullTransactionDateID;
+        jfieldID jFullTransactionSizeID;
+
+        // Outpoint
+        jclass jOutpointClass;
+        jmethodID jOutpointConstructor;
+        jfieldID jOutpointTransactionID;
+        jfieldID jOutpointIndexID;
+        jfieldID jOutpointOutputID;
+        jfieldID jOutpointConfirmationsID;
+
+        // SendResult
+        jclass jSendResultClass;
+        jmethodID jSendResultConstructor;
+        jfieldID jSendResultResultID;
+        jfieldID jSendResultTransactionID;
+        jfieldID jSendResultRawTransactionID;
+
+        Instance(JNIEnv *pEnvironment)
+        {
+            daemon = new BitCoin::Daemon();
+
+            // Bitcoin
+            jBitcoinClass = reinterpret_cast<jclass>(pEnvironment->NewGlobalRef(
+              pEnvironment->FindClass("tech/nextcash/nextcashwallet/Bitcoin")));
+            jBitcoinWalletsLoadedID = pEnvironment->GetFieldID(jBitcoinClass, "mWalletsLoaded",
+              "Z");
+            jBitcoinChainLoadedID = pEnvironment->GetFieldID(jBitcoinClass, "mChainLoaded", "Z");
+            jBitcoinWalletsID = pEnvironment->GetFieldID(jBitcoinClass, "mWallets",
+              "[Ltech/nextcash/nextcashwallet/Wallet;");
+
+            // Wallet
+            jWalletClass = NULL;
+            jWalletLastUpdatedID = NULL;
+            jWalletTransactionsID = NULL;
+            jWalletUpdatedTransactionsID = NULL;
+            jWalletIsPrivateID = NULL;
+            jWalletNameID = NULL;
+            jWalletIsSynchronizedID = NULL;
+            jWalletIsBackedUpID = NULL;
+            jWalletBalanceID = NULL;
+            jWalletPendingBalanceID = NULL;
+            jWalletBlockHeightID = NULL;
+
+            // Transaction
+            jTransactionClass = NULL;
+            jTransactionConstructor = NULL;
+            jTransactionHashID = NULL;
+            jTransactionBlockID = NULL;
+            jTransactionDateID = NULL;
+            jTransactionAmountID = NULL;
+            jTransactionCountID = NULL;
+
+            // Block
+            jBlockClass = NULL;
+            jBlockConstructor = NULL;
+            jBlockHeightID = NULL;
+            jBlockHashID = NULL;
+            jBlockTimeID = NULL;
+
+            // PaymentRequest
+            jPaymentRequestClass = NULL;
+            jPaymentRequestConstructor = NULL;
+            jPaymentRequestURIID = NULL;
+            jPaymentRequestFormatID = NULL;
+            jPaymentRequestTypeID = NULL;
+            jPaymentRequestAddressID = NULL;
+            jPaymentRequestAmountID = NULL;
+            jPaymentRequestAmountSpecifiedID = NULL;
+            jPaymentRequestLabelID = NULL;
+            jPaymentRequestMessageID = NULL;
+            jPaymentRequestSecureID = NULL;
+            jPaymentRequestSecureURLID = NULL;
+
+            // Input
+            jInputClass = NULL;
+            jInputConstructor = NULL;
+            jInputOutpointID = NULL;
+            jInputOutpointIndexID = NULL;
+            jInputScriptID = NULL;
+            jInputSequenceID = NULL;
+            jInputAddressID = NULL;
+            jInputAmountID = NULL;
+
+            // Output
+            jOutputClass = NULL;
+            jOutputConstructor = NULL;
+            jOutputAmountID = NULL;
+            jOutputScriptID = NULL;
+            jOutputScriptDataID = NULL;
+            jOutputAddressID = NULL;
+            jOutputRelatedID = NULL;
+
+            // Full Transaction
+            jFullTransactionClass = NULL;
+            jFullTransactionConstructor = NULL;
+            jFullTransactionHashID = NULL;
+            jFullTransactionBlockID = NULL;
+            jFullTransactionCountID = NULL;
+            jFullTransactionVersionID = NULL;
+            jFullTransactionInputsID = NULL;
+            jFullTransactionOutputsID = NULL;
+            jFullTransactionLockTimeID = NULL;
+            jFullTransactionDateID = NULL;
+            jFullTransactionSizeID = NULL;
+
+            // Outpoint
+            jOutpointClass = NULL;
+            jOutpointConstructor = NULL;
+            jOutpointTransactionID = NULL;
+            jOutpointIndexID = NULL;
+            jOutpointOutputID = NULL;
+            jOutpointConfirmationsID = NULL;
+
+            // SendResult
+            jSendResultClass = NULL;
+            jSendResultConstructor = NULL;
+            jSendResultResultID = NULL;
+            jSendResultTransactionID = NULL;
+            jSendResultRawTransactionID = NULL;
+
+        }
+
+        void clean(JNIEnv *pEnvironment)
+        {
+            if(jBitcoinClass != NULL)
+            {
+                pEnvironment->DeleteGlobalRef(jBitcoinClass);
+                jBitcoinClass = NULL;
+            }
+
+            if(jWalletClass != NULL)
+            {
+                pEnvironment->DeleteGlobalRef(jWalletClass);
+                jWalletClass = NULL;
+            }
+
+            if(jTransactionClass != NULL)
+            {
+                pEnvironment->DeleteGlobalRef(jTransactionClass);
+                jTransactionClass = NULL;
+            }
+
+            if(jBlockClass != NULL)
+            {
+                pEnvironment->DeleteGlobalRef(jBlockClass);
+                jBlockClass = NULL;
+            }
+
+            if(jPaymentRequestClass != NULL)
+            {
+                pEnvironment->DeleteGlobalRef(jPaymentRequestClass);
+                jPaymentRequestClass = NULL;
+            }
+
+            if(jInputClass != NULL)
+            {
+                pEnvironment->DeleteGlobalRef(jInputClass);
+                jInputClass = NULL;
+            }
+
+            if(jFullTransactionClass != NULL)
+            {
+                pEnvironment->DeleteGlobalRef(jFullTransactionClass);
+                jFullTransactionClass = NULL;
+            }
+
+            if(jOutputClass != NULL)
+            {
+                pEnvironment->DeleteGlobalRef(jOutputClass);
+                jOutputClass = NULL;
+            }
+
+            if(jOutpointClass != NULL)
+            {
+                pEnvironment->DeleteGlobalRef(jOutpointClass);
+                jOutpointClass = NULL;
+            }
+
+            if(jSendResultClass != NULL)
+            {
+                pEnvironment->DeleteGlobalRef(jSendResultClass);
+                jSendResultClass = NULL;
+            }
+        }
+
+        void setupWalletClass(JNIEnv *pEnvironment)
+        {
+            if(jWalletClass != NULL)
+              return;
+
+            jWalletClass = reinterpret_cast<jclass>(pEnvironment->NewGlobalRef(
+              pEnvironment->FindClass("tech/nextcash/nextcashwallet/Wallet")));
+            jWalletLastUpdatedID = pEnvironment->GetFieldID(jWalletClass, "lastUpdated", "J");
+            jWalletTransactionsID = pEnvironment->GetFieldID(jWalletClass, "transactions",
+              "[Ltech/nextcash/nextcashwallet/Transaction;");
+            jWalletUpdatedTransactionsID = pEnvironment->GetFieldID(jWalletClass, "updatedTransactions",
+              "[Ltech/nextcash/nextcashwallet/Transaction;");
+            jWalletIsPrivateID = pEnvironment->GetFieldID(jWalletClass, "isPrivate", "Z");
+            jWalletNameID = pEnvironment->GetFieldID(jWalletClass, "name", "Ljava/lang/String;");
+            jWalletIsSynchronizedID = pEnvironment->GetFieldID(jWalletClass, "isSynchronized", "Z");
+            jWalletIsBackedUpID = pEnvironment->GetFieldID(jWalletClass, "isBackedUp", "Z");
+            jWalletBalanceID = pEnvironment->GetFieldID(jWalletClass, "balance", "J");
+            jWalletPendingBalanceID = pEnvironment->GetFieldID(jWalletClass, "pendingBalance", "J");
+            jWalletBlockHeightID = pEnvironment->GetFieldID(jWalletClass, "blockHeight", "I");
+        }
+
+        void setupTransactionClass(JNIEnv *pEnvironment)
+        {
+            if(jTransactionClass != NULL)
+                return;
+
+            jTransactionClass = reinterpret_cast<jclass>(pEnvironment->NewGlobalRef(
+              pEnvironment->FindClass("tech/nextcash/nextcashwallet/Transaction")));
+            jTransactionConstructor = pEnvironment->GetMethodID(jTransactionClass, "<init>", "()V");
+            jTransactionHashID = pEnvironment->GetFieldID(jTransactionClass, "hash",
+              "Ljava/lang/String;");
+            jTransactionBlockID = pEnvironment->GetFieldID(jTransactionClass, "block",
+              "Ljava/lang/String;");
+            jTransactionDateID = pEnvironment->GetFieldID(jTransactionClass, "date", "J");
+            jTransactionAmountID = pEnvironment->GetFieldID(jTransactionClass, "amount", "J");
+            jTransactionCountID = pEnvironment->GetFieldID(jTransactionClass, "count", "I");
+        }
+
+        void setupBlockClass(JNIEnv *pEnvironment)
+        {
+            if(jBlockClass != NULL)
+                return;
+
+            jBlockClass = reinterpret_cast<jclass>(pEnvironment->NewGlobalRef(
+              pEnvironment->FindClass("tech/nextcash/nextcashwallet/Block")));
+            jBlockConstructor = pEnvironment->GetMethodID(jBlockClass, "<init>", "()V");
+            jBlockHeightID = pEnvironment->GetFieldID(jBlockClass, "height", "I");
+            jBlockHashID = pEnvironment->GetFieldID(jBlockClass, "hash", "Ljava/lang/String;");
+            jBlockTimeID = pEnvironment->GetFieldID(jBlockClass, "time", "J");
+        }
+
+        void setupPaymentRequestClass(JNIEnv *pEnvironment)
+        {
+            if(jPaymentRequestClass != NULL)
+                return;
+
+            jPaymentRequestClass = reinterpret_cast<jclass>(pEnvironment->NewGlobalRef(
+              pEnvironment->FindClass("tech/nextcash/nextcashwallet/PaymentRequest")));
+            jPaymentRequestConstructor = pEnvironment->GetMethodID(jPaymentRequestClass, "<init>",
+              "()V");
+            jPaymentRequestURIID = pEnvironment->GetFieldID(jPaymentRequestClass, "uri",
+              "Ljava/lang/String;");
+            jPaymentRequestFormatID = pEnvironment->GetFieldID(jPaymentRequestClass, "format", "I");
+            jPaymentRequestTypeID = pEnvironment->GetFieldID(jPaymentRequestClass, "type", "I");
+            jPaymentRequestAddressID = pEnvironment->GetFieldID(jPaymentRequestClass, "address",
+              "Ljava/lang/String;");
+            jPaymentRequestAmountID = pEnvironment->GetFieldID(jPaymentRequestClass, "amount", "J");
+            jPaymentRequestAmountSpecifiedID = pEnvironment->GetFieldID(jPaymentRequestClass,
+              "amountSpecified", "Z");
+            jPaymentRequestLabelID = pEnvironment->GetFieldID(jPaymentRequestClass, "label",
+              "Ljava/lang/String;");
+            jPaymentRequestMessageID = pEnvironment->GetFieldID(jPaymentRequestClass, "message",
+              "Ljava/lang/String;");
+            jPaymentRequestSecureID = pEnvironment->GetFieldID(jPaymentRequestClass, "secure", "Z");
+            jPaymentRequestSecureURLID = pEnvironment->GetFieldID(jPaymentRequestClass, "secureURL",
+              "Ljava/lang/String;");
+        }
+
+        void setupFullTransactionClass(JNIEnv *pEnvironment)
+        {
+            if(jFullTransactionClass != NULL)
+                return;
+
+            // Input
+            jInputClass = reinterpret_cast<jclass>(pEnvironment->NewGlobalRef(
+              pEnvironment->FindClass("tech/nextcash/nextcashwallet/Input")));
+            jInputConstructor = pEnvironment->GetMethodID(jInputClass, "<init>", "()V");
+            jInputOutpointID = pEnvironment->GetFieldID(jInputClass, "outpointID",
+              "Ljava/lang/String;");
+            jInputOutpointIndexID = pEnvironment->GetFieldID(jInputClass, "outpointIndex", "I");
+            jInputScriptID = pEnvironment->GetFieldID(jInputClass, "script", "Ljava/lang/String;");
+            jInputSequenceID = pEnvironment->GetFieldID(jInputClass, "sequence", "I");
+            jInputAddressID = pEnvironment->GetFieldID(jInputClass, "address",
+              "Ljava/lang/String;");
+            jInputAmountID = pEnvironment->GetFieldID(jInputClass, "amount", "J");
+
+            setupOutputClass(pEnvironment);
+
+            // Full Transaction
+            jFullTransactionClass = reinterpret_cast<jclass>(pEnvironment->NewGlobalRef(
+              pEnvironment->FindClass("tech/nextcash/nextcashwallet/FullTransaction")));
+            jFullTransactionConstructor = pEnvironment->GetMethodID(jFullTransactionClass, "<init>", "()V");
+            jFullTransactionHashID = pEnvironment->GetFieldID(jFullTransactionClass, "hash",
+              "Ljava/lang/String;");
+            jFullTransactionBlockID = pEnvironment->GetFieldID(jFullTransactionClass, "block",
+              "Ljava/lang/String;");
+            jFullTransactionCountID = pEnvironment->GetFieldID(jFullTransactionClass, "count", "I");
+            jFullTransactionVersionID = pEnvironment->GetFieldID(jFullTransactionClass, "version", "I");
+            jFullTransactionInputsID = pEnvironment->GetFieldID(jFullTransactionClass, "inputs",
+              "[Ltech/nextcash/nextcashwallet/Input;");
+            jFullTransactionOutputsID = pEnvironment->GetFieldID(jFullTransactionClass, "outputs",
+              "[Ltech/nextcash/nextcashwallet/Output;");
+            jFullTransactionLockTimeID = pEnvironment->GetFieldID(jFullTransactionClass, "lockTime",
+              "I");
+            jFullTransactionDateID = pEnvironment->GetFieldID(jFullTransactionClass, "date",
+              "J");
+            jFullTransactionSizeID = pEnvironment->GetFieldID(jFullTransactionClass, "size",
+              "I");
+        }
+
+        void setupOutputClass(JNIEnv *pEnvironment)
+        {
+            if(jOutputClass != NULL)
+                return;
+
+            jOutputClass = reinterpret_cast<jclass>(pEnvironment->NewGlobalRef(
+              pEnvironment->FindClass("tech/nextcash/nextcashwallet/Output")));
+            jOutputConstructor = pEnvironment->GetMethodID(jOutputClass, "<init>", "()V");
+            jOutputAmountID = pEnvironment->GetFieldID(jOutputClass, "amount", "J");
+            jOutputScriptID = pEnvironment->GetFieldID(jOutputClass, "script", "Ljava/lang/String;");
+            jOutputScriptDataID = pEnvironment->GetFieldID(jOutputClass,"scriptData", "[B");
+            jOutputAddressID = pEnvironment->GetFieldID(jOutputClass, "address", "Ljava/lang/String;");
+            jOutputRelatedID = pEnvironment->GetFieldID(jOutputClass, "related", "Z");
+        }
+
+        void setupOutpointClass(JNIEnv *pEnvironment)
+        {
+            if(jOutpointClass != NULL)
+                return;
+
+            jOutpointClass = reinterpret_cast<jclass>(pEnvironment->NewGlobalRef(
+              pEnvironment->FindClass("tech/nextcash/nextcashwallet/Outpoint")));
+            jOutpointConstructor = pEnvironment->GetMethodID(jOutpointClass, "<init>", "()V");
+            jOutpointTransactionID = pEnvironment->GetFieldID(jOutpointClass, "transactionID",
+              "Ljava/lang/String;");
+            jOutpointIndexID = pEnvironment->GetFieldID(jOutpointClass, "index", "I");
+            jOutpointOutputID = pEnvironment->GetFieldID(jOutpointClass, "output",
+              "Ltech/nextcash/nextcashwallet/Output;");
+            jOutpointConfirmationsID = pEnvironment->GetFieldID(jOutpointClass, "confirmations", "I");
+        }
+
+        void setupSendResultClass(JNIEnv *pEnvironment)
+        {
+            if(jSendResultClass != NULL)
+                return;
+
+            setupTransactionClass(pEnvironment);
+
+            jSendResultClass = reinterpret_cast<jclass>(pEnvironment->NewGlobalRef(
+              pEnvironment->FindClass("tech/nextcash/nextcashwallet/SendResult")));
+            jSendResultConstructor = pEnvironment->GetMethodID(jSendResultClass, "<init>", "()V");
+            jSendResultResultID = pEnvironment->GetFieldID(jSendResultClass, "result", "I");
+            jSendResultTransactionID = pEnvironment->GetFieldID(jSendResultClass, "transaction",
+              "Ltech/nextcash/nextcashwallet/Transaction;");
+            jSendResultRawTransactionID = pEnvironment->GetFieldID(jSendResultClass, "rawTransaction",
+              "[B");
+        }
+
+    };
+
+    Instance *getInstance(JNIEnv *pEnvironment, jobject pBitcoinObject, bool pCreate = false)
     {
         jlong handle = pEnvironment->GetLongField(pBitcoinObject, sBitcoinHandleID);
-
         if(handle != 0)
-            return reinterpret_cast<BitCoin::Daemon *>(handle);
+            return reinterpret_cast<Instance *>(handle);
 
         if(!pCreate)
             return NULL;
@@ -319,29 +516,39 @@ extern "C"
         // Create handle
         // NOTE : Daemon object apparently needs to be created in the thread running it. So make
         //   sure the functions with pCreate=true are only called on that Java thread.
-        BitCoin::Daemon *daemon = new BitCoin::Daemon();
-        handle = jlong(daemon);
+        Instance *instance = new Instance(pEnvironment);
+        handle = jlong(instance);
 
         pEnvironment->SetLongField(pBitcoinObject, sBitcoinHandleID, handle);
         NextCash::Log::add(NextCash::Log::INFO, NEXTCASH_JNI_LOG_NAME, "Bitcoin handle created");
 
-        return daemon;
+        return instance;
+    }
+
+    BitCoin::Daemon *getDaemon(JNIEnv *pEnvironment, jobject pBitcoinObject, bool pCreate = false)
+    {
+        Instance *instance = getInstance(pEnvironment, pBitcoinObject, pCreate);
+        if(instance != NULL)
+            return instance->daemon;
+        else
+            return NULL;
     }
 
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_destroy(JNIEnv *pEnvironment,
                                                                              jobject pObject)
     {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject, false);
-        if(daemon == NULL)
+        Instance *instance = getInstance(pEnvironment, pObject, false);
+        if(instance == NULL)
             return;
 
         // Zeroize handle in java object
         pEnvironment->SetLongField(pObject, sBitcoinHandleID, 0);
-        pEnvironment->SetBooleanField(pObject, sBitcoinWalletsLoadedID, JNI_FALSE);
-        pEnvironment->SetBooleanField(pObject, sBitcoinChainLoadedID, JNI_FALSE);
+        pEnvironment->SetBooleanField(pObject, instance->jBitcoinWalletsLoadedID, JNI_FALSE);
+        pEnvironment->SetBooleanField(pObject, instance->jBitcoinChainLoadedID, JNI_FALSE);
 
         // Delete C++ object
-        delete daemon;
+        instance->clean(pEnvironment);
+        delete instance;
         BitCoin::Info::destroy();
 
         NextCash::Log::add(NextCash::Log::INFO, NEXTCASH_JNI_LOG_NAME, "Bitcoin handle destroyed");
@@ -613,21 +820,22 @@ extern "C"
         return daemon->monitor()->height();
     }
 
-    jobject createBlock(JNIEnv *pEnvironment,
-                        int pHeight,
-                        jstring pHash,
-                        int32_t pTime)
+    jobject createBlock(Instance *pInstance, JNIEnv *pEnvironment, int pHeight, jstring pHash,
+      int32_t pTime)
     {
-        jobject result = pEnvironment->NewObject(sBlockClass, sBlockConstructor);
+        pInstance->setupBlockClass(pEnvironment);
+
+        jobject result = pEnvironment->NewObject(pInstance->jBlockClass,
+          pInstance->jBlockConstructor);
 
         // Set height
-        pEnvironment->SetIntField(result, sBlockHeightID, (jint)pHeight);
+        pEnvironment->SetIntField(result, pInstance->jBlockHeightID, (jint)pHeight);
 
         // Set hash
-        pEnvironment->SetObjectField(result, sBlockHashID, pHash);
+        pEnvironment->SetObjectField(result, pInstance->jBlockHashID, pHash);
 
         // Set time
-        pEnvironment->SetLongField(result, sBlockTimeID, (jlong)pTime);
+        pEnvironment->SetLongField(result, pInstance->jBlockTimeID, (jlong)pTime);
 
         return result;
     }
@@ -636,37 +844,38 @@ extern "C"
                                                                                            jobject pObject,
                                                                                            jint pHeight)
     {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
-        if(daemon == NULL)
+        Instance *instance = getInstance(pEnvironment, pObject);
+        if(instance == NULL)
             return NULL;
 
-        setupBlockClass(pEnvironment);
+        instance->setupBlockClass(pEnvironment);
 
         NextCash::Hash hash;
-        if(!daemon->chain()->getHash((unsigned int)pHeight, hash))
+        if(!instance->daemon->chain()->getHash((unsigned int)pHeight, hash))
             return NULL;
 
-        return createBlock(pEnvironment, pHeight, pEnvironment->NewStringUTF(hash.hex().text()),
-          daemon->chain()->time((unsigned int)pHeight));
+        return createBlock(instance, pEnvironment, pHeight,
+          pEnvironment->NewStringUTF(hash.hex().text()),
+          instance->daemon->chain()->time((unsigned int)pHeight));
     }
 
     JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getBlockFromHash(JNIEnv *pEnvironment,
                                                                                          jobject pObject,
                                                                                          jstring pHash)
     {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
-        if(daemon == NULL)
+        Instance *instance = getInstance(pEnvironment, pObject);
+        if(instance == NULL)
             return NULL;
 
-        setupBlockClass(pEnvironment);
+        instance->setupBlockClass(pEnvironment);
 
         const char *hashHex = pEnvironment->GetStringUTFChars(pHash, NULL);
         NextCash::Hash hash(hashHex);
-        int height = daemon->chain()->hashHeight(hash);
+        int height = instance->daemon->chain()->hashHeight(hash);
         pEnvironment->ReleaseStringUTFChars(pHash, hashHex);
 
-        return createBlock(pEnvironment, height, pHash,
-          daemon->chain()->time((unsigned int)height));
+        return createBlock(instance, pEnvironment, height, pHash,
+          instance->daemon->chain()->time((unsigned int)height));
     }
 
     bool savePublicKeys(BitCoin::Daemon *pDaemon)
@@ -833,42 +1042,43 @@ extern "C"
         return (jint)daemon->monitor()->changeID();
     }
 
-    jobject createTransaction(JNIEnv *pEnvironment,
-                              BitCoin::Daemon *pDaemon,
-                              BitCoin::Monitor::RelatedTransactionData &pTransaction,
-                              bool pChainWasLoaded)
+    jobject createTransaction(Instance *pInstance, JNIEnv *pEnvironment,
+      BitCoin::Monitor::RelatedTransactionData &pTransaction, bool pChainWasLoaded)
     {
-        jobject result = pEnvironment->NewObject(sTransactionClass, sTransactionConstructor);
+        pInstance->setupTransactionClass(pEnvironment);
+
+        jobject result = pEnvironment->NewObject(pInstance->jTransactionClass,
+          pInstance->jTransactionConstructor);
 
         // Set hash
-        pEnvironment->SetObjectField(result, sTransactionHashID,
+        pEnvironment->SetObjectField(result, pInstance->jTransactionHashID,
           pEnvironment->NewStringUTF(pTransaction.transaction.hash.hex()));
 
         // Set block
         if(!pTransaction.blockHash.isEmpty())
-            pEnvironment->SetObjectField(result, sTransactionBlockID,
+            pEnvironment->SetObjectField(result, pInstance->jTransactionBlockID,
               pEnvironment->NewStringUTF(pTransaction.blockHash.hex()));
 
         // Set date
         if(pTransaction.transaction.time() != 0)
-            pEnvironment->SetLongField(result, sTransactionDateID,
+            pEnvironment->SetLongField(result, pInstance->jTransactionDateID,
               (jlong)pTransaction.transaction.time());
 
         // Set amount
-        pEnvironment->SetLongField(result, sTransactionAmountID,
+        pEnvironment->SetLongField(result, pInstance->jTransactionAmountID,
           (jlong)pTransaction.amount());
 
         // Set count
         if(!pChainWasLoaded)
-            pEnvironment->SetIntField(result, sTransactionCountID,
+            pEnvironment->SetIntField(result, pInstance->jTransactionCountID,
               (jint)-1);
         else if(pTransaction.blockHash.isEmpty())
-            pEnvironment->SetIntField(result, sTransactionCountID,
+            pEnvironment->SetIntField(result, pInstance->jTransactionCountID,
               (jint)pTransaction.nodesVerified);
         else
-            pEnvironment->SetIntField(result, sTransactionCountID,
-              (jint)(pDaemon->chain()->headerHeight() + 1 -
-              pDaemon->chain()->hashHeight(pTransaction.blockHash)));
+            pEnvironment->SetIntField(result, pInstance->jTransactionCountID,
+              (jint)(pInstance->daemon->chain()->headerHeight() + 1 -
+                pInstance->daemon->chain()->hashHeight(pTransaction.blockHash)));
 
         return result;
     }
@@ -878,32 +1088,36 @@ extern "C"
                                                                                       jobject pWallet,
                                                                                       jint pOffset)
     {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pBitcoin);
-        if(daemon == NULL || daemon->keyStore()->size() <= pOffset)
+        Instance *instance = getInstance(pEnvironment, pBitcoin);
+        if(instance == NULL || instance->daemon->keyStore()->size() <= pOffset)
             return JNI_FALSE;
 
         // Loop through public chain keys getting transactions
         jint headerHeight;
         int64_t balance = 0, pendingBalance = 0;
-        bool chainWasLoaded = daemon->chainIsLoaded();
+        bool chainWasLoaded = instance->daemon->chainIsLoaded();
         std::vector<BitCoin::Key *> *chainKeys =
-          daemon->keyStore()->chainKeys((unsigned int)pOffset);
+          instance->daemon->keyStore()->chainKeys((unsigned int)pOffset);
         std::vector<BitCoin::Monitor::RelatedTransactionData> transactions;
 
         if(chainWasLoaded)
-            headerHeight = (jint)daemon->chain()->headerHeight();
+            headerHeight = (jint)instance->daemon->chain()->headerHeight();
         else
             headerHeight = 0;
 
         if(chainKeys != NULL && chainKeys->size() != 0)
         {
-            daemon->monitor()->getTransactions(chainKeys->begin(), chainKeys->end(),
+            instance->daemon->monitor()->getTransactions(chainKeys->begin(), chainKeys->end(),
               transactions, true);
 
-            balance = daemon->monitor()->balance(chainKeys->begin(), chainKeys->end(), false);
+            balance = instance->daemon->monitor()->balance(chainKeys->begin(), chainKeys->end(), false);
         }
 
-        bool previousUpdate = pEnvironment->GetLongField(pWallet, sWalletLastUpdatedID) != 0;
+        instance->setupWalletClass(pEnvironment);
+        instance->setupTransactionClass(pEnvironment);
+
+        bool previousUpdate = pEnvironment->GetLongField(pWallet, instance->jWalletLastUpdatedID) !=
+          0;
         NextCash::HashList previousHashList, previousConfirmedHashList;
         bool hasPending = false;
 
@@ -911,7 +1125,7 @@ extern "C"
         if(previousUpdate)
         {
             jobjectArray previousTransactions = (jobjectArray)pEnvironment->GetObjectField(pWallet,
-              sWalletTransactionsID);
+              instance->jWalletTransactionsID);
             if(previousTransactions != NULL)
             {
                 jsize previousCount = pEnvironment->GetArrayLength(previousTransactions);
@@ -924,9 +1138,9 @@ extern "C"
                     previousTransaction = pEnvironment->GetObjectArrayElement(previousTransactions,
                       i);
                     hashString = pEnvironment->GetObjectField(previousTransaction,
-                      sTransactionHashID);
+                      instance->jTransactionHashID);
                     blockString = pEnvironment->GetObjectField(previousTransaction,
-                      sTransactionBlockID);
+                      instance->jTransactionBlockID);
 
                     hashText = pEnvironment->GetStringUTFChars((jstring)hashString, NULL);
                     hash.setHex(hashText);
@@ -944,16 +1158,14 @@ extern "C"
               transactions.begin(); transaction != transactions.end(); ++transaction)
                 if(transaction->blockHeight != 0xffffffff)
                     (*transaction).transaction
-                      .setTime(daemon->chain()->time(transaction->blockHeight));
+                      .setTime(instance->daemon->chain()->time(transaction->blockHeight));
 
         std::sort(transactions.begin(), transactions.end(), transGreater);
-
-        setupTransactionClass(pEnvironment);
 
         // Set transactions
         std::vector<BitCoin::Monitor::RelatedTransactionData> newUpdatedTransactions;
         jobjectArray newTransactions = pEnvironment->NewObjectArray((jsize)transactions.size(),
-          sTransactionClass, NULL);
+          instance->jTransactionClass, NULL);
         unsigned int index = 0;
 
         for(std::vector<BitCoin::Monitor::RelatedTransactionData>::iterator transaction =
@@ -961,7 +1173,7 @@ extern "C"
         {
             // Set value in array
             pEnvironment->SetObjectArrayElement(newTransactions, index,
-              createTransaction(pEnvironment, daemon, *transaction, chainWasLoaded));
+              createTransaction(instance, pEnvironment, *transaction, chainWasLoaded));
 
             if(transaction->blockHash.isEmpty())
                 hasPending = true;
@@ -977,14 +1189,14 @@ extern "C"
             }
         }
 
-        pEnvironment->SetObjectField(pWallet, sWalletTransactionsID, newTransactions);
+        pEnvironment->SetObjectField(pWallet, instance->jWalletTransactionsID, newTransactions);
 
         if(previousUpdate)
         {
             // Set updated transactions
             jobjectArray updatedTransactions =
-              pEnvironment->NewObjectArray((jsize)newUpdatedTransactions.size(), sTransactionClass,
-              NULL);
+              pEnvironment->NewObjectArray((jsize)newUpdatedTransactions.size(),
+              instance->jTransactionClass, NULL);
 
             index = 0;
             for(std::vector<BitCoin::Monitor::RelatedTransactionData>::iterator transaction =
@@ -993,30 +1205,33 @@ extern "C"
             {
                 // Set value in array
                 pEnvironment->SetObjectArrayElement(updatedTransactions, index,
-                  createTransaction(pEnvironment, daemon, *transaction, chainWasLoaded));
+                  createTransaction(instance, pEnvironment, *transaction,
+                    chainWasLoaded));
             }
 
-            pEnvironment->SetObjectField(pWallet, sWalletUpdatedTransactionsID,
+            pEnvironment->SetObjectField(pWallet, instance->jWalletUpdatedTransactionsID,
               updatedTransactions);
         }
 
         if(hasPending)
-            pendingBalance = daemon->monitor()->balance(chainKeys->begin(), chainKeys->end(), true);
+            pendingBalance = instance->daemon->monitor()->balance(chainKeys->begin(), chainKeys->end(), true);
         else
             pendingBalance = balance;
 
-        pEnvironment->SetObjectField(pWallet, sWalletNameID,
-          pEnvironment->NewStringUTF(daemon->keyStore()->name((unsigned int)pOffset).text()));
-        pEnvironment->SetBooleanField(pWallet, sWalletIsPrivateID,
-          (jboolean)daemon->keyStore()->hasPrivate((unsigned int)pOffset));
-        pEnvironment->SetBooleanField(pWallet, sWalletIsSynchronizedID,
-          (jboolean)daemon->keyStore()->isSynchronized((unsigned int)pOffset));
-        pEnvironment->SetBooleanField(pWallet, sWalletIsBackedUpID,
-          (jboolean)daemon->keyStore()->isBackedUp((unsigned int)pOffset));
-        pEnvironment->SetLongField(pWallet, sWalletBalanceID, (jlong)balance);
-        pEnvironment->SetLongField(pWallet, sWalletPendingBalanceID, (jlong)pendingBalance);
-        pEnvironment->SetIntField(pWallet, sWalletBlockHeightID, headerHeight);
-        pEnvironment->SetLongField(pWallet, sWalletLastUpdatedID, (jlong)BitCoin::getTime());
+        pEnvironment->SetObjectField(pWallet, instance->jWalletNameID,
+          pEnvironment->NewStringUTF(instance->daemon->keyStore()->name((unsigned int)pOffset).text()));
+        pEnvironment->SetBooleanField(pWallet, instance->jWalletIsPrivateID,
+          (jboolean)instance->daemon->keyStore()->hasPrivate((unsigned int)pOffset));
+        pEnvironment->SetBooleanField(pWallet, instance->jWalletIsSynchronizedID,
+          (jboolean)instance->daemon->keyStore()->isSynchronized((unsigned int)pOffset));
+        pEnvironment->SetBooleanField(pWallet, instance->jWalletIsBackedUpID,
+          (jboolean)instance->daemon->keyStore()->isBackedUp((unsigned int)pOffset));
+        pEnvironment->SetLongField(pWallet, instance->jWalletBalanceID, (jlong)balance);
+        pEnvironment->SetLongField(pWallet, instance->jWalletPendingBalanceID,
+          (jlong)pendingBalance);
+        pEnvironment->SetIntField(pWallet, instance->jWalletBlockHeightID, headerHeight);
+        pEnvironment->SetLongField(pWallet, instance->jWalletLastUpdatedID,
+          (jlong)BitCoin::getTime());
         return JNI_TRUE;
     }
 
@@ -1025,26 +1240,26 @@ extern "C"
                                                                                  jint pOffset,
                                                                                  jstring pName)
     {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
-        if(daemon == NULL || daemon->keyStore()->size() <= pOffset)
+        Instance *instance = getInstance(pEnvironment, pObject);
+        if(instance == NULL || instance->daemon->keyStore()->size() <= pOffset)
             return JNI_FALSE;
 
         const char *newName = pEnvironment->GetStringUTFChars(pName, NULL);
-        daemon->keyStore()->setName((unsigned int)pOffset, newName);
+        instance->daemon->keyStore()->setName((unsigned int)pOffset, newName);
         pEnvironment->ReleaseStringUTFChars(pName, newName);
 
-        jboolean result = (jboolean)savePublicKeys(daemon);
+        jboolean result = (jboolean)savePublicKeys(instance->daemon);
         if(result)
         {
             // Set name in java object
             jobjectArray wallets = (jobjectArray)pEnvironment->GetObjectField(pObject,
-              sBitcoinWalletsID);
+              instance->jBitcoinWalletsID);
             if(pEnvironment->GetArrayLength(wallets) > pOffset)
             {
                 jobject wallet = pEnvironment->GetObjectArrayElement(wallets, pOffset);
-                pEnvironment->SetObjectField(wallet, sWalletNameID, pName);
+                pEnvironment->SetObjectField(wallet, instance->jWalletNameID, pName);
             }
-            daemon->monitor()->incrementChange();
+            instance->daemon->monitor()->incrementChange();
         }
 
         return result;
@@ -1424,35 +1639,40 @@ extern "C"
         if(request.network != BitCoin::MAINNET)
             request.format = BitCoin::PaymentRequest::Format::INVALID;
 
+        Instance *instance = getInstance(pEnvironment, pObject);
+        if(instance == NULL)
+            return NULL;
+
         // Create result object
-        setupPaymentRequestClass(pEnvironment);
-        jobject result = pEnvironment->NewObject(sPaymentRequestClass, sPaymentRequestConstructor);
+        instance->setupPaymentRequestClass(pEnvironment);
+        jobject result = pEnvironment->NewObject(instance->jPaymentRequestClass,
+          instance->jPaymentRequestConstructor);
 
         // Set code
-        pEnvironment->SetObjectField(result, sPaymentRequestURIID, pPaymentCode);
+        pEnvironment->SetObjectField(result, instance->jPaymentRequestURIID, pPaymentCode);
 
         // Set format
         switch(request.format)
         {
             case BitCoin::PaymentRequest::Format::INVALID:
-                pEnvironment->SetIntField(result, sPaymentRequestFormatID, (jint)0);
+                pEnvironment->SetIntField(result, instance->jPaymentRequestFormatID, (jint)0);
                 break;
             case BitCoin::PaymentRequest::Format::LEGACY:
-                pEnvironment->SetIntField(result, sPaymentRequestFormatID, (jint)1);
+                pEnvironment->SetIntField(result, instance->jPaymentRequestFormatID, (jint)1);
 
                 // Set address
                 if(!request.pubKeyHash.isEmpty())
-                    pEnvironment->SetObjectField(result, sPaymentRequestAddressID,
+                    pEnvironment->SetObjectField(result, instance->jPaymentRequestAddressID,
                       pEnvironment->NewStringUTF(BitCoin::encodeLegacyAddress(request.pubKeyHash,
                         request.type)));
 
                 break;
             case BitCoin::PaymentRequest::Format::CASH:
-                pEnvironment->SetIntField(result, sPaymentRequestFormatID, (jint)2);
+                pEnvironment->SetIntField(result, instance->jPaymentRequestFormatID, (jint)2);
 
                 // Set address
                 if(!request.pubKeyHash.isEmpty())
-                    pEnvironment->SetObjectField(result, sPaymentRequestAddressID,
+                    pEnvironment->SetObjectField(result, instance->jPaymentRequestAddressID,
                       pEnvironment->NewStringUTF(BitCoin::encodeCashAddress(request.pubKeyHash,
                         request.type)));
 
@@ -1463,48 +1683,50 @@ extern "C"
         switch(request.type)
         {
             case BitCoin::AddressType::UNKNOWN:
-                pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)0);
+                pEnvironment->SetIntField(result, instance->jPaymentRequestTypeID, (jint)0);
                 break;
             case BitCoin::AddressType::MAIN_PUB_KEY_HASH:
             case BitCoin::AddressType::TEST_PUB_KEY_HASH:
-                pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)1);
+                pEnvironment->SetIntField(result, instance->jPaymentRequestTypeID, (jint)1);
                 break;
             case BitCoin::AddressType::MAIN_SCRIPT_HASH:
             case BitCoin::AddressType::TEST_SCRIPT_HASH:
-                pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)2);
+                pEnvironment->SetIntField(result, instance->jPaymentRequestTypeID, (jint)2);
                 break;
             case BitCoin::AddressType::MAIN_PRIVATE_KEY:
             case BitCoin::AddressType::TEST_PRIVATE_KEY:
-                pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)3);
+                pEnvironment->SetIntField(result, instance->jPaymentRequestTypeID, (jint)3);
                 break;
             case BitCoin::AddressType::BIP0070:
-                pEnvironment->SetIntField(result, sPaymentRequestTypeID, (jint)4);
+                pEnvironment->SetIntField(result, instance->jPaymentRequestTypeID, (jint)4);
                 break;
         }
 
         // Set amount
-        pEnvironment->SetLongField(result, sPaymentRequestAmountID, (jlong)request.amount);
+        pEnvironment->SetLongField(result, instance->jPaymentRequestAmountID,
+          (jlong)request.amount);
 
         // Set amount specified
-        pEnvironment->SetBooleanField(result, sPaymentRequestAmountSpecifiedID,
+        pEnvironment->SetBooleanField(result, instance->jPaymentRequestAmountSpecifiedID,
           (jboolean)request.amountSpecified);
 
         // Set label
         if(request.label)
-            pEnvironment->SetObjectField(result, sPaymentRequestLabelID,
+            pEnvironment->SetObjectField(result, instance->jPaymentRequestLabelID,
               pEnvironment->NewStringUTF(request.label));
 
         // Set description
         if(request.message)
-            pEnvironment->SetObjectField(result, sPaymentRequestMessageID,
+            pEnvironment->SetObjectField(result, instance->jPaymentRequestMessageID,
               pEnvironment->NewStringUTF(request.message));
 
         // Set secure
-        pEnvironment->SetBooleanField(result, sPaymentRequestSecureID, (jboolean)request.secure);
+        pEnvironment->SetBooleanField(result, instance->jPaymentRequestSecureID,
+          (jboolean)request.secure);
 
         // Set secure URL
         if(request.secureURL)
-            pEnvironment->SetObjectField(result, sPaymentRequestSecureURLID,
+            pEnvironment->SetObjectField(result, instance->jPaymentRequestSecureURLID,
               pEnvironment->NewStringUTF(request.secureURL));
 
         return result;
@@ -1534,18 +1756,19 @@ extern "C"
                                                                                         jstring pID,
                                                                                         jobject pTransaction)
     {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
-        if(daemon == NULL || daemon->keyStore()->size() <= pKeyOffset)
+        Instance *instance = getInstance(pEnvironment, pObject);
+        if(instance == NULL || instance->daemon->keyStore()->size() <= pKeyOffset)
             return JNI_FALSE;
 
-        std::vector<BitCoin::Key *> *chainKeys = daemon->keyStore()->chainKeys(pKeyOffset);
+        std::vector<BitCoin::Key *> *chainKeys =
+          instance->daemon->keyStore()->chainKeys(pKeyOffset);
         if(chainKeys == NULL)
             return JNI_FALSE;
 
         const char *id = pEnvironment->GetStringUTFChars(pID, NULL);
         BitCoin::Monitor::RelatedTransactionData transaction;
-        bool success = daemon->monitor()->getTransaction(id, chainKeys->begin(), chainKeys->end(),
-          transaction);
+        bool success = instance->daemon->monitor()->getTransaction(id, chainKeys->begin(),
+          chainKeys->end(), transaction);
         pEnvironment->ReleaseStringUTFChars(pID, id);
 
         NextCash::Buffer buffer;
@@ -1555,56 +1778,57 @@ extern "C"
         if(!success)
             return JNI_FALSE;
 
-        setupFullTransactionClass(pEnvironment);
+        instance->setupFullTransactionClass(pEnvironment);
 
         // Hash
-        pEnvironment->SetObjectField(pTransaction, sFullTransactionHashID,
+        pEnvironment->SetObjectField(pTransaction, instance->jFullTransactionHashID,
           pEnvironment->NewStringUTF(transaction.transaction.hash.hex().text()));
 
         // Block
         if(!transaction.blockHash.isEmpty())
-            pEnvironment->SetObjectField(pTransaction, sFullTransactionBlockID,
+            pEnvironment->SetObjectField(pTransaction, instance->jFullTransactionBlockID,
               pEnvironment->NewStringUTF(transaction.blockHash.hex().text()));
         else
-            pEnvironment->SetObjectField(pTransaction, sFullTransactionBlockID, NULL);
+            pEnvironment->SetObjectField(pTransaction, instance->jFullTransactionBlockID, NULL);
 
         // Count and Date
-        if(!daemon->chainIsLoaded())
+        if(!instance->daemon->chainIsLoaded())
         {
-            pEnvironment->SetIntField(pTransaction, sFullTransactionCountID, (jint)-1);
+            pEnvironment->SetIntField(pTransaction, instance->jFullTransactionCountID, (jint)-1);
 
-            pEnvironment->SetLongField(pTransaction, sFullTransactionDateID, (jlong)0);
+            pEnvironment->SetLongField(pTransaction, instance->jFullTransactionDateID, (jlong)0);
         }
         else if(transaction.blockHash.isEmpty())
         {
-            pEnvironment->SetIntField(pTransaction, sFullTransactionCountID,
+            pEnvironment->SetIntField(pTransaction, instance->jFullTransactionCountID,
               (jint)transaction.nodesVerified);
 
-            pEnvironment->SetLongField(pTransaction, sFullTransactionDateID,
+            pEnvironment->SetLongField(pTransaction, instance->jFullTransactionDateID,
               (jlong)transaction.transaction.time());
         }
         else
         {
-            pEnvironment->SetIntField(pTransaction, sFullTransactionCountID,
-              (jint)(daemon->chain()->headerHeight() + 1 -
-              daemon->chain()->hashHeight(transaction.blockHash)));
+            pEnvironment->SetIntField(pTransaction, instance->jFullTransactionCountID,
+              (jint)(instance->daemon->chain()->headerHeight() + 1 -
+                instance->daemon->chain()->hashHeight(transaction.blockHash)));
 
-            pEnvironment->SetLongField(pTransaction, sFullTransactionDateID,
-              (jlong)daemon->chain()->time(daemon->chain()->hashHeight(transaction.blockHash)));
+            pEnvironment->SetLongField(pTransaction, instance->jFullTransactionDateID,
+              (jlong)instance->daemon->chain()->time(
+              instance->daemon->chain()->hashHeight(transaction.blockHash)));
         }
 
         // Size
-        pEnvironment->SetIntField(pTransaction, sFullTransactionSizeID,
+        pEnvironment->SetIntField(pTransaction, instance->jFullTransactionSizeID,
           transaction.transaction.size());
 
         // Version
-        pEnvironment->SetIntField(pTransaction, sFullTransactionVersionID,
+        pEnvironment->SetIntField(pTransaction, instance->jFullTransactionVersionID,
           (jint)transaction.transaction.version);
 
         // Inputs
         jobjectArray inputs =
-          pEnvironment->NewObjectArray((jsize)transaction.transaction.inputs.size(), sInputClass,
-            NULL);
+          pEnvironment->NewObjectArray((jsize)transaction.transaction.inputs.size(),
+            instance->jInputClass, NULL);
 
         unsigned int offset = 0;
         jobject inputObject;
@@ -1613,38 +1837,41 @@ extern "C"
         for(std::vector<BitCoin::Input>::iterator input = transaction.transaction.inputs.begin();
           input != transaction.transaction.inputs.end(); ++input, ++offset)
         {
-            inputObject = pEnvironment->NewObject(sInputClass, sInputConstructor);
+            inputObject = pEnvironment->NewObject(instance->jInputClass, instance->jInputConstructor);
 
             // Outpoint
-            pEnvironment->SetObjectField(inputObject, sInputOutpointID,
+            pEnvironment->SetObjectField(inputObject, instance->jInputOutpointID,
               pEnvironment->NewStringUTF(input->outpoint.transactionID.hex().text()));
-            pEnvironment->SetIntField(inputObject, sInputOutpointIndexID, input->outpoint.index);
+            pEnvironment->SetIntField(inputObject, instance->jInputOutpointIndexID,
+              input->outpoint.index);
 
             // Script
-            pEnvironment->SetObjectField(inputObject, sInputScriptID,
+            pEnvironment->SetObjectField(inputObject, instance->jInputScriptID,
               pEnvironment->NewStringUTF(BitCoin::ScriptInterpreter::scriptText(input->script,
-                daemon->chain()->forks(), daemon->chain()->headerHeight())));
+                instance->daemon->chain()->forks(), instance->daemon->chain()->headerHeight())));
 
             // Sequence
-            pEnvironment->SetIntField(inputObject, sInputSequenceID, (jint)input->sequence);
+            pEnvironment->SetIntField(inputObject, instance->jInputSequenceID,
+              (jint)input->sequence);
 
             // Address
             if(transaction.inputAddresses[offset])
-                pEnvironment->SetObjectField(inputObject, sInputAddressID,
+                pEnvironment->SetObjectField(inputObject, instance->jInputAddressID,
                   pEnvironment->NewStringUTF(transaction.inputAddresses[offset]));
 
             // Amount
-            pEnvironment->SetLongField(inputObject, sInputAmountID,
+            pEnvironment->SetLongField(inputObject, instance->jInputAmountID,
               (jlong)transaction.relatedInputAmounts[offset]);
 
             pEnvironment->SetObjectArrayElement(inputs, offset, inputObject);
         }
 
-        pEnvironment->SetObjectField(pTransaction, sFullTransactionInputsID, inputs);
+        pEnvironment->SetObjectField(pTransaction, instance->jFullTransactionInputsID, inputs);
 
         // Outputs
         jobjectArray outputs =
-          pEnvironment->NewObjectArray((jsize)transaction.transaction.outputs.size(), sOutputClass,
+          pEnvironment->NewObjectArray((jsize)transaction.transaction.outputs.size(),
+            instance->jOutputClass,
           NULL);
 
         jobject outputObject;
@@ -1653,53 +1880,105 @@ extern "C"
           transaction.transaction.outputs.begin();
           output != transaction.transaction.outputs.end(); ++output, ++offset)
         {
-            outputObject = pEnvironment->NewObject(sOutputClass, sOutputConstructor);
+            outputObject = pEnvironment->NewObject(instance->jOutputClass,
+              instance->jOutputConstructor);
 
             // Amount
-            pEnvironment->SetLongField(outputObject, sOutputAmountID, (jlong)output->amount);
+            pEnvironment->SetLongField(outputObject, instance->jOutputAmountID,
+              (jlong)output->amount);
 
             // Script
-            pEnvironment->SetObjectField(outputObject, sOutputScriptID,
+            pEnvironment->SetObjectField(outputObject, instance->jOutputScriptID,
               pEnvironment->NewStringUTF(BitCoin::ScriptInterpreter::scriptText(output->script,
-                daemon->chain()->forks(), daemon->chain()->headerHeight())));
+                instance->daemon->chain()->forks(), instance->daemon->chain()->headerHeight())));
+
+            // Script data
+            jbyteArray scriptBytes = pEnvironment->NewByteArray((jsize)output->script.length());
+            pEnvironment->SetByteArrayRegion(scriptBytes, 0, (jsize)output->script.length(),
+              (const jbyte *)output->script.startPointer());
+            pEnvironment->SetObjectField(outputObject, instance->jOutputScriptDataID, scriptBytes);
 
             // Address
             if(transaction.outputAddresses[offset])
-                pEnvironment->SetObjectField(outputObject, sOutputAddressID,
+                pEnvironment->SetObjectField(outputObject, instance->jOutputAddressID,
                   pEnvironment->NewStringUTF(transaction.outputAddresses[offset]));
 
             // Related
-            pEnvironment->SetBooleanField(outputObject, sOutputRelatedID,
+            pEnvironment->SetBooleanField(outputObject, instance->jOutputRelatedID,
               (jboolean)transaction.relatedOutputs[offset]);
 
             pEnvironment->SetObjectArrayElement(outputs, offset, outputObject);
         }
 
-        pEnvironment->SetObjectField(pTransaction, sFullTransactionOutputsID, outputs);
+        pEnvironment->SetObjectField(pTransaction, instance->jFullTransactionOutputsID, outputs);
 
         // Lock Time
-        pEnvironment->SetIntField(pTransaction, sFullTransactionLockTimeID,
+        pEnvironment->SetIntField(pTransaction, instance->jFullTransactionLockTimeID,
           (jint)transaction.transaction.lockTime);
 
         return JNI_TRUE;
     }
 
-    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendStandardPayment(JNIEnv *pEnvironment,
-                                                                                         jobject pObject,
-                                                                                         jint pWalletOffset,
-                                                                                         jstring pPassCode,
-                                                                                         jstring pAddress,
-                                                                                         jlong pAmount,
-                                                                                         jdouble pFeeRate,
-                                                                                         jboolean pUsePending,
-                                                                                         jboolean pSendAll)
+    jobject createSendResult(Instance *pInstance, JNIEnv *pEnvironment, int pWalletOffset,
+      int pResult, BitCoin::Transaction *pTransaction)
     {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
-        if(daemon == NULL || daemon->keyStore()->size() <= pWalletOffset)
-            return (jint)1;
+        pInstance->setupSendResultClass(pEnvironment);
+        jobject result = pEnvironment->NewObject(pInstance->jSendResultClass,
+          pInstance->jSendResultConstructor);
+        pEnvironment->SetIntField(result, pInstance->jSendResultResultID, (jint)pResult);
 
-        if(!loadPrivateKeys(pEnvironment, daemon, pPassCode))
-            return (jint)1;
+        if(pTransaction == NULL)
+            pEnvironment->SetObjectField(result, pInstance->jSendResultRawTransactionID, NULL);
+        else
+        {
+            // Transaction
+            if(pInstance->daemon->keyStore()->size() > pWalletOffset)
+            {
+                std::vector<BitCoin::Key *> *chainKeys =
+                  pInstance->daemon->keyStore()->chainKeys(pWalletOffset);
+                if(chainKeys != NULL)
+                {
+                    BitCoin::Monitor::RelatedTransactionData relatedData;
+                    pInstance->daemon->monitor()->getTransaction(pTransaction->hash,
+                      chainKeys->begin(), chainKeys->end(), relatedData);
+                    pEnvironment->SetObjectField(result, pInstance->jSendResultTransactionID,
+                      createTransaction(pInstance, pEnvironment, relatedData,
+                        pInstance->daemon->chainIsLoaded()));
+                }
+                else
+                    pEnvironment->SetObjectField(result, pInstance->jSendResultTransactionID, NULL);
+            }
+            else
+                pEnvironment->SetObjectField(result, pInstance->jSendResultTransactionID, NULL);
+
+            // Setup raw transaction data.
+            NextCash::Buffer rawData;
+            pTransaction->write(&rawData);
+            jbyteArray array = pEnvironment->NewByteArray((jsize)rawData.length());
+            pEnvironment->SetByteArrayRegion(array, 0, (jsize)rawData.length(),
+              (const jbyte *)rawData.startPointer());
+            pEnvironment->SetObjectField(result, pInstance->jSendResultRawTransactionID, array);
+        }
+
+        return result;
+    }
+
+    JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendStandardPayment(JNIEnv *pEnvironment,
+                                                                                            jobject pObject,
+                                                                                            jint pWalletOffset,
+                                                                                            jstring pPassCode,
+                                                                                            jstring pAddress,
+                                                                                            jlong pAmount,
+                                                                                            jdouble pFeeRate,
+                                                                                            jboolean pUsePending,
+                                                                                            jboolean pSendAll)
+    {
+        Instance *instance = getInstance(pEnvironment, pObject);
+        if(instance == NULL || instance->daemon->keyStore()->size() <= pWalletOffset)
+            return createSendResult(instance, pEnvironment, pWalletOffset, 1, NULL);
+
+        if(!loadPrivateKeys(pEnvironment, instance->daemon, pPassCode))
+            return createSendResult(instance, pEnvironment, pWalletOffset, 1, NULL);
 
         NextCash::Hash hash;
         BitCoin::AddressType type;
@@ -1708,98 +1987,88 @@ extern "C"
           !BitCoin::decodeLegacyAddress(address, hash, type))
         {
             pEnvironment->ReleaseStringUTFChars(pAddress, address);
-            daemon->keyStore()->unloadPrivate();
-            return (jint)3; // Invalid Hash
+            instance->daemon->keyStore()->unloadPrivate();
+            return createSendResult(instance, pEnvironment, pWalletOffset, 3, NULL); // Invalid Hash
         }
         pEnvironment->ReleaseStringUTFChars(pAddress, address);
 
-        int result = daemon->sendStandardPayment((unsigned int)pWalletOffset, type, hash,
-          (uint64_t)pAmount, pFeeRate, pUsePending, pSendAll);
+        BitCoin::Transaction *transaction = NULL;
+        int result = instance->daemon->sendStandardPayment((unsigned int)pWalletOffset, type, hash,
+          (uint64_t)pAmount, pFeeRate, pUsePending, pSendAll, true, transaction);
 
-        if(!daemon->saveMonitor() && result == 0)
+        if(!instance->daemon->saveMonitor() && result == 0)
             result = 1;
-        if(!savePrivateKeys(pEnvironment, daemon, pPassCode) && result == 0)
+        if(!savePrivateKeys(pEnvironment, instance->daemon, pPassCode) && result == 0)
             result = 1;
-        if(!savePublicKeys(daemon) && result == 0)
+        if(!savePublicKeys(instance->daemon) && result == 0)
             result = 1;
 
-        daemon->keyStore()->unloadPrivate();
-        return (jint)result;
+        instance->daemon->keyStore()->unloadPrivate();
+        return createSendResult(instance, pEnvironment, pWalletOffset, result, transaction);
     }
 
-    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendOutputPayment(JNIEnv *pEnvironment,
-                                                                                       jobject pObject,
-                                                                                       jint pWalletOffset,
-                                                                                       jstring pPassCode,
-                                                                                       jbyteArray pOutputScript,
-                                                                                       jlong pAmount,
-                                                                                       jdouble pFeeRate,
-                                                                                       jboolean pUsePending)
+    JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendOutputsPayment(JNIEnv *pEnvironment,
+                                                                                           jobject pObject,
+                                                                                           jint pWalletOffset,
+                                                                                           jstring pPassCode,
+                                                                                           jobjectArray pOutputs,
+                                                                                           jdouble pFeeRate,
+                                                                                           jboolean pUsePending,
+                                                                                           jboolean pTransmit)
     {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
-        if(daemon == NULL || daemon->keyStore()->size() <= pWalletOffset)
-            return (jint)1;
+        Instance *instance = getInstance(pEnvironment, pObject);
+        if(instance == NULL || instance->daemon->keyStore()->size() <= pWalletOffset)
+            return createSendResult(instance, pEnvironment, pWalletOffset, 1, NULL);
 
-        if(!loadPrivateKeys(pEnvironment, daemon, pPassCode))
-            return (jint)1;
+        if(!loadPrivateKeys(pEnvironment, instance->daemon, pPassCode))
+            return createSendResult(instance, pEnvironment, pWalletOffset, 1, NULL);
 
-        NextCash::Buffer outputScript;
-        jbyte *outputScriptBytes = pEnvironment->GetByteArrayElements(pOutputScript, NULL);
-        outputScript.write(outputScriptBytes,
-          (NextCash::stream_size)pEnvironment->GetArrayLength(pOutputScript));
-        pEnvironment->ReleaseByteArrayElements(pOutputScript, outputScriptBytes, 0);
-
-        if(outputScript.length() == 0)
+        // Convert outputs
+        jobject jOutput;
+        BitCoin::Output *output;
+        jbyteArray scriptByteArray;
+        jbyte *scriptBytes;
+        std::vector<BitCoin::Output> outputs(
+          (NextCash::stream_size)pEnvironment->GetArrayLength(pOutputs));
+        for(unsigned int i = 0; i < pEnvironment->GetArrayLength(pOutputs); ++i)
         {
-            daemon->keyStore()->unloadPrivate();
-            return (jint)3; // Invalid Hash
+            jOutput = pEnvironment->GetObjectArrayElement(pOutputs, i);
+            output = &outputs.at(i);
+
+            output->amount = pEnvironment->GetLongField(jOutput, instance->jOutputAmountID);
+            if(output->amount <= 0)
+            {
+                instance->daemon->keyStore()->unloadPrivate();
+                return createSendResult(instance, pEnvironment, pWalletOffset, 7, NULL); // Invalid Outputs
+            }
+
+            scriptByteArray = reinterpret_cast<jbyteArray>(
+              pEnvironment->GetObjectField(jOutput, instance->jOutputScriptDataID));
+            if(pEnvironment->GetArrayLength(scriptByteArray) == 0)
+            {
+                instance->daemon->keyStore()->unloadPrivate();
+                return createSendResult(instance, pEnvironment, pWalletOffset, 7, NULL); // Invalid Outputs
+            }
+
+            scriptBytes = pEnvironment->GetByteArrayElements(scriptByteArray, NULL);
+            output->script.write(scriptBytes,
+              (NextCash::stream_size)pEnvironment->GetArrayLength(scriptByteArray));
+            pEnvironment->ReleaseByteArrayElements(scriptByteArray, scriptBytes, 0);
         }
 
-        int result = daemon->sendSpecifiedOutputPayment((unsigned int)pWalletOffset, outputScript,
-          (uint64_t)pAmount, pFeeRate, pUsePending, false);
+        BitCoin::Transaction *transaction = NULL;
+        int result = instance->daemon->sendSpecifiedOutputsPayment((unsigned int)pWalletOffset,
+          outputs, pFeeRate, pUsePending, pTransmit, transaction);
 
-        if(!daemon->saveMonitor() && result == 0)
+        if(!instance->daemon->saveMonitor() && result == 0)
             result = 1;
-        if(!savePrivateKeys(pEnvironment, daemon, pPassCode) && result == 0)
+        if(!savePrivateKeys(pEnvironment, instance->daemon, pPassCode) && result == 0)
             result = 1;
-        if(!savePublicKeys(daemon) && result == 0)
+        if(!savePublicKeys(instance->daemon) && result == 0)
             result = 1;
 
-        daemon->keyStore()->unloadPrivate();
-        return (jint)result;
-    }
-
-    JNIEXPORT jbyteArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getRawTransaction(JNIEnv *pEnvironment,
-                                                                                             jobject pObject,
-                                                                                             jbyteArray pPayingOutputScript,
-                                                                                             jlong pAmount)
-    {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
-        if(daemon == NULL)
-            return NULL;
-
-        NextCash::Buffer outputScript;
-        jbyte *outputScriptBytes = pEnvironment->GetByteArrayElements(pPayingOutputScript, NULL);
-        outputScript.write(outputScriptBytes,
-          (NextCash::stream_size)pEnvironment->GetArrayLength(pPayingOutputScript));
-        pEnvironment->ReleaseByteArrayElements(pPayingOutputScript, outputScriptBytes, 0);
-        if(outputScript.length() == 0)
-            return NULL;
-
-        BitCoin::Transaction *transaction = daemon->monitor()->findTransactionPaying(outputScript,
-          (int64_t)pAmount);
-        if(transaction == NULL)
-            return NULL;
-
-        NextCash::Log::addFormatted(NextCash::Log::INFO, NEXTCASH_JNI_LOG_NAME,
-          "Found raw transaction : %s", transaction->hash.hex().text());
-
-        NextCash::Buffer data;
-        transaction->write(&data);
-        jbyteArray result = pEnvironment->NewByteArray((jsize)data.length());
-        pEnvironment->SetByteArrayRegion(result, 0, (jsize)data.length(),
-          (const jbyte *)data.startPointer());
-        return result;
+        instance->daemon->keyStore()->unloadPrivate();
+        return createSendResult(instance, pEnvironment, pWalletOffset, result, transaction);
     }
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isValidSeedWord(JNIEnv *pEnvironment,
@@ -1872,19 +2141,26 @@ extern "C"
         return (jboolean)BitCoin::test();
     }
 
-    jobject createOutput(JNIEnv *pEnvironment, BitCoin::Daemon *pDaemon, BitCoin::Output &pOutput,
+    jobject createOutput(Instance *pInstance, JNIEnv *pEnvironment, BitCoin::Output &pOutput,
       bool pIsRelated)
     {
-        jobject result = pEnvironment->NewObject(sOutputClass, sOutputConstructor);
+        jobject result = pEnvironment->NewObject(pInstance->jOutputClass,
+          pInstance->jOutputConstructor);
 
         // Set amount
-        pEnvironment->SetLongField(result, sOutputAmountID, pOutput.amount);
+        pEnvironment->SetLongField(result, pInstance->jOutputAmountID, pOutput.amount);
 
         // Set script
         pOutput.script.setReadOffset(0);
-        pEnvironment->SetObjectField(result, sOutputScriptID,
+        pEnvironment->SetObjectField(result, pInstance->jOutputScriptID,
           pEnvironment->NewStringUTF(BitCoin::ScriptInterpreter::scriptText(pOutput.script,
-            pDaemon->chain()->forks(), pDaemon->chain()->headerHeight())));
+            pInstance->daemon->chain()->forks(), pInstance->daemon->chain()->headerHeight())));
+
+        // Script data
+        jbyteArray scriptBytes = pEnvironment->NewByteArray((jsize)pOutput.script.length());
+        pEnvironment->SetByteArrayRegion(scriptBytes, 0, (jsize)pOutput.script.length(),
+          (const jbyte *)pOutput.script.startPointer());
+        pEnvironment->SetObjectField(result, pInstance->jOutputScriptDataID, scriptBytes);
 
         // Set address
         NextCash::HashList payAddresses;
@@ -1893,43 +2169,45 @@ extern "C"
           BitCoin::ScriptInterpreter::parseOutputScript(pOutput.script, payAddresses);
         if(scriptType == BitCoin::ScriptInterpreter::P2PKH && payAddresses.size() == 1)
         {
-            pEnvironment->SetObjectField(result, sOutputAddressID,
+            pEnvironment->SetObjectField(result, pInstance->jOutputAddressID,
               pEnvironment->NewStringUTF(BitCoin::encodeCashAddress(payAddresses.front())));
         }
 
         // Set related
-        pEnvironment->SetBooleanField(result, sOutputRelatedID, (jboolean)pIsRelated);
+        pEnvironment->SetBooleanField(result, pInstance->jOutputRelatedID, (jboolean)pIsRelated);
 
         return result;
     }
 
-    jobject createOutpoint(JNIEnv *pEnvironment, BitCoin::Daemon *pDaemon, BitCoin::Outpoint &pOutpoint)
+    jobject createOutpoint(Instance *pInstance, JNIEnv *pEnvironment, BitCoin::Outpoint &pOutpoint)
     {
-        jobject result = pEnvironment->NewObject(sOutpointClass, sOutpointConstructor);
+        jobject result = pEnvironment->NewObject(pInstance->jOutpointClass,
+          pInstance->jOutpointConstructor);
 
         // Set transactionID
-        pEnvironment->SetObjectField(result, sOutpointTransactionID,
+        pEnvironment->SetObjectField(result, pInstance->jOutpointTransactionID,
           pEnvironment->NewStringUTF(pOutpoint.transactionID.hex()));
 
         // Set index
-        pEnvironment->SetIntField(result, sOutpointIndexID, pOutpoint.index);
+        pEnvironment->SetIntField(result, pInstance->jOutpointIndexID, pOutpoint.index);
 
         // Set output
-        pEnvironment->SetObjectField(result, sOutpointOutputID,
-          createOutput(pEnvironment, pDaemon, *pOutpoint.output, true));
+        pEnvironment->SetObjectField(result, pInstance->jOutpointOutputID,
+          createOutput(pInstance, pEnvironment, *pOutpoint.output, true));
 
         // Confirmations
         if(pOutpoint.confirmations != 0xffffffff)
-            pEnvironment->SetIntField(result, sOutpointConfirmationsID, pOutpoint.confirmations);
+            pEnvironment->SetIntField(result, pInstance->jOutpointConfirmationsID,
+              pOutpoint.confirmations);
         else
         {
             NextCash::Hash confirmBlock =
-              pDaemon->monitor()->confirmBlockHash(pOutpoint.transactionID);
+              pInstance->daemon->monitor()->confirmBlockHash(pOutpoint.transactionID);
             jint confirms = 0;
             if(!confirmBlock.isEmpty())
-                confirms = pDaemon->chain()->headerHeight() -
-                  pDaemon->chain()->hashHeight(confirmBlock);
-            pEnvironment->SetIntField(result, sOutpointConfirmationsID, confirms);
+                confirms = pInstance->daemon->chain()->headerHeight() -
+                  pInstance->daemon->chain()->hashHeight(confirmBlock);
+            pEnvironment->SetIntField(result, pInstance->jOutpointConfirmationsID, confirms);
         }
 
         return result;
@@ -1939,33 +2217,33 @@ extern "C"
                                                                                                jobject pObject,
                                                                                                jint pWalletOffset)
     {
-        BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
-        if(daemon == NULL || daemon->keyStore()->size() <= pWalletOffset)
+        Instance *instance = getInstance(pEnvironment, pObject);
+        if(instance == NULL || instance->daemon->keyStore()->size() <= pWalletOffset)
             return NULL;
 
         std::vector<BitCoin::Key *> *chainKeys =
-          daemon->keyStore()->chainKeys((unsigned int)pWalletOffset);
+          instance->daemon->keyStore()->chainKeys((unsigned int)pWalletOffset);
         if(chainKeys == NULL)
             return NULL;
 
-        setupOutputClass(pEnvironment);
-        setupOutpointClass(pEnvironment);
+        instance->setupOutputClass(pEnvironment);
+        instance->setupOutpointClass(pEnvironment);
 
         // Get UTXOs from monitor
         std::vector<BitCoin::Outpoint> unspentOutputs;
-        if(!daemon->monitor()->getUnspentOutputs(chainKeys->begin(), chainKeys->end(),
-          unspentOutputs, daemon->chain(), true))
+        if(!instance->daemon->monitor()->getUnspentOutputs(chainKeys->begin(), chainKeys->end(),
+          unspentOutputs, instance->daemon->chain(), true))
             return NULL;
 
         jobjectArray result = pEnvironment->NewObjectArray((jsize)unspentOutputs.size(),
-          sOutpointClass, NULL);
+          instance->jOutpointClass, NULL);
 
         unsigned int index = 0;
         for(std::vector<BitCoin::Outpoint>::iterator output = unspentOutputs.begin();
           output != unspentOutputs.end(); ++output, ++index)
         {
             pEnvironment->SetObjectArrayElement(result, index,
-              createOutpoint(pEnvironment, daemon, *output));
+              createOutpoint(instance, pEnvironment, *output));
         }
 
         return result;

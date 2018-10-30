@@ -35,10 +35,6 @@ extern "C"
     // Initialization
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setupJNI(JNIEnv *pEnvironment,
                                                                               jclass pObject);
-    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Wallet_setupJNI(JNIEnv *pEnvironment,
-                                                                             jclass pObject);
-    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Transaction_setupJNI(JNIEnv *pEnvironment,
-                                                                                  jclass pObject);
 
     // Daemon
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_loadWallets(JNIEnv *pEnvironment,
@@ -199,29 +195,24 @@ extern "C"
                                                                                         jstring pID,
                                                                                         jobject pTransaction);
 
-    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendStandardPayment(JNIEnv *pEnvironment,
-                                                                                         jobject pObject,
-                                                                                         jint pWalletOffset,
-                                                                                         jstring pPassCode,
-                                                                                         jstring pAddress,
-                                                                                         jlong pAmount,
-                                                                                         jdouble pFeeRate,
-                                                                                         jboolean pUsePending,
-                                                                                         jboolean pSendAll);
+    JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendStandardPayment(JNIEnv *pEnvironment,
+                                                                                            jobject pObject,
+                                                                                            jint pWalletOffset,
+                                                                                            jstring pPassCode,
+                                                                                            jstring pAddress,
+                                                                                            jlong pAmount,
+                                                                                            jdouble pFeeRate,
+                                                                                            jboolean pUsePending,
+                                                                                            jboolean pSendAll);
 
-    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendOutputPayment(JNIEnv *pEnvironment,
-                                                                                       jobject pObject,
-                                                                                       jint pWalletOffset,
-                                                                                       jstring pPassCode,
-                                                                                       jbyteArray pOutputScript,
-                                                                                       jlong pAmount,
-                                                                                       jdouble pFeeRate,
-                                                                                       jboolean pUsePending);
-
-    JNIEXPORT jbyteArray JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_getRawTransaction(JNIEnv *pEnvironment,
-                                                                                             jobject pObject,
-                                                                                             jbyteArray pPayingOutputScript,
-                                                                                             jlong pAmount);
+    JNIEXPORT jobject JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_sendOutputsPayment(JNIEnv *pEnvironment,
+                                                                                           jobject pObject,
+                                                                                           jint pWalletOffset,
+                                                                                           jstring pPassCode,
+                                                                                           jobjectArray pOutputs,
+                                                                                           jdouble pFeeRate,
+                                                                                           jboolean pUsePending,
+                                                                                           jboolean pTransmit);
 
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_isValidSeedWord(JNIEnv *pEnvironment,
                                                                                          jobject pObject,

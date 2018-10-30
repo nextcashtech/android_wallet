@@ -11,6 +11,7 @@ public class Output
 {
     public long amount;
     public String script;
+    public byte scriptData[];
 
     public String address;
     public boolean related;
@@ -18,6 +19,10 @@ public class Output
     Output()
     {
         amount = 0;
+        script = null;
+        scriptData = null;
+
+        address = null;
         related = false;
     }
 }

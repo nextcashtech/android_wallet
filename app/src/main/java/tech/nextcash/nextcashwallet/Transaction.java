@@ -26,6 +26,8 @@ public class Transaction
 
     public Transaction()
     {
+        hash = null;
+        block = null;
         date = 0;
         amount = 0;
         count = 0;
@@ -120,12 +122,5 @@ public class Transaction
     public TransactionData.ID tag()
     {
         return new TransactionData.ID(hash, amount);
-    }
-
-    private static native void setupJNI();
-
-    static
-    {
-        setupJNI();
     }
 }
