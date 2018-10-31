@@ -137,6 +137,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Scanner mScanner;
     private ScanMode mScanMode;
     private String mPIN;
+    private AddressBookAdapter mAddressBookAdapter;
+    private AddressLabelAdapter mAddressLabelAdapter;
+    private Drawable mDeleteIcon;
+    private int mSmallIconSize;
+    private Paint mNegativeColorPaint;
 
 
     public class TransactionRunnable implements Runnable
@@ -220,6 +225,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mEncodedPrivateKey = null;
         mKeyToLoad = null;
         mSeed = null;
+        mAddressBookAdapter = null;
+        mAddressLabelAdapter = null;
+        mDeleteIcon = getResources().getDrawable(R.drawable.baseline_delete_white_36dp);
+        mSmallIconSize = getResources().getDimensionPixelSize(R.dimen.small_icon_size);
+        mNegativeColorPaint = new Paint();
+        mNegativeColorPaint.setColor(getResources().getColor(R.color.colorNegative));
 
         if(!settings.containsValue("beta_message"))
         {
@@ -2411,17 +2422,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        final ViewGroup addressLabelView = (ViewGroup)inflater.inflate(R.layout.address_labels, nonScrollView,
+        ViewGroup addressLabelView = (ViewGroup)inflater.inflate(R.layout.address_labels, nonScrollView,
           false);
         nonScrollView.addView(addressLabelView);
 
         ((TextView)addressLabelView.findViewById(R.id.walletName)).setText(mBitcoin.wallet(mCurrentWalletIndex).name);
 
-        final RecyclerView itemsView = addressLabelView.findViewById(R.id.addressLabelItems);
+        RecyclerView recyclerView = addressLabelView.findViewById(R.id.addressLabelItems);
         mUndoDeleteRunnable = null;
         mConfirmDeleteRunnable = null;
         LinearLayoutManager layoutManager = new LinearLayoutManager(this); // Vertical list
-        final AddressLabelAdapter adapter = new AddressLabelAdapter(mBitcoin, mCurrentWalletIndex,
+        mAddressLabelAdapter = new AddressLabelAdapter(mBitcoin, layoutManager, mCurrentWalletIndex,
           getResources().getColor(R.color.rowShade), getResources().getColor(R.color.rowNotShade));
         ItemTouchHelper.SimpleCallback touchCallBack = new ItemTouchHelper.SimpleCallback(0,
           ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT)
@@ -2437,7 +2448,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             public void onSwiped(@NonNull RecyclerView.ViewHolder pViewHolder, int pDirection)
             {
                 findViewById(R.id.undoDelete).setVisibility(View.VISIBLE);
-                adapter.remove(pViewHolder.getAdapterPosition());
+                mAddressLabelAdapter.remove(pViewHolder.getAdapterPosition());
                 if(mConfirmDeleteRunnable != null)
                     mDelayHandler.removeCallbacks(mConfirmDeleteRunnable);
                 mUndoDeleteRunnable = new Runnable()
@@ -2445,7 +2456,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     @Override
                     public void run()
                     {
-                        adapter.undoDelete();
+                        mAddressLabelAdapter.undoDelete();
                         findViewById(R.id.undoDelete).setVisibility(View.GONE);
                         mDelayHandler.postDelayed(mConfirmDeleteRunnable, 3000);
                     }
@@ -2455,7 +2466,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     @Override
                     public void run()
                     {
-                        adapter.confirmDelete();
+                        mAddressLabelAdapter.confirmDelete();
                         findViewById(R.id.undoDelete).setVisibility(View.GONE);
                     }
                 };
@@ -2470,8 +2481,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 View itemView = pViewHolder.itemView;
 
                 // Draw the red delete background
-                Paint backgroundColor = new Paint();
-                backgroundColor.setColor(getResources().getColor(R.color.colorNegative));
                 Rect rect;
                 if(pDeltaX < 0)
                     rect = new Rect(itemView.getRight() + (int)pDeltaX, itemView.getTop(), itemView.getRight(),
@@ -2479,38 +2488,36 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 else
                     rect = new Rect(itemView.getLeft() + (int)pDeltaX, itemView.getTop(), itemView.getLeft(),
                       itemView.getBottom());
-                pCanvas.drawRect(rect, backgroundColor);
+                pCanvas.drawRect(rect, mNegativeColorPaint);
 
                 // Calculate position of delete icon
-                Drawable icon = getResources().getDrawable(R.drawable.baseline_delete_white_36dp);
-                int iconDrawSize = getResources().getDimensionPixelSize(R.dimen.small_icon_size);
-                int iconTop = itemView.getTop() + (itemView.getHeight() - iconDrawSize) / 2;
-                int iconBottom = iconTop + iconDrawSize;
-                int iconMargin = (itemView.getHeight() - iconDrawSize) / 2;
+                int iconTop = itemView.getTop() + (itemView.getHeight() - mSmallIconSize) / 2;
+                int iconBottom = iconTop + mSmallIconSize;
+                int iconMargin = (itemView.getHeight() - mSmallIconSize) / 2;
                 int iconLeft, iconRight;
                 if(pDeltaX < 0)
                 {
-                    iconLeft = itemView.getRight() - iconMargin - iconDrawSize;
+                    iconLeft = itemView.getRight() - iconMargin - mSmallIconSize;
                     iconRight = itemView.getRight() - iconMargin;
                 }
                 else
                 {
-                    iconLeft = itemView.getLeft() + iconMargin + iconDrawSize;
+                    iconLeft = itemView.getLeft() + iconMargin + mSmallIconSize;
                     iconRight = itemView.getLeft() + iconMargin;
                 }
 
                 // Draw the delete icon
-                icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-                icon.draw(pCanvas);
+                mDeleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                mDeleteIcon.draw(pCanvas);
 
                 super.onChildDraw(pCanvas, pRecyclerView, pViewHolder, pDeltaX, pDeltaY, pActionState,
                   pIsCurrentlyActive);
             }
         };
 
-        itemsView.setLayoutManager(layoutManager);
-        itemsView.setAdapter(adapter);
-        new ItemTouchHelper(touchCallBack).attachToRecyclerView(itemsView);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setAdapter(mAddressLabelAdapter);
+        new ItemTouchHelper(touchCallBack).attachToRecyclerView(recyclerView);
 
         showView(R.id.nonScroll);
         mMode = Mode.ADDRESS_LABELS;
@@ -2533,14 +2540,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        final ViewGroup addressBookView = (ViewGroup)inflater.inflate(R.layout.address_book, nonScrollView, false);
+        ViewGroup addressBookView = (ViewGroup)inflater.inflate(R.layout.address_book, nonScrollView, false);
         nonScrollView.addView(addressBookView);
 
-        final RecyclerView itemsView = addressBookView.findViewById(R.id.addressBookItems);
+        RecyclerView recyclerView = addressBookView.findViewById(R.id.addressBookItems);
         mUndoDeleteRunnable = null;
         mConfirmDeleteRunnable = null;
         LinearLayoutManager layoutManager = new LinearLayoutManager(this); // Vertical list
-        final AddressBookAdapter adapter = new AddressBookAdapter(mBitcoin, getResources().getColor(R.color.rowShade),
+        mAddressBookAdapter = new AddressBookAdapter(mBitcoin, layoutManager, getResources().getColor(R.color.rowShade),
           getResources().getColor(R.color.rowNotShade));
         ItemTouchHelper.SimpleCallback touchCallBack = new ItemTouchHelper.SimpleCallback(0,
           ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT)
@@ -2556,7 +2563,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             public void onSwiped(@NonNull RecyclerView.ViewHolder pViewHolder, int pDirection)
             {
                 findViewById(R.id.undoDelete).setVisibility(View.VISIBLE);
-                adapter.remove(pViewHolder.getAdapterPosition());
+                mAddressBookAdapter.remove(pViewHolder.getAdapterPosition());
                 if(mConfirmDeleteRunnable != null)
                     mDelayHandler.removeCallbacks(mConfirmDeleteRunnable);
                 mUndoDeleteRunnable = new Runnable()
@@ -2564,7 +2571,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     @Override
                     public void run()
                     {
-                        adapter.undoDelete();
+                        mAddressBookAdapter.undoDelete();
                         findViewById(R.id.undoDelete).setVisibility(View.GONE);
                         mDelayHandler.postDelayed(mConfirmDeleteRunnable, 3000);
                     }
@@ -2574,7 +2581,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     @Override
                     public void run()
                     {
-                        adapter.confirmDelete();
+                        mAddressBookAdapter.confirmDelete();
                         findViewById(R.id.undoDelete).setVisibility(View.GONE);
                     }
                 };
@@ -2589,8 +2596,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 View itemView = pViewHolder.itemView;
 
                 // Draw the red delete background
-                Paint backgroundColor = new Paint();
-                backgroundColor.setColor(getResources().getColor(R.color.colorNegative));
                 Rect rect;
                 if(pDeltaX < 0)
                     rect = new Rect(itemView.getRight() + (int)pDeltaX, itemView.getTop(), itemView.getRight(),
@@ -2598,38 +2603,36 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 else
                     rect = new Rect(itemView.getLeft() + (int)pDeltaX, itemView.getTop(), itemView.getLeft(),
                       itemView.getBottom());
-                pCanvas.drawRect(rect, backgroundColor);
+                pCanvas.drawRect(rect, mNegativeColorPaint);
 
                 // Calculate position of delete icon
-                Drawable icon = getResources().getDrawable(R.drawable.baseline_delete_white_36dp);
-                int iconDrawSize = getResources().getDimensionPixelSize(R.dimen.small_icon_size);
-                int iconTop = itemView.getTop() + (itemView.getHeight() - iconDrawSize) / 2;
-                int iconBottom = iconTop + iconDrawSize;
-                int iconMargin = (itemView.getHeight() - iconDrawSize) / 2;
+                int iconTop = itemView.getTop() + (itemView.getHeight() - mSmallIconSize) / 2;
+                int iconBottom = iconTop + mSmallIconSize;
+                int iconMargin = (itemView.getHeight() - mSmallIconSize) / 2;
                 int iconLeft, iconRight;
                 if(pDeltaX < 0)
                 {
-                    iconLeft = itemView.getRight() - iconMargin - iconDrawSize;
+                    iconLeft = itemView.getRight() - iconMargin - mSmallIconSize;
                     iconRight = itemView.getRight() - iconMargin;
                 }
                 else
                 {
-                    iconLeft = itemView.getLeft() + iconMargin + iconDrawSize;
+                    iconLeft = itemView.getLeft() + iconMargin + mSmallIconSize;
                     iconRight = itemView.getLeft() + iconMargin;
                 }
 
                 // Draw the delete icon
-                icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-                icon.draw(pCanvas);
+                mDeleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                mDeleteIcon.draw(pCanvas);
 
                 super.onChildDraw(pCanvas, pRecyclerView, pViewHolder, pDeltaX, pDeltaY, pActionState,
                   pIsCurrentlyActive);
             }
         };
 
-        itemsView.setLayoutManager(layoutManager);
-        itemsView.setAdapter(adapter);
-        new ItemTouchHelper(touchCallBack).attachToRecyclerView(itemsView);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setAdapter(mAddressBookAdapter);
+        new ItemTouchHelper(touchCallBack).attachToRecyclerView(recyclerView);
 
         showView(R.id.nonScroll);
         mMode = Mode.ADDRESS_BOOK;
@@ -4679,12 +4682,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onBackPressed()
     {
-        if(mConfirmDeleteRunnable != null)
+        if(mAddressBookAdapter != null || mAddressLabelAdapter != null)
         {
-            mDelayHandler.removeCallbacks(mConfirmDeleteRunnable);
-            mConfirmDeleteRunnable.run();
-            mConfirmDeleteRunnable = null;
-            mUndoDeleteRunnable = null;
+            if(mConfirmDeleteRunnable != null)
+            {
+                mDelayHandler.removeCallbacks(mConfirmDeleteRunnable);
+                mConfirmDeleteRunnable.run();
+                mConfirmDeleteRunnable = null;
+                mUndoDeleteRunnable = null;
+            }
+
+            mAddressBookAdapter = null;
+            mAddressLabelAdapter = null;
         }
 
         switch(mMode)

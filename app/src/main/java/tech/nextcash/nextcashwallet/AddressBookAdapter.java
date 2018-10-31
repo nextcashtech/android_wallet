@@ -1,6 +1,7 @@
 package tech.nextcash.nextcashwallet;
 
 import android.support.annotation.NonNull;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +16,7 @@ import java.util.Collections;
 public class AddressBookAdapter extends RecyclerView.Adapter
 {
     private Bitcoin mBitcoin;
+    private LinearLayoutManager mLayoutManager;
     private ArrayList<AddressBook.Item> mItems;
     private AddressBook.Item mItemToDelete;
     private int mPositionToDelete;
@@ -28,9 +30,10 @@ public class AddressBookAdapter extends RecyclerView.Adapter
         }
     }
 
-    public AddressBookAdapter(Bitcoin pBitcoin, int pShadeColor, int pNonShadeColor)
+    public AddressBookAdapter(Bitcoin pBitcoin, LinearLayoutManager pLayoutManager, int pShadeColor, int pNonShadeColor)
     {
         mBitcoin = pBitcoin;
+        mLayoutManager = pLayoutManager;
         mItems = pBitcoin.getAddresses();
         Collections.sort(mItems);
         mShadeColor = pShadeColor;
@@ -113,6 +116,7 @@ public class AddressBookAdapter extends RecyclerView.Adapter
     {
         mItems.add(mPositionToDelete, mItemToDelete);
         notifyItemInserted(mPositionToDelete);
+        mLayoutManager.scrollToPosition(mPositionToDelete);
         mPositionToDelete = -1;
         mItemToDelete = null;
     }
