@@ -432,10 +432,10 @@ public class Bitcoin
         return mAddressLabels.add(pItem);
     }
 
-    public boolean removeAddressLabel(String pAddress)
+    public boolean removeAddressLabel(String pAddress, boolean pSave)
     {
         boolean result = mAddressLabels.remove(pAddress);
-        if(result)
+        if(result && pSave)
             mAddressLabels.save(mDirectory);
         return result;
     }
