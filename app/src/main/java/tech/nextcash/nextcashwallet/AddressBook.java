@@ -123,6 +123,19 @@ public class AddressBook
         mIsModified = true;
     }
 
+    public synchronized boolean removeAddress(String pAddress)
+    {
+        for(Item item : mItems)
+            if(item.address.equals(pAddress))
+            {
+                mItems.remove(item);
+                mIsModified = true;
+                return true;
+            }
+
+        return false;
+    }
+
     public synchronized Item lookup(String pAddress)
     {
         for(Item item : mItems)

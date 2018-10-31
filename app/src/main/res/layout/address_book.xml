@@ -19,77 +19,20 @@
         android:layout_height="wrap_content"
         android:text="@string/address_book_description"/>
 
-    <LinearLayout
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:layout_marginTop="5dp"
+        android:textStyle="bold"
+        android:text="@string/swipe_to_delete"/>
+
+    <android.support.v7.widget.RecyclerView
         android:id="@+id/addressBookItems"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginTop="10dp">
+        android:layout_marginTop="20dp">
 
-
-    </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        style="@style/SmallHeadingText"
-        android:text="@string/add_manual_address_book"/>
-
-    <EditText
-        android:id="@+id/manualAddressBookAddress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="text"
-        android:imeOptions="actionDone"
-        android:hint="@string/enter_address_hint"/>
-
-    <RelativeLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="start">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_marginEnd="10dp"
-            style="@style/SmallHeadingText"
-            android:labelFor="@id/manualAddressBookAddress"
-            android:text="@string/address"/>
-
-    </RelativeLayout>
-
-    <EditText
-        android:id="@+id/manualAddressBookName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="text"
-        android:imeOptions="actionDone"
-        android:hint="@string/enter_address_name_hint"/>
-
-    <RelativeLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="start">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_marginEnd="10dp"
-            style="@style/SmallHeadingText"
-            android:labelFor="@id/manualAddressBookName"
-            android:text="@string/name"/>
-
-        <tech.nextcash.nextcashwallet.TextButton
-            android:id="@+id/addManualAddressBook"
-            android:layout_alignParentEnd="true"
-            style="@style/SmallButton"
-            android:text="@string/add"/>
-
-    </RelativeLayout>
+    </android.support.v7.widget.RecyclerView>
 
 </LinearLayout>

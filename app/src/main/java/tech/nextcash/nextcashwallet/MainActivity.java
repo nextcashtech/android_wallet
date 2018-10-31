@@ -20,7 +20,11 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,7 +35,10 @@ import android.support.constraint.ConstraintLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -90,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification,
-      mRequestExpiresUpdater, mRequestTransactionRunnable;
+      mRequestExpiresUpdater, mRequestTransactionRunnable, mUndoDeleteRunnable, mConfirmDeleteRunnable;
 
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
       IMPORT_PRIVATE_KEY, IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, TRANSACTION_HISTORY, TRANSACTION,
@@ -163,6 +170,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mDelayHandler = new Handler();
         mStatusUpdateRunnable = new Runnable() { @Override public void run() { updateStatus(); } };
         mRateUpdateRunnable = new Runnable() { @Override public void run() { scheduleExchangeRateUpdate(); } };
+        mUndoDeleteRunnable = null;
+        mConfirmDeleteRunnable = null;
         mClearFinishOnBack = new Runnable() { @Override public void run() { mFinishOnBack = false; } };
         mClearNotification = new Runnable()
         {
@@ -442,11 +451,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         textDialog.setVisibility(View.GONE);
         root.addView(textDialog);
 
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.dialog).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.VISIBLE);
-        findViewById(R.id.statusBar).setVisibility(View.VISIBLE);
-        findViewById(R.id.controls).setVisibility(View.VISIBLE);
+        showView(R.id.progress);
         mMode = Mode.LOADING_WALLETS;
 
         scheduleJobs();
@@ -1004,12 +1009,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(false); // Show the Up button in the action bar.
         }
 
-        findViewById(R.id.dialog).setVisibility(View.VISIBLE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
-
+        showView(R.id.dialog);
         mMode = mPreviousMode;
     }
 
@@ -1030,12 +1030,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(false); // Show the Up button in the action bar.
         }
 
-        findViewById(R.id.dialog).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.main).setVisibility(View.VISIBLE);
-        findViewById(R.id.statusBar).setVisibility(View.VISIBLE);
-        findViewById(R.id.controls).setVisibility(View.VISIBLE);
-
+        showView(R.id.main);
         mMode = Mode.WALLETS;
     }
 
@@ -1246,12 +1241,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup dialogView = findViewById(R.id.dialog);
 
-        dialogView.setVisibility(View.GONE);
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -1264,6 +1254,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         Settings settings = Settings.getInstance(getFilesDir());
         View settingsView = inflater.inflate(R.layout.settings, dialogView, false);
+        dialogView.addView(settingsView);
 
         Spinner exchangeCurrency = settingsView.findViewById(R.id.exchangeCurrency);
         String[] exchangeTypes = getResources().getStringArray(R.array.exchange_types);
@@ -1346,8 +1337,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             offset++;
         }
 
-        dialogView.addView(settingsView);
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.SETTINGS;
     }
@@ -1358,10 +1348,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -1373,8 +1359,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         inflater.inflate(R.layout.instructions, dialogView, true);
-
         dialogView.setVisibility(View.VISIBLE);
+
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.HELP;
     }
@@ -1385,10 +1372,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -1399,12 +1382,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        inflater.inflate(R.layout.info, dialogView, true);
+        LinearLayout infoView = (LinearLayout)inflater.inflate(R.layout.info, dialogView, false);
+        dialogView.addView(infoView);
 
         ((TextView)findViewById(R.id.nodeUserAgentValue)).setText(Bitcoin.userAgent());
         ((TextView)findViewById(R.id.networkValue)).setText(Bitcoin.networkName());
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.INFO;
     }
@@ -1415,6 +1399,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         switch(item.getItemId())
         {
             case android.R.id.home:
+                if(mConfirmDeleteRunnable != null)
+                {
+                    mDelayHandler.removeCallbacks(mConfirmDeleteRunnable);
+                    mConfirmDeleteRunnable.run();
+                    mConfirmDeleteRunnable = null;
+                    mUndoDeleteRunnable = null;
+                }
+
                 if(mMode == Mode.AUTHORIZE && mAuthorizedTask == AuthorizedTask.INITIALIZE)
                     showMessage(getString(R.string.must_create_pin), 2000);
                 else
@@ -1543,12 +1535,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup dialogView = findViewById(R.id.dialog);
 
-        findViewById(R.id.main).setVisibility(View.GONE);
-
         dialogView.removeAllViews();
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
 
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
@@ -1559,6 +1546,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         ViewGroup sendView = (ViewGroup)inflater.inflate(R.layout.send_payment, dialogView, false);
+        dialogView.addView(sendView);
 
         // Display payment details
         String formatText;
@@ -1749,8 +1737,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             sendView.findViewById(R.id.description).setVisibility(View.GONE);
         }
 
-        dialogView.addView(sendView);
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
 
         if(mPaymentRequest.protocolDetails != null && mPaymentRequest.protocolDetails.hasExpires())
@@ -1810,10 +1797,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         else
         {
             dialogView.removeAllViews();
-            findViewById(R.id.main).setVisibility(View.GONE);
-            findViewById(R.id.statusBar).setVisibility(View.GONE);
-            findViewById(R.id.controls).setVisibility(View.GONE);
-            findViewById(R.id.progress).setVisibility(View.GONE);
 
             ActionBar actionBar = getSupportActionBar();
             if(actionBar != null)
@@ -1827,7 +1810,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
               false);
             update = false;
             dialogView.addView(transactionView);
-            dialogView.setVisibility(View.VISIBLE);
+            showView(R.id.dialog);
             findViewById(R.id.mainScroll).setScrollY(0);
 
             if(mTransaction.data != null)
@@ -2007,7 +1990,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             outputIndex++;
         }
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         mMode = Mode.TRANSACTION;
     }
 
@@ -2017,10 +2000,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
 
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
@@ -2055,7 +2034,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         };
         paymentCodeEntry.setOnEditorActionListener(paymentCodeListener);
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         focusOnText(paymentCodeEntry);
         mMode = Mode.ENTER_PAYMENT_CODE;
@@ -2067,10 +2046,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
 
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
@@ -2088,7 +2063,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         dialogView.addView(paymentCodeView);
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.CLIPBOARD_PAYMENT_CODE;
     }
@@ -2170,10 +2145,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
@@ -2201,7 +2172,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             scanView.findViewById(R.id.openAddressBook).setVisibility(View.GONE);
         }
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.SCAN;
         mScanMode = pMode;
@@ -2231,10 +2202,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(rebuild)
             {
                 dialogView.removeAllViews();
-                findViewById(R.id.main).setVisibility(View.GONE);
-                findViewById(R.id.progress).setVisibility(View.GONE);
-                findViewById(R.id.statusBar).setVisibility(View.GONE);
-                findViewById(R.id.controls).setVisibility(View.GONE);
 
                 ActionBar actionBar = getSupportActionBar();
                 if(actionBar != null)
@@ -2420,7 +2387,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
             }
 
-            dialogView.setVisibility(View.VISIBLE);
+            showView(R.id.dialog);
             if(rebuild)
                 findViewById(R.id.mainScroll).setScrollY(0);
             mMode = Mode.RECEIVE;
@@ -2433,10 +2400,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
@@ -2475,7 +2438,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             shade = !shade;
         }
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         mMode = Mode.ADDRESS_LABELS;
     }
 
@@ -2483,12 +2446,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup dialogView = findViewById(R.id.dialog);
+        ViewGroup nonScrollView = findViewById(R.id.nonScroll);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
+        nonScrollView.removeAllViews();
 
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
@@ -2498,30 +2459,126 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        ViewGroup addressLabels = (ViewGroup)inflater.inflate(R.layout.address_book, dialogView, false);
-        dialogView.addView(addressLabels);
+        final ViewGroup addressBookView = (ViewGroup)inflater.inflate(R.layout.address_book, nonScrollView, false);
+        nonScrollView.addView(addressBookView);
 
-        ViewGroup itemsView = addressLabels.findViewById(R.id.addressBookItems);
-        ArrayList<AddressBook.Item> items = mBitcoin.getAddresses();
-        ViewGroup itemView;
-        boolean shade = true;
-
-        Collections.sort(items); // Most recent first
-
-        for(AddressBook.Item item : items)
+        final RecyclerView itemsView = addressBookView.findViewById(R.id.addressBookItems);
+        mUndoDeleteRunnable = null;
+        mConfirmDeleteRunnable = null;
+        // use a linear layout manager
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        final AddressBookAdapter adapter = new AddressBookAdapter(mBitcoin, getResources().getColor(R.color.rowShade),
+          getResources().getColor(R.color.rowNotShade));
+        ItemTouchHelper.SimpleCallback touchCallBack = new ItemTouchHelper.SimpleCallback(0,
+          ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT)
         {
-            itemView = (ViewGroup)inflater.inflate(R.layout.address_book_item, itemsView, false);
-            itemsView.addView(itemView);
+            @Override
+            public boolean onMove(@NonNull RecyclerView pRecyclerView, @NonNull RecyclerView.ViewHolder pViewHolder,
+              @NonNull RecyclerView.ViewHolder pViewHolderLower)
+            {
+                return false;
+            }
 
-            ((TextView)itemView.findViewById(R.id.addressBookName)).setText(item.name);
-            ((TextView)itemView.findViewById(R.id.addressBookAddress)).setText(item.address);
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder pViewHolder, int pDirection)
+            {
+                findViewById(R.id.undoDelete).setVisibility(View.VISIBLE);
+                adapter.remove(pViewHolder.getAdapterPosition());
+                if(mConfirmDeleteRunnable != null)
+                    mDelayHandler.removeCallbacks(mConfirmDeleteRunnable);
+                mUndoDeleteRunnable = new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        adapter.undoDelete();
+                        findViewById(R.id.undoDelete).setVisibility(View.GONE);
+                    }
+                };
+                mConfirmDeleteRunnable = new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        adapter.confirmDelete();
+                        findViewById(R.id.undoDelete).setVisibility(View.GONE);
+                    }
+                };
+                mDelayHandler.postDelayed(mConfirmDeleteRunnable, 3000);
+            }
 
-            if(shade)
-                itemView.setBackgroundColor(getResources().getColor(R.color.rowShade));
-            shade = !shade;
-        }
+            @Override
+            public void onChildDraw(@NonNull Canvas pCanvas, @NonNull RecyclerView pRecyclerView,
+              @NonNull RecyclerView.ViewHolder pViewHolder, float pDeltaX, float pDeltaY, int pActionState,
+              boolean pIsCurrentlyActive)
+            {
+                View itemView = pViewHolder.itemView;
 
-        dialogView.setVisibility(View.VISIBLE);
+                // Draw the red delete background
+                Paint backgroundColor = new Paint();
+                backgroundColor.setColor(getResources().getColor(R.color.colorNegative));
+                Rect rect;
+                if(pDeltaX < 0)
+                    rect = new Rect(itemView.getRight() + (int)pDeltaX, itemView.getTop(), itemView.getRight(),
+                      itemView.getBottom());
+                else
+                    rect = new Rect(itemView.getLeft() + (int)pDeltaX, itemView.getTop(), itemView.getLeft(),
+                      itemView.getBottom());
+                pCanvas.drawRect(rect, backgroundColor);
+
+                // Calculate position of delete icon
+                Drawable icon = getResources().getDrawable(R.drawable.baseline_delete_white_36dp);
+                int iconDrawSize = getResources().getDimensionPixelSize(R.dimen.small_icon_size);
+                int iconTop = itemView.getTop() + (itemView.getHeight() - iconDrawSize) / 2;
+                int iconBottom = iconTop + iconDrawSize;
+                int iconMargin = (itemView.getHeight() - iconDrawSize) / 2;
+                int iconLeft, iconRight;
+                if(pDeltaX < 0)
+                {
+                    iconLeft = itemView.getRight() - iconMargin - iconDrawSize;
+                    iconRight = itemView.getRight() - iconMargin;
+                }
+                else
+                {
+                    iconLeft = itemView.getLeft() + iconMargin + iconDrawSize;
+                    iconRight = itemView.getLeft() + iconMargin;
+                }
+
+                // Draw the delete icon
+                icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                icon.draw(pCanvas);
+
+                super.onChildDraw(pCanvas, pRecyclerView, pViewHolder, pDeltaX, pDeltaY, pActionState,
+                  pIsCurrentlyActive);
+            }
+        };
+
+        itemsView.setLayoutManager(layoutManager);
+        itemsView.setAdapter(adapter);
+        new ItemTouchHelper(touchCallBack).attachToRecyclerView(itemsView);
+
+//        ArrayList<AddressBook.Item> items = mBitcoin.getAddresses();
+//        Collections.sort(items); // Alphabetical
+//        ViewGroup itemsView = addressBookView.findViewById(R.id.addressBookItems);
+//        Collections.sort(items); // Alphabetical
+//
+//        ViewGroup itemView;
+//        boolean shade = true;
+//
+//        for(AddressBook.Item item : items)
+//        {
+//            itemView = (ViewGroup)inflater.inflate(R.layout.address_book_item, itemsView, false);
+//            itemsView.addView(itemView);
+//
+//            ((TextView)itemView.findViewById(R.id.addressBookName)).setText(item.name);
+//            ((TextView)itemView.findViewById(R.id.addressBookAddress)).setText(item.address);
+//
+//            if(shade)
+//                itemView.setBackgroundColor(getResources().getColor(R.color.rowShade));
+//            shade = !shade;
+//        }
+
+        showView(R.id.nonScroll);
         mMode = Mode.ADDRESS_BOOK;
     }
 
@@ -2532,10 +2589,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
@@ -2547,7 +2600,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         inflater.inflate(R.layout.add_wallet, dialogView, true);
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.ADD_WALLET;
     }
@@ -2558,10 +2611,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -2577,37 +2626,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Done button
         dialogView.findViewById(R.id.dateSelected).setId(R.id.enterImportKey);
 
-        dialogView.setVisibility(View.VISIBLE);
-        findViewById(R.id.mainScroll).setScrollY(0);
-        mMode = Mode.IMPORT_WALLET;
-    }
-
-    public synchronized void displayScanKey()
-    {
-        LayoutInflater inflater = getLayoutInflater();
-        ViewGroup dialogView = findViewById(R.id.dialog);
-
-        dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
-
-        // Title
-        ActionBar actionBar = getSupportActionBar();
-        if(actionBar != null)
-        {
-            actionBar.setIcon(null);
-            actionBar.setTitle(" " + getString(R.string.import_text));
-            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
-        }
-
-        inflater.inflate(R.layout.select_recover_date, dialogView, true);
-
-        // Done button
-        dialogView.findViewById(R.id.dateSelected).setId(R.id.enterImportKey);
-
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.IMPORT_WALLET;
     }
@@ -2618,10 +2637,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         inflater.inflate(R.layout.import_bip32_key, dialogView, true);
 
@@ -2630,7 +2645,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         derivationMethod.setAdapter(adapter);
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         focusOnText((EditText)dialogView.findViewById(R.id.importText));
         mMode = Mode.IMPORT_WALLET;
@@ -2642,10 +2657,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -2680,7 +2691,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         entropy.setSelection(entropyPosition);
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.CREATE_WALLET;
     }
@@ -2810,10 +2821,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -2855,7 +2862,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(mSeedBackupOnly)
             verifySeed.findViewById(R.id.skipCheckSeed).setVisibility(View.GONE);
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.VERIFY_SEED;
     }
@@ -2866,10 +2873,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -2885,7 +2888,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Done button
         dialogView.findViewById(R.id.dateSelected).setId(R.id.addPrivateKey);
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.IMPORT_PRIVATE_KEY;
     }
@@ -2896,10 +2899,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -2915,7 +2914,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         // Done button
         dialogView.findViewById(R.id.dateSelected).setId(R.id.enterRecoverSeed);
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.RECOVER_WALLET;
     }
@@ -3074,10 +3073,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -3089,6 +3084,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         ViewGroup enterSeed = (ViewGroup)inflater.inflate(R.layout.enter_seed, dialogView, false);
+        dialogView.addView(enterSeed);
 
         if(mSeedWordWatcher == null)
         {
@@ -3117,10 +3113,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         EditText seedWordEntry = enterSeed.findViewById(R.id.seedWordEntry);
         seedWordEntry.addTextChangedListener(mSeedWordWatcher);
 
-        dialogView.addView(enterSeed);
-
+        showView(R.id.dialog);
         focusOnText(seedWordEntry);
-        dialogView.setVisibility(View.VISIBLE);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.RECOVER_WALLET;
     }
@@ -3131,10 +3125,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -3146,6 +3136,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         ViewGroup viewSeed = (ViewGroup)inflater.inflate(R.layout.view_seed, dialogView, false);
+        dialogView.addView(viewSeed);
+
         mSeed = mBitcoin.seed(pPassCode, mCurrentWalletIndex);
         if(mSeed == null)
         {
@@ -3159,9 +3151,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         viewSeed.findViewById(R.id.seedEntropyContainer).setVisibility(View.GONE);
 
-        dialogView.addView(viewSeed);
-
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.BACKUP_WALLET;
     }
@@ -3246,10 +3236,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup dialogView = findViewById(R.id.dialog);
 
         dialogView.removeAllViews();
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
 
         // Title
         ActionBar actionBar = getSupportActionBar();
@@ -3270,7 +3256,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         dialogView.addView(editWallet);
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.EDIT_WALLET;
     }
@@ -3513,10 +3499,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         else
         {
             dialogView.removeAllViews();
-            findViewById(R.id.main).setVisibility(View.GONE);
-            findViewById(R.id.progress).setVisibility(View.GONE);
-            findViewById(R.id.statusBar).setVisibility(View.GONE);
-            findViewById(R.id.controls).setVisibility(View.GONE);
 
             // Title
             ActionBar actionBar = getSupportActionBar();
@@ -3538,7 +3520,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         populateTransactions(transactions, wallet.transactions, 100, false);
         alignTransactions(transactions);
 
-        dialogView.setVisibility(View.VISIBLE);
+        showView(R.id.dialog);
         if(!update)
             findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.TRANSACTION_HISTORY;
@@ -3561,13 +3543,50 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         processClick(pView, pView.getId());
     }
 
+    // Set one view visible and hide the rest.
+    public synchronized void showView(int pViewID)
+    {
+        switch(pViewID)
+        {
+        default:
+        case R.id.main:
+            findViewById(R.id.main).setVisibility(View.VISIBLE);
+            findViewById(R.id.statusBar).setVisibility(View.VISIBLE);
+            findViewById(R.id.controls).setVisibility(View.VISIBLE);
+            findViewById(R.id.dialog).setVisibility(View.GONE);
+            findViewById(R.id.progress).setVisibility(View.GONE);
+            findViewById(R.id.nonScroll).setVisibility(View.GONE);
+            break;
+        case R.id.progress:
+            findViewById(R.id.main).setVisibility(View.GONE);
+            findViewById(R.id.statusBar).setVisibility(View.GONE);
+            findViewById(R.id.controls).setVisibility(View.GONE);
+            findViewById(R.id.dialog).setVisibility(View.GONE);
+            findViewById(R.id.progress).setVisibility(View.VISIBLE);
+            findViewById(R.id.nonScroll).setVisibility(View.GONE);
+            break;
+        case R.id.dialog:
+            findViewById(R.id.main).setVisibility(View.GONE);
+            findViewById(R.id.statusBar).setVisibility(View.GONE);
+            findViewById(R.id.controls).setVisibility(View.GONE);
+            findViewById(R.id.dialog).setVisibility(View.VISIBLE);
+            findViewById(R.id.progress).setVisibility(View.GONE);
+            findViewById(R.id.nonScroll).setVisibility(View.GONE);
+            break;
+        case R.id.nonScroll:
+            findViewById(R.id.main).setVisibility(View.GONE);
+            findViewById(R.id.statusBar).setVisibility(View.GONE);
+            findViewById(R.id.controls).setVisibility(View.GONE);
+            findViewById(R.id.dialog).setVisibility(View.GONE);
+            findViewById(R.id.progress).setVisibility(View.GONE);
+            findViewById(R.id.nonScroll).setVisibility(View.VISIBLE);
+            break;
+        }
+    }
+
     public synchronized void displayProgress()
     {
-        findViewById(R.id.main).setVisibility(View.GONE);
-        findViewById(R.id.dialog).setVisibility(View.GONE);
-        findViewById(R.id.statusBar).setVisibility(View.GONE);
-        findViewById(R.id.controls).setVisibility(View.GONE);
-        findViewById(R.id.progress).setVisibility(View.VISIBLE);
+        showView(R.id.progress);
         mMode = Mode.IN_PROGRESS;
     }
 
@@ -4270,21 +4289,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.addressBookItem:
         {
             // Open payment view for specified address
-            TextView address = pView.findViewById(R.id.addressBookAddress);
-            if(address != null)
+            TextView nameView = pView.findViewById(R.id.addressBookName);
+            TextView addressView = pView.findViewById(R.id.addressBookAddress);
+            if(nameView != null && addressView != null)
             {
-                AddressBook.Item item = mBitcoin.lookupAddress(address.getText().toString());
-                if(item != null)
-                {
                     mPreviousReceiveMode = mMode;
-                    displayProgress();
-
-                    mPaymentRequest = new PaymentRequest();
-                    mPaymentRequest.address = item.address;
-                    mPaymentRequest.label = item.name;
+                    mPaymentRequest = mBitcoin.decodePaymentCode(addressView.getText().toString());
+                    mPaymentRequest.label = nameView.getText().toString();
                     mPaymentRequest.encode();
                     displayPaymentDetails();
-                }
             }
             break;
         }
@@ -4309,6 +4322,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
             break;
         }
+        case R.id.undoDelete:
+            if(mUndoDeleteRunnable != null)
+            {
+                mUndoDeleteRunnable.run();
+                mUndoDeleteRunnable = null;
+                mDelayHandler.removeCallbacks(mConfirmDeleteRunnable);
+                mConfirmDeleteRunnable = null;
+            }
+            break;
         case R.id.textDialogOkay:
         {
             EditText textView = findViewById(R.id.enteredText);
@@ -4604,6 +4626,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onBackPressed()
     {
+        if(mConfirmDeleteRunnable != null)
+        {
+            mDelayHandler.removeCallbacks(mConfirmDeleteRunnable);
+            mConfirmDeleteRunnable.run();
+            mConfirmDeleteRunnable = null;
+            mUndoDeleteRunnable = null;
+        }
+
         switch(mMode)
         {
         case LOADING_WALLETS:

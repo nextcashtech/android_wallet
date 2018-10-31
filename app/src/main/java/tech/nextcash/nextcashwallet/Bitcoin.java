@@ -432,6 +432,14 @@ public class Bitcoin
         return mAddressLabels.add(pItem);
     }
 
+    public boolean removeAddressLabel(String pAddress)
+    {
+        boolean result = mAddressLabels.remove(pAddress);
+        if(result)
+            mAddressLabels.save(mDirectory);
+        return result;
+    }
+
     public ArrayList<AddressLabel.Item> getAddressLabels(int pWalletOffset)
     {
         ArrayList<AddressLabel.Item> allItems = mAddressLabels.getAll();
@@ -451,6 +459,14 @@ public class Bitcoin
     {
         mAddressBook.addAddress(pAddress, pName);
         mAddressBook.save(mDirectory);
+    }
+
+    public boolean removeAddress(String pAddress, boolean pSave)
+    {
+        boolean result = mAddressBook.removeAddress(pAddress);
+        if(result && pSave)
+            mAddressBook.save(mDirectory);
+        return result;
     }
 
     public AddressBook.Item lookupAddress(String pAddress)

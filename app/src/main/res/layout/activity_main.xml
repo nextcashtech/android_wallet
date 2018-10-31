@@ -65,6 +65,16 @@
     </ScrollView>
 
     <LinearLayout
+        android:id="@+id/nonScroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_below="@id/toolbar"
+        android:layout_above="@id/statusBar">
+
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/controls"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -220,9 +230,32 @@
             android:background="@drawable/notification_background"
             android:layout_margin="10dp"
             android:padding="15dp"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             android:textAlignment="center"
+            style="@style/SmallHeadingText"
+            android:textColor="@color/buttonText"
             android:text="@string/double_tap_back"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/undoDelete"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:visibility="gone"
+        style="@style/UndoButton">
+        <ImageView
+            android:layout_width="@dimen/small_icon_size"
+            android:layout_height="@dimen/small_icon_size"
+            android:layout_marginEnd="10dp"
+            android:src="@drawable/baseline_undo_white_36dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/undo_delete"
+            android:textColor="@color/buttonText"
+            android:layout_gravity="center_vertical"/>
     </LinearLayout>
 
 </RelativeLayout>

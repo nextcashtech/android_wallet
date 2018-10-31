@@ -188,6 +188,8 @@
         When using saved addresses please ensure the recipient still has access to the address.
         If sending a large amount it is best to request a new payment address.
     </string>
+    <string name="swipe_to_delete">Swipe to delete</string>
+    <string name="undo_delete">Undo Delete</string>
     <string name="add_manual_address_book">Manually Add</string>
     <string name="enter_address_name_hint">Enter Address Name</string>
     <string name="fee">Fee</string>

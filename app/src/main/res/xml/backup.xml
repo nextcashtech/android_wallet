@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
     <include domain="file" path="transactions.data"/>
+    <include domain="file" path="address_book.data"/>
+    <include domain="file" path="addresses.data"/>
 </full-backup-content>

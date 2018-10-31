@@ -128,6 +128,19 @@ public class AddressLabel
         return false;
     }
 
+    public synchronized boolean remove(String pAddress)
+    {
+        for(Item item : mItems)
+            if(item.address.equals(pAddress))
+            {
+                mItems.remove(item);
+                mIsModified = true;
+                return true;
+            }
+
+        return false;
+    }
+
     public synchronized Item lookup(String pAddress, long pAmount)
     {
         for(Item item : mItems)
