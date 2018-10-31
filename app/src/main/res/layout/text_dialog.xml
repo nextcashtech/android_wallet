@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/dialogBackground"
-    android:padding="20dp">
+    android:padding="10dp"
+    android:onClick="onClick">
 
     <RelativeLayout
         android:layout_width="match_parent"

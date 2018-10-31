@@ -58,8 +58,8 @@
         app:layout_constraintTop_toBottomOf="@id/camera"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/openAddressBook"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="@dimen/image_button_size"
+        android:layout_height="@dimen/image_button_size"
         style="@style/SmallButton"
         android:src="@drawable/ic_cursor_white_36dp"
         android:contentDescription="@string/enter_payment_code"/>
@@ -69,8 +69,8 @@
         app:layout_constraintTop_toBottomOf="@id/camera"
         app:layout_constraintStart_toEndOf="@id/enterPaymentCode"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="@dimen/image_button_size"
+        android:layout_height="@dimen/image_button_size"
         style="@style/SmallButton"
         android:src="@drawable/baseline_list_white_36dp"
         android:contentDescription="@string/address_book"/>

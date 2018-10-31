@@ -163,6 +163,10 @@
     <string name="comment">Comment</string>
     <string name="comment_hint">Enter TX Comment</string>
     <string name="comment_updated">Comment updated</string>
+    <string name="specify_amount">Specify Amount</string>
+    <string name="modify">Modify</string>
+    <string name="specify_label">Specify Label</string>
+    <string name="specify_message">Specify Message</string>
     <string name="cost_basis">Cost Basis</string>
     <string name="cost_basis_hint">Enter Manual Cost Basis</string>
     <string name="cost_basis_cleared">Cost basis cleared</string>
@@ -174,6 +178,8 @@
         Automatically apply a comment to any transactions received to this address.
     </string>
     <string name="address_label_updated">Address label updated</string>
+    <string name="add_label">Add Label</string>
+    <string name="view_labels">View Labels</string>
     <string name="labeled_addresses">Labeled Addresses</string>
     <string name="any_amount">Any amount</string>
     <string name="add_manual_address_label">Manually Add</string>
@@ -192,6 +198,7 @@
     <string name="undo_delete">Undo Delete</string>
     <string name="add_manual_address_book">Manually Add</string>
     <string name="enter_address_name_hint">Enter Address Name</string>
+    <string name="address_saved">Address saved</string>
     <string name="fee">Fee</string>
     <string name="estimated_fee">Estimated Fee</string>
     <string name="bitcoins_amount_title">bitcoins</string>

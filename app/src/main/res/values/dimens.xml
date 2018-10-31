@@ -8,4 +8,7 @@
     <dimen name="pin_button_size">45dp</dimen>
     <dimen name="pin_button_text_size">20dp</dimen>
     <dimen name="small_icon_size">24dp</dimen>
+    <dimen name="image_button_size">40dp</dimen>
+    <dimen name="button_min_width">180dp</dimen>
+    <dimen name="button_padding">8dp</dimen>
 </resources>

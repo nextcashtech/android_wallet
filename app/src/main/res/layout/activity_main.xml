@@ -232,7 +232,6 @@
             android:padding="15dp"
             android:textAlignment="center"
             style="@style/SmallHeadingText"
-            android:textColor="@color/buttonText"
             android:text="@string/double_tap_back"/>
     </LinearLayout>
 

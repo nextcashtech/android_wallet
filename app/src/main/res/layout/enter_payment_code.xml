@@ -45,8 +45,8 @@
             app:layout_constraintEnd_toStartOf="@id/openAddressBook"
             app:layout_constraintStart_toStartOf="parent"
             style="@style/SmallButton"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="@dimen/image_button_size"
+            android:layout_height="@dimen/image_button_size"
             android:src="@drawable/ic_scan_white_36dp"
             android:contentDescription="@string/scan"/>
 
@@ -55,8 +55,8 @@
             app:layout_constraintStart_toEndOf="@id/scanPaymentCode"
             app:layout_constraintEnd_toEndOf="parent"
             style="@style/SmallButton"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="@dimen/image_button_size"
+            android:layout_height="@dimen/image_button_size"
             android:src="@drawable/baseline_list_white_36dp"
             android:contentDescription="@string/address_book"/>
 

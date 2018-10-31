@@ -143,6 +143,16 @@ public class Bitcoin
         return (long)(pBits * 100.0);
     }
 
+    public static long satoshisFromFiat(double pAmount, double pExchangeRate)
+    {
+        return satoshisFromBitcoins(Math.abs(pAmount) / pExchangeRate);
+    }
+
+    public long satoshisFromFiat(double pAmount)
+    {
+        return satoshisFromFiat(pAmount, mExchangeRate);
+    }
+
     public String amountText(long pAmount, String pExchangeType, double pExchangeRate)
     {
         double exchangeRate = pExchangeRate;
@@ -203,6 +213,7 @@ public class Bitcoin
 
     public static double parseAmount(String pAmountText) throws NumberFormatException
     {
+        pAmountText = pAmountText.trim();
         if(pAmountText.length() == 0)
             return 0.0;
 
@@ -425,11 +436,12 @@ public class Bitcoin
         return mAddressLabels.lookup(pAddress);
     }
 
-    public boolean addAddressLabel(AddressLabel.Item pItem)
+    public void addAddressLabel(AddressLabel.Item pItem, int pWalletOffset)
     {
         if(mAddressLabels == null)
-            return false;
-        return mAddressLabels.add(pItem);
+            return;
+        mAddressLabels.add(pItem);
+        markAddressUsed(pWalletOffset, pItem.address);
     }
 
     public boolean removeAddressLabel(String pAddress, boolean pSave)
