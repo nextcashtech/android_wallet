@@ -28,4 +28,6 @@
     <color name="textPositive">#f180</color>
     <color name="heading">#f666</color>
     <color name="dialogBackground">#9000</color>
+    <color name="disabled">#f999</color>
+    <color name="enabled">#f000</color>
 </resources>

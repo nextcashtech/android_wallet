@@ -148,6 +148,7 @@
     <string name="balance">Balance</string>
     <string name="pending_balance">Unconfirmed Balance</string>
     <string name="send">Send</string>
+    <string name="still_syncing">Still Synchronizing</string>
     <string name="receive">Receive</string>
     <string name="add_amount">Add Amount</string>
     <string name="history">History</string>

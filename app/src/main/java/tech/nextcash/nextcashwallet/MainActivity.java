@@ -1145,9 +1145,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             if(wallet.isPrivate && wallet.isSynchronized && mBitcoin.chainIsLoaded() &&
               mBitcoin.initialBlockDownloadIsComplete() && mBitcoin.isInRoughSync())
-                walletView.findViewById(R.id.walletSend).setVisibility(View.VISIBLE);
+                ((ImageView)walletView.findViewById(R.id.walletSend))
+                  .setColorFilter(getResources().getColor(R.color.enabled));
             else
-                walletView.findViewById(R.id.walletSend).setVisibility(View.GONE);
+                ((ImageView)walletView.findViewById(R.id.walletSend))
+                  .setColorFilter(getResources().getColor(R.color.disabled));
 
             if(!wallet.isSynchronized)
             {
@@ -4096,26 +4098,33 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
             mCurrentWalletIndex = (int)walletView.getTag();
-            ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
-            if(manager != null)
+            Wallet wallet = mBitcoin.wallet(mCurrentWalletIndex);
+            if(wallet.isPrivate && wallet.isSynchronized && mBitcoin.chainIsLoaded() &&
+              mBitcoin.initialBlockDownloadIsComplete() && mBitcoin.isInRoughSync())
             {
-                ClipData clip = manager.getPrimaryClip();
-                if(clip != null && clip.getItemCount() > 0)
+                ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+                if(manager != null)
                 {
-                    String clipText = clip.getItemAt(0).coerceToText(getApplicationContext()).toString();
-                    if(clipText.length() > 0)
+                    ClipData clip = manager.getPrimaryClip();
+                    if(clip != null && clip.getItemCount() > 0)
                     {
-                        mPaymentRequest = mBitcoin.decodePaymentCode(clipText);
-                        if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
+                        String clipText = clip.getItemAt(0).coerceToText(getApplicationContext()).toString();
+                        if(clipText.length() > 0)
                         {
-                            displayClipBoardPaymentCode();
-                            break;
+                            mPaymentRequest = mBitcoin.decodePaymentCode(clipText);
+                            if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
+                            {
+                                displayClipBoardPaymentCode();
+                                break;
+                            }
                         }
                     }
                 }
-            }
 
-            displayScanner(ScanMode.SCAN_PAYMENT_CODE);
+                displayScanner(ScanMode.SCAN_PAYMENT_CODE);
+            }
+            else
+                showMessage(getString(R.string.still_syncing), 2000);
             break;
         }
         case R.id.walletBackup:
