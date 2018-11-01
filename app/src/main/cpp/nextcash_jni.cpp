@@ -1070,8 +1070,7 @@ extern "C"
 
         // Set count
         if(!pChainWasLoaded)
-            pEnvironment->SetIntField(result, pInstance->jTransactionCountID,
-              (jint)-1);
+            pEnvironment->SetIntField(result, pInstance->jTransactionCountID, (jint)-1);
         else if(pTransaction.blockHash.isEmpty())
             pEnvironment->SetIntField(result, pInstance->jTransactionCountID,
               (jint)pTransaction.nodesVerified);

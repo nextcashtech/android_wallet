@@ -8,6 +8,7 @@
 package tech.nextcash.nextcashwallet;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -15,7 +16,7 @@ import android.widget.TextView;
 import java.util.Locale;
 
 
-public class Transaction
+public class Transaction implements Comparable
 {
     public String hash; // Transaction ID
     public String block; // Block Hash in which transaction was confirmed. Null when unconfirmed.
@@ -52,6 +53,27 @@ public class Transaction
           pBitcoin.amountText(amount, data), pContext.getString(endString));
     }
 
+    public long effectiveDate()
+    {
+        if(data != null)
+            return data.date;
+        if(date == 0)
+            return System.currentTimeMillis() / 1000L;
+        return date;
+    }
+
+    @Override
+    public int compareTo(@NonNull Object pOther)
+    {
+        if(pOther == null || pOther.getClass() != Transaction.class)
+            return 0;
+
+        long date1 = effectiveDate();
+        long date2 = ((Transaction)pOther).effectiveDate();
+
+        return Long.compare(date1, date2);
+    }
+
     public void updateView(Context pContext, Bitcoin pBitcoin, ViewGroup pView)
     {
         ViewGroup basicGroup = (ViewGroup)pView.getChildAt(0);
@@ -75,11 +97,7 @@ public class Transaction
             timeText.setText(pContext.getString(R.string.not_available_abbreviation));
         else
         {
-            long dateToUse;
-            if(data != null)
-                dateToUse = data.date;
-            else
-                dateToUse = date;
+            long dateToUse = effectiveDate();
             long diff = (System.currentTimeMillis() / 1000L) - dateToUse;
             if(diff < 60)
                 timeText.setText(pContext.getString(R.string.just_now));

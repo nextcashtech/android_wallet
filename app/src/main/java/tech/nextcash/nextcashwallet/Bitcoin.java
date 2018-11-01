@@ -21,6 +21,8 @@ import com.google.zxing.common.BitMatrix;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -533,6 +535,9 @@ public class Bitcoin
                 for(Transaction transaction : mWallets[offset].transactions)
                     if(updateTransactionData(transaction, offset))
                         dataUpdated = true;
+
+                // Sort most recent first
+                Arrays.sort(mWallets[offset].transactions, Collections.<Transaction>reverseOrder());
             }
             else
             {
@@ -604,7 +609,7 @@ public class Bitcoin
         }
 
         // TODO Temporary Fix for issue with bad date being tagged on transaction.
-        if(pTransaction.date != 0 && pTransaction.block != null &&
+        if(pTransaction.date != 0 && pTransaction.block != null && pTransaction.count != -1 &&
           Math.abs(pTransaction.date - pTransaction.data.date) > 864000) // One day
             pTransaction.data.date = pTransaction.date;
 
