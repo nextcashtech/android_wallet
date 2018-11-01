@@ -27,6 +27,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
+import android.view.View;
+import android.widget.RemoteViews;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -410,52 +412,45 @@ public class BitcoinService extends Service
         if(mIsStopped)
             return;
 
-        boolean isChainLoaded = mBitcoin.chainIsLoaded();
-        boolean isInSync = mBitcoin.isInSync();
-        int merkleHeight = mBitcoin.merkleHeight();
-        int blockHeight = mBitcoin.headerHeight();
-
         if(mIcon == null)
             mIcon = BitmapFactory.decodeResource(getResources(), R.drawable.icon_notification_large);
 
         // Setup intent to open activity
         Intent openIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingOpenIntent = PendingIntent.getActivity(this, 0, openIntent, 0);
+
+        RemoteViews notificationLayout = new RemoteViews(getPackageName(), R.layout.progress_notification);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, sProgressNotificationChannel)
           .setSmallIcon(R.drawable.icon_notification_small)
-          .setLargeIcon(mIcon)
           .setContentIntent(pendingOpenIntent)
-          .setPriority(NotificationCompat.PRIORITY_LOW);
+          .setPriority(NotificationCompat.PRIORITY_LOW)
+          .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
+          .setCustomContentView(notificationLayout);
 
-        if(!mIsStopped && !mBitcoin.isStopping() && mBitcoin.finishMode() != Bitcoin.FINISH_ON_REQUEST)
-        {
-            // Setup an intent to stop synchronization
-            Intent stopIntent = new Intent(SERVICE_ACTION);
-            stopIntent.setAction(STOP_ACTION);
-            PendingIntent pendingStopIntent = PendingIntent.getBroadcast(this, 0, stopIntent, 0);
-            builder.addAction(R.drawable.ic_stop_black_24dp, getString(R.string.stop), pendingStopIntent);
-        }
-
+        boolean isChainLoaded = mBitcoin.chainIsLoaded();
+        boolean isInSync = mBitcoin.isInSync();
+        int merkleHeight = mBitcoin.merkleHeight();
+        int blockHeight = mBitcoin.headerHeight();
         int max = 0;
         int progress = 0;
         boolean indeterminate = false;
         if(mIsStopped || mBitcoin.isStopping())
         {
             indeterminate = true;
-            builder.setContentTitle(getString(R.string.stopping));
+            notificationLayout.setTextViewText(R.id.title, getString(R.string.stopping));
         }
         else if(!isChainLoaded)
         {
             indeterminate = true;
-            builder.setContentTitle(getString(R.string.loading));
+            notificationLayout.setTextViewText(R.id.title, getString(R.string.loading));
         }
         else if(isInSync)
         {
             if(mBitcoin.walletCount() == 0 || merkleHeight == blockHeight)
             {
                 indeterminate = true;
-                builder.setContentTitle(getString(R.string.monitoring));
-                builder.setContentText(getString(R.string.watching_for_transactions));
+                notificationLayout.setTextViewText(R.id.title, getString(R.string.monitoring));
             }
             else
             {
@@ -463,8 +458,7 @@ public class BitcoinService extends Service
                     mStartMerkleHeight = merkleHeight;
                 max = blockHeight - mStartMerkleHeight;
                 progress = merkleHeight - mStartMerkleHeight;
-                builder.setContentTitle(getString(R.string.synchronizing));
-                builder.setContentText(getString(R.string.requesting_transactions));
+                notificationLayout.setTextViewText(R.id.title, getString(R.string.synchronizing));
             }
         }
         else
@@ -472,8 +466,7 @@ public class BitcoinService extends Service
             int estimatedHeight = mBitcoin.estimatedHeight();
             max = estimatedHeight - mStartBlockHeight;
             progress = blockHeight - mStartBlockHeight;
-            builder.setContentTitle(getString(R.string.synchronizing));
-            builder.setContentText(getString(R.string.requesting_blocks));
+            notificationLayout.setTextViewText(R.id.title, getString(R.string.synchronizing));
         }
 
         if(!indeterminate && (max <= 1 || progress < 1 || max - progress < 2))
@@ -483,7 +476,21 @@ public class BitcoinService extends Service
             progress = 0;
         }
 
-        builder.setProgress(max, progress, indeterminate);
+        notificationLayout.setProgressBar(R.id.progress, max, progress, indeterminate);
+
+        if(!mIsStopped && !mBitcoin.isStopping() && mBitcoin.finishMode() != Bitcoin.FINISH_ON_REQUEST)
+        {
+            notificationLayout.setViewVisibility(R.id.stop, View.VISIBLE);
+
+            // Setup an intent to stop synchronization
+            Intent stopIntent = new Intent(SERVICE_ACTION);
+            stopIntent.setAction(STOP_ACTION);
+            PendingIntent pendingStopIntent = PendingIntent.getBroadcast(this, 0, stopIntent,
+              0);
+            notificationLayout.setOnClickPendingIntent(R.id.stop, pendingStopIntent);
+        }
+        else
+            notificationLayout.setViewVisibility(R.id.stop, View.GONE);
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
 
