@@ -2396,11 +2396,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 // Draw the red delete background
                 Rect rect;
-                if(pDeltaX < 0)
+                if(pDeltaX < 0.0f)
                     rect = new Rect(itemView.getRight() + (int)pDeltaX, itemView.getTop(), itemView.getRight(),
                       itemView.getBottom());
                 else
-                    rect = new Rect(itemView.getLeft() + (int)pDeltaX, itemView.getTop(), itemView.getLeft(),
+                    rect = new Rect(itemView.getLeft(), itemView.getTop(), itemView.getLeft() + (int)pDeltaX,
                       itemView.getBottom());
                 pCanvas.drawRect(rect, mNegativeColorPaint);
 
@@ -2409,15 +2409,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 int iconBottom = iconTop + mSmallIconSize;
                 int iconMargin = (itemView.getHeight() - mSmallIconSize) / 2;
                 int iconLeft, iconRight;
-                if(pDeltaX < 0)
+                if(pDeltaX < 0.0f)
                 {
                     iconLeft = itemView.getRight() - iconMargin - mSmallIconSize;
                     iconRight = itemView.getRight() - iconMargin;
                 }
                 else
                 {
-                    iconLeft = itemView.getLeft() + iconMargin + mSmallIconSize;
-                    iconRight = itemView.getLeft() + iconMargin;
+                    iconLeft = itemView.getLeft() + iconMargin;
+                    iconRight = itemView.getLeft() + iconMargin + mSmallIconSize;
                 }
 
                 // Draw the delete icon
@@ -2511,11 +2511,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 // Draw the red delete background
                 Rect rect;
-                if(pDeltaX < 0)
+                if(pDeltaX < 0.0f)
                     rect = new Rect(itemView.getRight() + (int)pDeltaX, itemView.getTop(), itemView.getRight(),
                       itemView.getBottom());
                 else
-                    rect = new Rect(itemView.getLeft() + (int)pDeltaX, itemView.getTop(), itemView.getLeft(),
+                    rect = new Rect(itemView.getLeft(), itemView.getTop(), itemView.getLeft() + (int)pDeltaX,
                       itemView.getBottom());
                 pCanvas.drawRect(rect, mNegativeColorPaint);
 
@@ -2524,15 +2524,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 int iconBottom = iconTop + mSmallIconSize;
                 int iconMargin = (itemView.getHeight() - mSmallIconSize) / 2;
                 int iconLeft, iconRight;
-                if(pDeltaX < 0)
+                if(pDeltaX < 0.0f)
                 {
                     iconLeft = itemView.getRight() - iconMargin - mSmallIconSize;
                     iconRight = itemView.getRight() - iconMargin;
                 }
                 else
                 {
-                    iconLeft = itemView.getLeft() + iconMargin + mSmallIconSize;
-                    iconRight = itemView.getLeft() + iconMargin;
+                    iconLeft = itemView.getLeft() + iconMargin;
+                    iconRight = itemView.getLeft() + iconMargin + mSmallIconSize;
                 }
 
                 // Draw the delete icon
