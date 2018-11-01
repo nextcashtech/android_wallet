@@ -61,10 +61,15 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <android.support.constraint.ConstraintLayout
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp">
+            android:text="@string/address_label_description"
+            android:layout_marginTop="10dp"/>
+
+        <android.support.constraint.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
             <tech.nextcash.nextcashwallet.TextButton
                 android:id="@+id/addAddressLabel"

@@ -16,6 +16,12 @@
         android:text="@string/labeled_addresses"/>
 
     <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/address_label_description_plural"
+        android:layout_marginTop="10dp"/>
+
+    <TextView
         android:id="@+id/walletName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
