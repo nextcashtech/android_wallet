@@ -15,7 +15,7 @@
         android:orientation="horizontal"
         android:padding="10dp"
         android:layout_margin="5dp"
-        android:background="@drawable/item_background"
+        android:background="@drawable/wallet_header_background"
         android:onClick="onClick"
         android:elevation="4dp">
 

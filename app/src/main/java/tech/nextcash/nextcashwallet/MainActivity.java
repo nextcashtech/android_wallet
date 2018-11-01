@@ -47,12 +47,14 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.DatePicker;
 import android.widget.EditText;
@@ -144,6 +146,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Drawable mDeleteIcon;
     private int mSmallIconSize;
     private Paint mNegativeColorPaint;
+    private Animation mLargeButtonDownAnimation, mLargeButtonUpAnimation;
+    private Animation mButtonDownAnimation, mButtonUpAnimation;
+    private View.OnTouchListener mButtonTouchListener, mLargeButtonTouchListener;
 
 
     public class TransactionRunnable implements Runnable
@@ -235,6 +240,75 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mNegativeColorPaint.setColor(getResources().getColor(R.color.colorNegative));
         mEnteredAmountWatcher = null;
         mTextEntryMode = TextEntryMode.NONE;
+
+        mLargeButtonDownAnimation = new ScaleAnimation(1.0f, 0.97f, 1.0f, 0.90f,
+          Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        mLargeButtonDownAnimation.setDuration(250L);
+
+        mLargeButtonUpAnimation = new ScaleAnimation(0.97f, 1.0f, 0.90f, 1.0f,
+          Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        mLargeButtonUpAnimation.setDuration(250L);
+
+        mButtonDownAnimation = new ScaleAnimation(1.0f, 0.90f, 1.0f, 0.90f,
+          Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        mButtonDownAnimation.setDuration(250L);
+
+        mButtonUpAnimation = new ScaleAnimation(0.90f, 1.0f, 0.90f, 1.0f,
+          Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        mButtonUpAnimation.setDuration(250L);
+
+        mLargeButtonTouchListener = new View.OnTouchListener()
+        {
+            @Override
+            public boolean onTouch(View pView, MotionEvent pEvent)
+            {
+                switch(pEvent.getAction())
+                {
+                case MotionEvent.ACTION_DOWN:
+                    pView.startAnimation(mLargeButtonDownAnimation);
+                    break;
+                case MotionEvent.ACTION_UP:
+                    pView.startAnimation(mLargeButtonUpAnimation);
+                    pView.performClick();
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                    pView.clearAnimation();
+                    break;
+                default:
+                    break;
+                }
+                return true;
+            }
+        };
+
+        mButtonTouchListener = new View.OnTouchListener()
+        {
+            @Override
+            public boolean onTouch(View pView, MotionEvent pEvent)
+            {
+                switch(pEvent.getAction())
+                {
+                    case MotionEvent.ACTION_DOWN:
+                        pView.startAnimation(mButtonDownAnimation);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        pView.startAnimation(mButtonUpAnimation);
+                        pView.performClick();
+                        break;
+                    case MotionEvent.ACTION_CANCEL:
+                        pView.clearAnimation();
+                        break;
+                    default:
+                        break;
+                }
+                return true;
+            }
+        };
+
+        // Set listener for control buttons.
+        LinearLayout controls = findViewById(R.id.controls);
+        for(int index = 0; index < controls.getChildCount(); index++)
+            controls.getChildAt(index).setOnTouchListener(mButtonTouchListener);
 
         if(!settings.containsValue("beta_message"))
         {
@@ -460,14 +534,28 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         View pinView = inflater.inflate(R.layout.pin_entry, root, false);
         pinView.setVisibility(View.GONE);
+        pinView.findViewById(R.id.one).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.two).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.three).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.four).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.five).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.six).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.seven).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.eight).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.nine).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.backspace).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.zero).setOnTouchListener(mButtonTouchListener);
+        pinView.findViewById(R.id.authorize).setOnTouchListener(mButtonTouchListener);
         root.addView(pinView);
 
         View textDialog = inflater.inflate(R.layout.text_dialog, root, false);
         textDialog.setVisibility(View.GONE);
+        textDialog.findViewById(R.id.textDialogOkay).setOnTouchListener(mButtonTouchListener);
         root.addView(textDialog);
 
         View amountDialog = inflater.inflate(R.layout.amount_dialog, root, false);
         amountDialog.setVisibility(View.GONE);
+        amountDialog.findViewById(R.id.textDialogOkay).setOnTouchListener(mButtonTouchListener);
         root.addView(amountDialog);
 
         showView(R.id.progress);
@@ -650,7 +738,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case HELP:
                 break;
             case SETTINGS:
-                displaySettings(); // Reload
                 break;
         }
     }
@@ -1108,6 +1195,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(walletView == null)
                 break;
 
+            walletView.findViewById(R.id.walletHeader).setOnTouchListener(mLargeButtonTouchListener);
+
             ((TextView)walletView.findViewById(R.id.walletBalance)).setText(mBitcoin.amountText(wallet.balance));
 
             if(mBitcoin.exchangeRate() != 0.0)
@@ -1137,6 +1226,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 walletView.findViewById(R.id.walletLocked).setVisibility(View.VISIBLE);
                 walletView.findViewById(R.id.walletLockedMessage).setVisibility(View.VISIBLE);
             }
+
+            // Set listener for wallet controls
+            RelativeLayout controls = walletView.findViewById(R.id.walletControls);
+            for(int index = 0; index < controls.getChildCount(); index++)
+                controls.getChildAt(index).setOnTouchListener(mButtonTouchListener);
 
             if(!wallet.isBackedUp && wallet.isPrivate)
                 walletView.findViewById(R.id.walletBackup).setVisibility(View.VISIBLE);
@@ -1354,6 +1448,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             button.setId(R.id.editWallet);
             button.setTag(offset);
             button.setText(wallet.name);
+            button.setOnTouchListener(mButtonTouchListener);
             walletsView.addView(button);
             offset++;
         }
@@ -1575,6 +1670,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         ViewGroup sendView = (ViewGroup)inflater.inflate(R.layout.send_payment, dialogView, false);
         dialogView.addView(sendView);
+
+        sendView.findViewById(R.id.saveAddress).setOnTouchListener(mButtonTouchListener);
+        sendView.findViewById(R.id.sendMax).setOnTouchListener(mButtonTouchListener);
+        sendView.findViewById(R.id.sendPayment).setOnTouchListener(mButtonTouchListener);
 
         // Display payment details
         String formatText;
@@ -1841,6 +1940,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             showView(R.id.dialog);
             findViewById(R.id.mainScroll).setScrollY(0);
 
+            transactionView.findViewById(R.id.updateTransactionComment).setOnTouchListener(mButtonTouchListener);
+            transactionView.findViewById(R.id.updateTransactionCostBasis).setOnTouchListener(mButtonTouchListener);
+
             if(mTransaction.data != null)
             {
                 if(mTransaction.data.comment != null)
@@ -2040,6 +2142,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup paymentCodeView = (ViewGroup)inflater.inflate(R.layout.enter_payment_code, dialogView,
           false);
 
+        paymentCodeView.findViewById(R.id.enterPaymentDetails).setOnTouchListener(mButtonTouchListener);
+        paymentCodeView.findViewById(R.id.scanPaymentCode).setOnTouchListener(mButtonTouchListener);
+        paymentCodeView.findViewById(R.id.openAddressBook).setOnTouchListener(mButtonTouchListener);
+
         EditText paymentCodeEntry = paymentCodeView.findViewById(R.id.paymentCode);
 
         dialogView.addView(paymentCodeView);
@@ -2088,6 +2194,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         TextView paymentCode = paymentCodeView.findViewById(R.id.clipboard);
         paymentCode.setText(mPaymentRequest.uri);
+
+        paymentCodeView.findViewById(R.id.useClipBoardPaymentCode).setOnTouchListener(mButtonTouchListener);
+        paymentCodeView.findViewById(R.id.scanPaymentCode).setOnTouchListener(mButtonTouchListener);
+        paymentCodeView.findViewById(R.id.openAddressBook).setOnTouchListener(mButtonTouchListener);
 
         dialogView.addView(paymentCodeView);
 
@@ -2193,6 +2303,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup scanView = (ViewGroup)inflater.inflate(R.layout.scan, dialogView, false);
         dialogView.addView(scanView);
 
+        scanView.findViewById(R.id.enterPaymentCode).setOnTouchListener(mButtonTouchListener);
+        scanView.findViewById(R.id.openAddressBook).setOnTouchListener(mButtonTouchListener);
+
         if(pMode != ScanMode.SCAN_PAYMENT_CODE)
         {
             ((TextView)scanView.findViewById(R.id.scanTitle)).setText(R.string.scan_private_key);
@@ -2240,6 +2353,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 receiveView = (ViewGroup)inflater.inflate(R.layout.receive, dialogView, false);
                 dialogView.addView(receiveView);
+
+                receiveView.findViewById(R.id.addAddressLabel).setOnTouchListener(mButtonTouchListener);
+                receiveView.findViewById(R.id.openAddressLabels).setOnTouchListener(mButtonTouchListener);
+                receiveView.findViewById(R.id.modifyReceiveAmount).setOnTouchListener(mButtonTouchListener);
+                receiveView.findViewById(R.id.modifyReceiveLabel).setOnTouchListener(mButtonTouchListener);
+                receiveView.findViewById(R.id.modifyReceiveMessage).setOnTouchListener(mButtonTouchListener);
+                receiveView.findViewById(R.id.specifyReceiveAmount).setOnTouchListener(mButtonTouchListener);
+                receiveView.findViewById(R.id.specifyReceiveLabel).setOnTouchListener(mButtonTouchListener);
+                receiveView.findViewById(R.id.specifyReceiveMessage).setOnTouchListener(mButtonTouchListener);
             }
             else
                 receiveView = (ViewGroup)dialogView.getChildAt(0);
@@ -2570,7 +2692,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        inflater.inflate(R.layout.add_wallet, dialogView, true);
+        LinearLayout addView = (LinearLayout)inflater.inflate(R.layout.add_wallet, dialogView, false);
+        dialogView.addView(addView);
+
+        // Set listener for buttons
+        for(int index = 0; index < addView.getChildCount(); index++)
+            addView.getChildAt(index).setOnTouchListener(mButtonTouchListener);
 
         showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2593,7 +2720,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        inflater.inflate(R.layout.select_recover_date, dialogView, true);
+        LinearLayout dateView = (LinearLayout)inflater.inflate(R.layout.select_recover_date, dialogView,
+          false);
+        dialogView.addView(dateView);
+
+        dateView.findViewById(R.id.dateSelected).setOnTouchListener(mButtonTouchListener);
 
         // Done button
         dialogView.findViewById(R.id.dateSelected).setId(R.id.enterImportKey);
@@ -2610,12 +2741,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         dialogView.removeAllViews();
 
-        inflater.inflate(R.layout.import_bip32_key, dialogView, true);
+        LinearLayout importView = (LinearLayout)inflater.inflate(R.layout.import_bip32_key, dialogView,
+          false);
+        dialogView.addView(importView);
 
-        Spinner derivationMethod = findViewById(R.id.derivationMethodSpinner);
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.derivation_methods, android.R.layout.simple_spinner_item);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        derivationMethod.setAdapter(adapter);
+        importView.findViewById(R.id.loadKey).setOnTouchListener(mButtonTouchListener);
 
         showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
@@ -2641,6 +2771,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         ViewGroup createWallet = (ViewGroup)inflater.inflate(R.layout.view_seed, dialogView, false);
         dialogView.addView(createWallet);
+
+        createWallet.findViewById(R.id.verifySeedSaved).setOnTouchListener(mButtonTouchListener);
 
         mSeedIsBackedUp = false;
         mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION;
@@ -2825,6 +2957,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup verifySeed = (ViewGroup)inflater.inflate(R.layout.verify_seed, dialogView, false);
         ViewGroup wordRows = verifySeed.findViewById(R.id.seedRows);
 
+        verifySeed.findViewById(R.id.removeSeedWord).setOnTouchListener(mButtonTouchListener);
+        verifySeed.findViewById(R.id.skipCheckSeed).setOnTouchListener(mButtonTouchListener);
+
         dialogView.addView(verifySeed);
 
         ArrayList<String> words = new ArrayList<>();
@@ -2844,6 +2979,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
             wordButton = (TextButton)inflater.inflate(R.layout.seed_word_button, row, false);
             wordButton.setText(word);
+            wordButton.setOnTouchListener(mButtonTouchListener);
             row.addView(wordButton);
             rowCount++;
             if(rowCount == 4)
@@ -2874,7 +3010,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        inflater.inflate(R.layout.select_recover_date, dialogView, true);
+        LinearLayout dateView = (LinearLayout)inflater.inflate(R.layout.select_recover_date, dialogView,
+          false);
+        dialogView.addView(dateView);
+
+        dateView.findViewById(R.id.dateSelected).setOnTouchListener(mButtonTouchListener);
 
         // Done button
         dialogView.findViewById(R.id.dateSelected).setId(R.id.addPrivateKey);
@@ -2900,7 +3040,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        inflater.inflate(R.layout.select_recover_date, dialogView, true);
+        LinearLayout dateView = (LinearLayout)inflater.inflate(R.layout.select_recover_date, dialogView,
+          false);
+        dialogView.addView(dateView);
+
+        dateView.findViewById(R.id.dateSelected).setOnTouchListener(mButtonTouchListener);
 
         // Done button
         dialogView.findViewById(R.id.dateSelected).setId(R.id.enterRecoverSeed);
@@ -2968,6 +3112,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         wordButton = (TextButton)inflater.inflate(R.layout.seed_word_button, wordButtons,
                           false);
                         wordButton.setText(word);
+                        wordButton.setOnTouchListener(mButtonTouchListener);
                         wordButtons.addView(wordButton);
                     }
                 }
@@ -3077,6 +3222,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup enterSeed = (ViewGroup)inflater.inflate(R.layout.enter_seed, dialogView, false);
         dialogView.addView(enterSeed);
 
+        enterSeed.findViewById(R.id.importSeed).setOnTouchListener(mButtonTouchListener);
+
         if(mSeedWordWatcher == null)
         {
             mSeedWordWatcher = new TextWatcher()
@@ -3128,6 +3275,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         ViewGroup viewSeed = (ViewGroup)inflater.inflate(R.layout.view_seed, dialogView, false);
         dialogView.addView(viewSeed);
+
+        viewSeed.findViewById(R.id.verifySeedSaved).setOnTouchListener(mButtonTouchListener);
 
         mSeed = mBitcoin.seed(pPassCode, mCurrentWalletIndex);
         if(mSeed == null)
@@ -3333,6 +3482,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         ViewGroup editWallet = (ViewGroup)inflater.inflate(R.layout.edit_wallet, dialogView, false);
+
+        editWallet.findViewById(R.id.updateWalletName).setOnTouchListener(mButtonTouchListener);
+        editWallet.findViewById(R.id.backupWallet).setOnTouchListener(mButtonTouchListener);
+        editWallet.findViewById(R.id.removeWallet).setOnTouchListener(mButtonTouchListener);
 
         // Set Name
         ((EditText)editWallet.findViewById(R.id.name)).setText(wallet.name);
@@ -3676,7 +3829,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.IN_PROGRESS;
     }
 
-    public void processClick(View pView, int pID)
+    public boolean processClick(View pView, int pID)
     {
         if(pID != R.id.seedWordButton)
         {
@@ -3936,7 +4089,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     showMessage(getString(R.string.request_expired), 2000);
                     mPaymentRequest = null;
                     displayWallets();
-                    return;
+                    break;
                 }
             }
 
@@ -4764,7 +4917,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             showMessage(getString(R.string.request_expired), 2000);
                             mPaymentRequest = null;
                             displayWallets();
-                            return;
+                            break;
                         }
                     }
 
@@ -4778,8 +4931,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         }
         default:
-            break;
+            return false;
         }
+
+        return true;
     }
 
     public void addPINEntry()
@@ -4825,6 +4980,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         LayoutInflater inflater = getLayoutInflater();
         View messageView = inflater.inflate(R.layout.persistent_message, headerView, false);
         ((TextView)messageView.findViewById(R.id.messageText)).setText(pText);
+        messageView.findViewById(R.id.closeMessage).setOnTouchListener(mButtonTouchListener);
         headerView.addView(messageView, 0);
     }
 
