@@ -3471,7 +3471,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         Calendar date;
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
         {
-            date = new Calendar.Builder().setInstant(pDate).build();
+            date = new Calendar.Builder().setInstant(pDate * 1000L).build();
         }
         else
         {
@@ -3982,8 +3982,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Calendar date;
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             {
-                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
-                  picker.getDayOfMonth()).build();
+                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(), picker.getDayOfMonth())
+                  .setTimeOfDay(0, 0, 0).build();
             }
             else
             {
@@ -4009,8 +4009,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Calendar date;
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             {
-                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
-                  picker.getDayOfMonth()).build();
+                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(), picker.getDayOfMonth())
+                  .setTimeOfDay(0, 0, 0).build();
             }
             else
             {
@@ -4061,7 +4061,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Calendar date;
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             {
-                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(), picker.getDayOfMonth()).setTimeOfDay(0, 0, 0).build();
+                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(), picker.getDayOfMonth())
+                  .setTimeOfDay(0, 0, 0).build();
             }
             else
             {
@@ -4815,8 +4816,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Calendar date;
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             {
-                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
-                  picker.getDayOfMonth()).build();
+                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(), picker.getDayOfMonth())
+                  .setTimeOfDay(0, 0, 0).build();
             }
             else
             {
