@@ -4331,8 +4331,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
             mCurrentWalletIndex = (int)walletView.getTag();
             Wallet wallet = mBitcoin.wallet(mCurrentWalletIndex);
-            if(wallet.isPrivate && wallet.isSynchronized && mBitcoin.chainIsLoaded() &&
-              mBitcoin.initialBlockDownloadIsComplete() && mBitcoin.isInRoughSync())
+            if(!wallet.isPrivate)
+                showMessage(getString(R.string.wallet_view_only), 2000);
+            else if(wallet.isSynchronized && mBitcoin.chainIsLoaded() && mBitcoin.initialBlockDownloadIsComplete() &&
+              mBitcoin.isInRoughSync())
             {
                 ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
                 if(manager != null)

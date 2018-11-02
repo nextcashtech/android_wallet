@@ -131,6 +131,7 @@
     <string name="locked_message">
         View Only. Wallet has a \"public only\" key and can not spend.
     </string>
+    <string name="wallet_view_only">Wallet is view only</string>
     <string-array name="derivation_methods">
         <item>BIP-0044</item>
         <item>BIP-0032</item>
