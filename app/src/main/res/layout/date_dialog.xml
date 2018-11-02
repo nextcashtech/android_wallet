@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dateDialog"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dialogBackground"
+    android:padding="10dp"
+    android:onClick="onClick">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_centerVertical="true"
+        android:padding="10dp"
+        android:background="#ffff">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            style="@style/SmallHeadingText"
+            android:text="@string/cost_date_hint"/>
+
+        <DatePicker
+            android:id="@+id/enteredDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/title"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="20dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:datePickerMode="spinner"
+            android:calendarViewShown="false"
+            android:endYear="2100"
+            android:startYear="2009">
+        </DatePicker>
+
+        <tech.nextcash.nextcashwallet.TextButton
+            android:id="@+id/dateDialogOkay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/enteredDate"
+            android:layout_alignParentEnd="true"
+            style="@style/SmallButton"
+            android:text="@string/okay"/>
+
+    </RelativeLayout>
+
+</RelativeLayout>

@@ -91,6 +91,7 @@ public class TransactionData
         //   For "sends" represents value sent.
         double cost;
         String costType;
+        long costDate;
 
         public Item()
         {
@@ -102,6 +103,7 @@ public class TransactionData
             exchangeType = null;
             cost = 0.0;
             costType = null;
+            costDate = 0L;
         }
 
         public Item(String pTransactionID, long pAmount)
@@ -114,6 +116,7 @@ public class TransactionData
             exchangeType = null;
             cost = 0.0;
             costType = null;
+            costDate = 0L;
         }
 
         public void read(DataInputStream pStream, int pVersion) throws IOException
@@ -129,6 +132,10 @@ public class TransactionData
             exchangeType = readString(pStream);
             cost = pStream.readDouble();
             costType = readString(pStream);
+            if(pVersion > 2)
+                costDate = pStream.readLong();
+            else
+                costDate = 0L;
         }
 
         public void write(DataOutputStream pStream) throws IOException
@@ -141,6 +148,7 @@ public class TransactionData
             writeString(pStream, exchangeType);
             pStream.writeDouble(cost);
             writeString(pStream, costType);
+            pStream.writeLong(costDate);
         }
     }
 
@@ -189,7 +197,7 @@ public class TransactionData
 
             // Version
             int version = stream.readInt();
-            if(version != 1 && version != 2)
+            if(version != 1 && version != 2 && version != 3)
             {
                 Log.e(logTag, String.format("Unknown version : %d", version));
                 return false;
@@ -229,7 +237,7 @@ public class TransactionData
             DataOutputStream stream = new DataOutputStream(fileOutputStream);
 
             // Version
-            stream.writeInt(2);
+            stream.writeInt(3);
 
             // Count
             stream.writeInt(mItems.size());

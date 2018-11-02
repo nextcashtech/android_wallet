@@ -51,76 +51,132 @@
             android:textSize="@dimen/text_size_smallheading"/>
     </LinearLayout>
 
-    <EditText
-        android:id="@+id/commentEdit"
+    <LinearLayout
+        android:id="@+id/commentGroup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:inputType="textAutoComplete"
-        android:importantForAutofill="no"
-        android:hint="@string/comment_hint"/>
-
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
 
         <TextView
+            android:id="@+id/commentTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentStart="true"
-            style="@style/SmallHeadingText"
-            android:text="@string/comment"
-            android:labelFor="@id/commentEdit"/>
+            style="@style/SubHeadingText"
+            android:text="@string/comment"/>
 
-        <tech.nextcash.nextcashwallet.TextButton
-            android:id="@+id/updateTransactionComment"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
-            style="@style/SmallButton"
-            android:onClick="onClick"
-            android:text="@string/update"/>
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/commentValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@id/modifyReceiveLabel"
+                android:layout_centerVertical="true"
+                android:textStyle="bold"/>
 
-    </RelativeLayout>
+            <tech.nextcash.nextcashwallet.TextButton
+                android:id="@+id/modifyTransactionComment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                style="@style/SmallButton"
+                android:text="@string/modify"/>
+        </RelativeLayout>
 
-    <EditText
-        android:id="@+id/costBasisEdit"
-        android:layout_width="match_parent"
+    </LinearLayout>
+
+    <tech.nextcash.nextcashwallet.TextButton
+        android:id="@+id/addTransactionComment"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:inputType="numberDecimal"
-        android:importantForAutofill="no"
-        android:hint="@string/cost_basis_hint"/>
+        style="@style/Button"
+        android:text="@string/add_comment"/>
 
-    <RelativeLayout
+    <LinearLayout
+        android:id="@+id/costBasisGroup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
 
         <TextView
             android:id="@+id/costBasisTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentStart="true"
-            style="@style/SmallHeadingText"
-            android:text="@string/cost_basis"
-            android:labelFor="@id/costBasisEdit"/>
+            style="@style/SubHeadingText"
+            android:text="@string/cost_basis"/>
 
-        <tech.nextcash.nextcashwallet.TextButton
-            android:id="@+id/updateTransactionCostBasis"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
-            style="@style/SmallButton"
-            android:onClick="onClick"
-            android:text="@string/update"/>
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-    </RelativeLayout>
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginEnd="10dp"
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@id/modifyTransactionCostBasis"
+                android:layout_centerVertical="true">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_marginEnd="10dp"
+                        android:text="@string/amount_title"/>
+                    <TextView
+                        android:id="@+id/costBasisAmount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:textStyle="bold"
+                        android:text="$100.00 USD"/>
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_marginEnd="10dp"
+                        android:text="@string/date"/>
+                    <TextView
+                        android:id="@+id/costBasisDate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:textStyle="bold"
+                        android:text="2018-01-01"/>
+                </RelativeLayout>
+
+            </LinearLayout>
+
+            <tech.nextcash.nextcashwallet.TextButton
+                android:id="@+id/modifyTransactionCostBasis"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                style="@style/SmallButton"
+                android:text="@string/modify"/>
+        </RelativeLayout>
+
+    </LinearLayout>
 
     <TextView
         android:id="@+id/statusHeading"

@@ -142,7 +142,8 @@
         It will take half an hour per year, or longer, to query all blocks for transactions from
         that time until now.
     </string>
-    <string name="failed_to_get_recover_date">Failed to get recover date.</string>
+    <string name="failed_to_get_recover_date">Failed to get recover date</string>
+    <string name="failed_to_get_date">Failed to get date</string>
     <string name="expand_compress">Expand/Compress</string>
     <string name="pending">Pending</string>
     <string name="balance">Balance</string>
@@ -161,7 +162,9 @@
     <string name="confirmed_transactions">Confirmed Transactions</string>
     <string name="no_transactions">No Transactions</string>
     <string name="amount_title">Amount</string>
+    <string name="date">Date</string>
     <string name="comment">Comment</string>
+    <string name="add_comment">Add Comment</string>
     <string name="comment_hint">Enter TX Comment</string>
     <string name="comment_updated">Comment updated</string>
     <string name="specify_amount">Specify Amount</string>
@@ -170,6 +173,7 @@
     <string name="specify_message">Specify Message</string>
     <string name="cost_basis">Cost Basis</string>
     <string name="cost_basis_hint">Enter Manual Cost Basis</string>
+    <string name="cost_date_hint">Enter Manual Cost Date</string>
     <string name="cost_basis_cleared">Cost basis cleared</string>
     <string name="cost_basis_updated">Cost basis updated</string>
     <string name="cost_must_be_number">Cost basis must be a valid number</string>

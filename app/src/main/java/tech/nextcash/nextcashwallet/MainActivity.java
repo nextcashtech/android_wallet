@@ -105,7 +105,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
       IMPORT_PRIVATE_KEY, IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, TRANSACTION_HISTORY, TRANSACTION,
       SCAN, RECEIVE, ENTER_PAYMENT_CODE, CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP,
       SETTINGS, ADDRESS_LABELS, ADDRESS_BOOK }
-    private enum TextEntryMode { NONE, SAVE_ADDRESS, LABEL_ADDRESS, RECEIVE_AMOUNT, RECEIVE_LABEL, RECEIVE_MESSAGE }
+    private enum TextEntryMode { NONE, SAVE_ADDRESS, LABEL_ADDRESS, RECEIVE_AMOUNT, RECEIVE_LABEL, RECEIVE_MESSAGE,
+      TRANSACTION_COMMENT, TRANSACTION_COST_AMOUNT, TRANSACTION_COST_DATE }
     private Mode mMode, mPreviousMode, mPreviousTransactionMode, mPreviousReceiveMode;
     private TextEntryMode mTextEntryMode;
     private boolean mWalletsNeedUpdated;
@@ -134,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private int mRequestedTransactionWalletIndex, mHistoryToShowWalletIndex;
     private String mRequestedTransactionID;
     private int mRequestedTransactionAttempts;
-    private FullTransaction mTransaction;
+    private FullTransaction mTransaction, mTransactionToModify;
     private int mTransactionWalletIndex;
     private ArrayList<String> mPersistentMessages;
     private Messages mMessages;
@@ -557,6 +558,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         amountDialog.setVisibility(View.GONE);
         amountDialog.findViewById(R.id.textDialogOkay).setOnTouchListener(mButtonTouchListener);
         root.addView(amountDialog);
+
+        View dateDialog = inflater.inflate(R.layout.date_dialog, root, false);
+        dateDialog.setVisibility(View.GONE);
+        dateDialog.findViewById(R.id.dateDialogOkay).setOnTouchListener(mButtonTouchListener);
+        root.addView(dateDialog);
 
         showView(R.id.progress);
         mMode = Mode.LOADING_WALLETS;
@@ -1527,6 +1533,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 {
                     findViewById(R.id.amountDialog).setVisibility(View.GONE);
                     findViewById(R.id.textDialog).setVisibility(View.GONE);
+                    findViewById(R.id.dateDialog).setVisibility(View.GONE);
                     mTextEntryMode = TextEntryMode.NONE;
                 }
 
@@ -1910,6 +1917,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             return;
         }
 
+        mTransactionToModify = mTransaction;
+
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup dialogView = findViewById(R.id.dialog);
         ViewGroup transactionView;
@@ -1933,37 +1942,51 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
             }
 
-            transactionView = (ViewGroup)inflater.inflate(R.layout.transaction, dialogView,
-              false);
+            transactionView = (ViewGroup)inflater.inflate(R.layout.transaction, dialogView, false);
             update = false;
             dialogView.addView(transactionView);
             showView(R.id.dialog);
             findViewById(R.id.mainScroll).setScrollY(0);
 
-            transactionView.findViewById(R.id.updateTransactionComment).setOnTouchListener(mButtonTouchListener);
-            transactionView.findViewById(R.id.updateTransactionCostBasis).setOnTouchListener(mButtonTouchListener);
-
-            if(mTransaction.data != null)
-            {
-                if(mTransaction.data.comment != null)
-                {
-                    EditText commentEdit = transactionView.findViewById(R.id.commentEdit);
-                    commentEdit.setText(mTransaction.data.comment);
-                }
-                if(mTransaction.data.cost != 0.0)
-                {
-                    EditText costBasisEdit = transactionView.findViewById(R.id.costBasisEdit);
-                    costBasisEdit.setText(Bitcoin.formatAmount(mTransaction.data.cost, mTransaction.data.costType));
-                }
-            }
-
-            ((TextView)transactionView.findViewById(R.id.id)).setText(mTransaction.hash);
-            ((TextView)transactionView.findViewById(R.id.size)).setText(String.format(Locale.getDefault(),
-              "%,d %s", mTransaction.size, getString(R.string.bytes)));
-            ((TextView)transactionView.findViewById(R.id.lockTime)).setText(mTransaction.lockTimeString(this));
-            ((TextView)transactionView.findViewById(R.id.version)).setText(String.format(Locale.getDefault(),
-              "%d", mTransaction.version));
+            transactionView.findViewById(R.id.modifyTransactionComment).setOnTouchListener(mButtonTouchListener);
+            transactionView.findViewById(R.id.addTransactionComment).setOnTouchListener(mButtonTouchListener);
+            transactionView.findViewById(R.id.modifyTransactionCostBasis).setOnTouchListener(mButtonTouchListener);
         }
+
+        if(mTransaction.data.comment == null)
+        {
+            transactionView.findViewById(R.id.commentGroup).setVisibility(View.GONE);
+            transactionView.findViewById(R.id.addTransactionComment).setVisibility(View.VISIBLE);
+        }
+        else
+        {
+            transactionView.findViewById(R.id.commentGroup).setVisibility(View.VISIBLE);
+            transactionView.findViewById(R.id.addTransactionComment).setVisibility(View.GONE);
+            ((TextView)transactionView.findViewById(R.id.commentValue)).setText(mTransaction.data.comment);
+        }
+
+        TextView costBasisAmount = transactionView.findViewById(R.id.costBasisAmount);
+        if(mTransaction.data.cost != 0.0)
+            costBasisAmount.setText(String.format("%s %s", Bitcoin.formatAmount(mTransaction.data.cost,
+              mTransaction.data.costType), mTransaction.data.costType));
+        else
+            costBasisAmount.setText(String.format("%s %s", mBitcoin.amountText(amount, mTransaction.data),
+              mTransaction.data.exchangeType));
+
+        TextView costBasisDate = transactionView.findViewById(R.id.costBasisDate);
+        if(mTransaction.data.costDate == 0)
+            costBasisDate.setText(String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td",
+              mTransaction.data.date * 1000L));
+        else
+            costBasisDate.setText(String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td",
+              mTransaction.data.costDate * 1000L));
+
+        ((TextView)transactionView.findViewById(R.id.id)).setText(mTransaction.hash);
+        ((TextView)transactionView.findViewById(R.id.size)).setText(String.format(Locale.getDefault(),
+          "%,d %s", mTransaction.size, getString(R.string.bytes)));
+        ((TextView)transactionView.findViewById(R.id.lockTime)).setText(mTransaction.lockTimeString(this));
+        ((TextView)transactionView.findViewById(R.id.version)).setText(String.format(Locale.getDefault(),
+          "%d", mTransaction.version));
 
         if(mTransaction.block != null)
         {
@@ -3377,21 +3400,30 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         switch(pMode)
         {
-            case SAVE_ADDRESS:
-                entry.setHint(R.string.save_address_hint);
-                break;
-            case LABEL_ADDRESS:
-                entry.setHint(R.string.address_label_hint);
-                break;
-            case RECEIVE_AMOUNT:
-                entry.setHint(R.string.request_amount_hint);
-                break;
-            case RECEIVE_LABEL:
-                entry.setHint(R.string.request_label_hint);
-                break;
-            case RECEIVE_MESSAGE:
-                entry.setHint(R.string.request_message_hint);
-                break;
+        case SAVE_ADDRESS:
+            entry.setHint(R.string.save_address_hint);
+            break;
+        case LABEL_ADDRESS:
+            entry.setHint(R.string.address_label_hint);
+            break;
+        case RECEIVE_AMOUNT:
+            entry.setHint(R.string.request_amount_hint);
+            break;
+        case RECEIVE_LABEL:
+            entry.setHint(R.string.request_label_hint);
+            break;
+        case RECEIVE_MESSAGE:
+            entry.setHint(R.string.request_message_hint);
+            break;
+        case TRANSACTION_COMMENT:
+            entry.setHint(R.string.comment_hint);
+            break;
+        case TRANSACTION_COST_AMOUNT:
+            entry.setHint(R.string.cost_basis_hint);
+            break;
+        case TRANSACTION_COST_DATE:
+            entry.setHint(R.string.cost_date_hint);
+            break;
         }
 
         if(pDefaultText != null && pDefaultText.length() > 0)
@@ -3419,6 +3451,37 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         entry.setOnEditorActionListener(textListener);
 
         focusOnText(entry);
+        mTextEntryMode = pMode;
+    }
+
+    private synchronized void displayDateDialog(TextEntryMode pMode, long pDate)
+    {
+        if(pMode != TextEntryMode.TRANSACTION_COST_DATE)
+        {
+            mTextEntryMode = TextEntryMode.NONE;
+            displayWallets();
+            return;
+        }
+
+        RelativeLayout entryView = findViewById(R.id.dateDialog);
+        DatePicker entry = entryView.findViewById(R.id.enteredDate);
+
+        ((TextView)entryView.findViewById(R.id.title)).setText(getString(R.string.cost_date_hint));
+
+        Calendar date;
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        {
+            date = new Calendar.Builder().setInstant(pDate).build();
+        }
+        else
+        {
+            date = Calendar.getInstance();
+            date.setTimeInMillis(pDate * 1000L);
+        }
+
+        entry.updateDate(date.get(Calendar.YEAR), date.get(Calendar.MONTH), date.get(Calendar.DAY_OF_MONTH));
+        entryView.setVisibility(View.VISIBLE);
+
         mTextEntryMode = pMode;
     }
 
@@ -3985,6 +4048,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayScanner(ScanMode.SCAN_PRIVATE_KEY);
             break;
         case R.id.enterImportKey:
+        {
             // Get recover seed date
             DatePicker picker = findViewById(R.id.date);
             if(picker == null)
@@ -3997,8 +4061,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Calendar date;
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             {
-                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
-                  picker.getDayOfMonth()).setTimeOfDay(0, 0, 0).build();
+                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(), picker.getDayOfMonth()).setTimeOfDay(0, 0, 0).build();
             }
             else
             {
@@ -4009,6 +4072,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mRecoverDate = date.getTimeInMillis() / 1000L;
             displayEnterImportKey();
             break;
+        }
         case R.id.loadKey: // Import BIP-0032 encoded key
         {
             mAuthorizedTask = AuthorizedTask.ADD_KEY;
@@ -4075,6 +4139,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.modifyReceiveMessage:
             displayTextDialog(TextEntryMode.RECEIVE_MESSAGE, mPaymentRequest.message);
             break;
+        case R.id.modifyTransactionComment:
+        case R.id.addTransactionComment:
+            displayTextDialog(TextEntryMode.TRANSACTION_COMMENT, mTransactionToModify.data.comment);
+            break;
+        case R.id.modifyTransactionCostBasis:
+        {
+            if(mTransactionToModify.data.cost == 0.0)
+                displayTextDialog(TextEntryMode.TRANSACTION_COST_AMOUNT,
+                  mBitcoin.amountText(mTransactionToModify.amount()));
+            else
+                displayTextDialog(TextEntryMode.TRANSACTION_COST_AMOUNT,
+                  Bitcoin.formatAmount(mTransactionToModify.data.cost, mTransactionToModify.data.costType));
+            break;
+        }
         case R.id.sendPayment:
         {
             mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
@@ -4392,53 +4470,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 startActivity(settingsIntent);
             }
             break;
-        case R.id.updateTransactionComment:
-        {
-            EditText comment = findViewById(R.id.commentEdit);
-            if(mTransaction == null || mTransaction.data == null || comment == null)
-                break;
-
-            mTransaction.data.comment = comment.getText().toString();
-
-            mBitcoin.saveTransactionData();
-            mBitcoin.triggerUpdate();
-            showMessage(getString(R.string.comment_updated), 2000);
-            break;
-        }
-        case R.id.updateTransactionCostBasis:
-        {
-            EditText costBasis = findViewById(R.id.costBasisEdit);
-            if(mTransaction == null || mTransaction.data == null || costBasis == null)
-                break;
-
-            String costText = costBasis.getText().toString();
-            if(costText.length() == 0)
-            {
-                mTransaction.data.cost = 0.0;
-                mTransaction.data.costType = null;
-            }
-            else
-            {
-                try
-                {
-                    mTransaction.data.cost = Bitcoin.parseAmount(costText);
-                    mTransaction.data.costType = mBitcoin.exchangeType();
-                }
-                catch(NumberFormatException pException)
-                {
-                    showMessage(getString(R.string.cost_must_be_number), 2000);
-                    break;
-                }
-            }
-
-            costBasis.setText(Bitcoin.formatAmount(mTransaction.data.cost, mTransaction.data.costType));
-            mBitcoin.saveTransactionData();
-            if(mTransaction.data.cost == 0.0)
-                showMessage(getString(R.string.cost_basis_cleared), 2000);
-            else
-                showMessage(getString(R.string.cost_basis_updated), 2000);
-            break;
-        }
         case R.id.addAddressLabel:
         {
             AddressLabel.Item item = mBitcoin.lookupAddressLabel(mPaymentRequest.address);
@@ -4712,10 +4743,93 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                   mPaymentRequest, mQRCode);
                 messageTask.execute();
                 break;
+            case TRANSACTION_COMMENT:
+                enteredText = enteredText.trim();
+                if(enteredText.length() == 0)
+                    mTransactionToModify.data.comment = null;
+                else
+                    mTransactionToModify.data.comment = enteredText;
+                mBitcoin.saveTransactionData();
+                mBitcoin.triggerUpdate();
+                displayTransaction();
+                break;
+            case TRANSACTION_COST_AMOUNT:
+                double enteredAmount;
+                try
+                {
+                    enteredAmount = Bitcoin.parseAmount(enteredText);
+                }
+                catch(Exception pException)
+                {
+                    showMessage(getString(R.string.cost_must_be_number), 2000);
+                    break;
+                }
+
+                if(enteredAmount == 0.0)
+                {
+                    mTransactionToModify.data.cost = 0.0;
+                    mTransactionToModify.data.costType = null;
+                }
+                else
+                {
+                    mTransactionToModify.data.cost = enteredAmount;
+                    mTransactionToModify.data.costType = mBitcoin.exchangeType();
+                }
+                break;
+            case TRANSACTION_COST_DATE:
+                break;
             }
+
+            if(mTextEntryMode == TextEntryMode.TRANSACTION_COST_AMOUNT)
+            {
+                if(mTransaction.data.costDate == 0L)
+                    displayDateDialog(TextEntryMode.TRANSACTION_COST_DATE, mTransactionToModify.data.date);
+                else
+                    displayDateDialog(TextEntryMode.TRANSACTION_COST_DATE, mTransactionToModify.data.costDate);
+            }
+            else
+                mTextEntryMode = TextEntryMode.NONE;
 
             findViewById(R.id.amountDialog).setVisibility(View.GONE);
             findViewById(R.id.textDialog).setVisibility(View.GONE);
+            break;
+        }
+        case R.id.dateDialogOkay:
+        {
+            if(mTextEntryMode != TextEntryMode.TRANSACTION_COST_DATE)
+            {
+                findViewById(R.id.dateDialog).setVisibility(View.GONE);
+                mTextEntryMode = TextEntryMode.NONE;
+                break;
+            }
+
+            DatePicker picker = findViewById(R.id.enteredDate);
+            if(picker == null)
+            {
+                showMessage(getString(R.string.failed_to_get_date), 2000);
+                findViewById(R.id.dateDialog).setVisibility(View.GONE);
+                mTextEntryMode = TextEntryMode.NONE;
+                break;
+            }
+
+            Calendar date;
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            {
+                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(),
+                  picker.getDayOfMonth()).build();
+            }
+            else
+            {
+                date = Calendar.getInstance();
+                date.set(picker.getYear(), picker.getMonth(), picker.getDayOfMonth());
+            }
+
+            mTransactionToModify.data.costDate = date.getTimeInMillis() / 1000L;
+            mBitcoin.saveTransactionData();
+            mBitcoin.triggerUpdate();
+            showMessage(getString(R.string.cost_basis_updated), 2000);
+
+            findViewById(R.id.dateDialog).setVisibility(View.GONE);
             mTextEntryMode = TextEntryMode.NONE;
             break;
         }
@@ -4991,6 +5105,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             findViewById(R.id.amountDialog).setVisibility(View.GONE);
             findViewById(R.id.textDialog).setVisibility(View.GONE);
+            findViewById(R.id.dateDialog).setVisibility(View.GONE);
             mTextEntryMode = TextEntryMode.NONE;
             return;
         }
