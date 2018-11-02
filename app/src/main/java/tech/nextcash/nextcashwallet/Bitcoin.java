@@ -573,28 +573,34 @@ public class Bitcoin
             pTransaction.data.exchangeRate = exchangeRate();
             pTransaction.data.exchangeType = exchangeType();
 
-            FullTransaction fullTransaction = new FullTransaction();
-            if(getTransaction(pWalletOffset, pTransaction.hash, fullTransaction))
+            if(pTransaction.data.comment == null)
             {
-                // Check if it pays to any labeled addresses.
-                AddressLabel.Item addressLabel;
-                for(Output output : fullTransaction.outputs)
-                    if(output.related)
-                    {
-                        addressLabel = lookupAddressLabel(output.address, output.amount);
-                        if(addressLabel != null)
-                            pTransaction.data.comment = addressLabel.label;
-                    }
-
-                // Check if it pays to any address book entries.
-                AddressBook.Item addressItem;
-                for(Output output : fullTransaction.outputs)
+                FullTransaction fullTransaction = new FullTransaction();
+                if(getTransaction(pWalletOffset, pTransaction.hash, fullTransaction))
                 {
-                    addressItem = lookupAddress(output.address);
-                    if(addressItem != null)
+                    // Check if it pays to any labeled addresses.
+                    AddressLabel.Item addressLabel;
+                    for(Output output : fullTransaction.outputs)
+                        if(output.related)
+                        {
+                            addressLabel = lookupAddressLabel(output.address, output.amount);
+                            if(addressLabel != null)
+                                pTransaction.data.comment = addressLabel.label;
+                        }
+
+                    if(pTransaction.data.comment == null)
                     {
-                        pTransaction.data.comment = addressItem.name;
-                        break;
+                        // Check if it pays to any address book entries.
+                        AddressBook.Item addressItem;
+                        for(Output output : fullTransaction.outputs)
+                        {
+                            addressItem = lookupAddress(output.address);
+                            if(addressItem != null)
+                            {
+                                pTransaction.data.comment = addressItem.name;
+                                break;
+                            }
+                        }
                     }
                 }
             }
