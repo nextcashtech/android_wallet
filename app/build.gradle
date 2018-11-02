@@ -6,8 +6,8 @@ android {
         applicationId "tech.nextcash.nextcashwallet"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 44
-        versionName "0.12.2"
+        versionCode 45
+        versionName "0.12.3"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
