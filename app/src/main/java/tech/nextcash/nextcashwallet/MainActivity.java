@@ -3764,7 +3764,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
             }
 
-            transaction.updateView(getApplicationContext(), mBitcoin, transactionView);
+            transaction.updateView(getApplicationContext(), mBitcoin, transactionView, false);
         }
 
         if(pendingCount == 0)
@@ -3789,18 +3789,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             return;
 
         LayoutInflater inflater = getLayoutInflater();
-        ViewGroup dialogView = findViewById(R.id.dialog);
+        ViewGroup nonScrollView = findViewById(R.id.nonScroll);
         ViewGroup historyView;
         boolean update;
 
         if(mMode == Mode.TRANSACTION_HISTORY)
         {
-            historyView = (ViewGroup)dialogView.getChildAt(0);
+            historyView = (ViewGroup)nonScrollView.getChildAt(0);
             update = true;
         }
         else
         {
-            dialogView.removeAllViews();
+            nonScrollView.removeAllViews();
 
             // Title
             ActionBar actionBar = getSupportActionBar();
@@ -3811,20 +3811,38 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
             }
 
-            historyView = (ViewGroup)inflater.inflate(R.layout.wallet_history, dialogView, false);
+            historyView = (ViewGroup)inflater.inflate(R.layout.wallet_history, nonScrollView, false);
             ((TextView)historyView.findViewById(R.id.title)).setText(wallet.name);
-            dialogView.addView(historyView);
+            nonScrollView.addView(historyView);
 
             update = false;
         }
 
-        ViewGroup transactions = historyView.findViewById(R.id.walletTransactions);
-        populateTransactions(transactions, wallet.transactions, 100, false);
-        alignTransactions(transactions);
+        RecyclerView recyclerView = historyView.findViewById(R.id.transactionItems);
 
-        showView(R.id.dialog);
-        if(!update)
-            findViewById(R.id.mainScroll).setScrollY(0);
+        if(update)
+        {
+            TransactionAdapter transactionAdapter = (TransactionAdapter)recyclerView.getAdapter();
+            if(transactionAdapter != null)
+                transactionAdapter.updateTransactions();
+        }
+        else
+        {
+            LinearLayoutManager layoutManager = new LinearLayoutManager(this); // Vertical list
+            recyclerView.setLayoutManager(layoutManager);
+
+            RelativeLayout header = historyView.findViewById(R.id.header);
+            TextView countView = header.findViewById(R.id.count);
+            countView.measure(0, 0);
+            int countWidth = countView.getMeasuredWidth();
+
+            TransactionAdapter transactionAdapter = new TransactionAdapter(getApplicationContext(), mBitcoin,
+              mCurrentWalletIndex, layoutManager, getResources().getColor(R.color.rowShade),
+              getResources().getColor(R.color.rowNotShade), countWidth);
+            recyclerView.setAdapter(transactionAdapter);
+        }
+
+        showView(R.id.nonScroll);
         mMode = Mode.TRANSACTION_HISTORY;
     }
 

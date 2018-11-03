@@ -1,97 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-  android:orientation="vertical"
-  android:layout_width="match_parent"
-  android:layout_height="match_parent">
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
     <TextView
         android:id="@+id/title"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
         android:padding="10dp"
         style="@style/HeadingText"
-        android:textAlignment="center"/>
-    <ScrollView
+        android:text="Wallet 1"/>
+
+    <RelativeLayout
+        android:id="@+id/header"
+        android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_below="@id/title">
 
-        <LinearLayout
-            android:id="@+id/walletTransactions"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/amount"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="20dp"
-            android:paddingEnd="10dp"
-            android:animateLayoutChanges="true">
+            android:layout_alignParentStart="true"
+            android:paddingEnd="5dp"
+            android:paddingStart="5dp"
+            android:text="@string/amount_title"
+            style="@style/SubHeadingText"
+            android:textAlignment="textEnd"/>
 
-            <LinearLayout
-                android:id="@+id/walletPendingGroup"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
+        <TextView
+            android:id="@+id/time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/count"
+            android:paddingEnd="5dp"
+            android:paddingStart="5dp"
+            android:text="@string/time_title"
+            style="@style/SubHeadingText"/>
 
-                <LinearLayout
-                    android:id="@+id/walletPendingTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    <ImageView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:paddingEnd="5dp"
-                        android:src="@drawable/baseline_timer_black_36dp"
-                        android:contentDescription="@string/pending"/>
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/pending_transactions"
-                        style="@style/HeadingText"/>
-                </LinearLayout>
+        <TextView
+            android:id="@+id/count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:paddingEnd="5dp"
+            android:paddingStart="5dp"
+            android:text="@string/confirms_title"
+            style="@style/SubHeadingText"
+            android:textAlignment="textEnd"/>
 
-                <TextView
-                    android:id="@+id/walletPendingSubTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/pending_transactions_description"
-                    style="@style/SmallHeadingText"/>
+    </RelativeLayout>
 
-                <LinearLayout
-                    android:id="@+id/walletPending"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="20dp"
-                    android:orientation="vertical"
-                    android:animateLayoutChanges="true">
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/transactionItems"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/header"
+        android:layout_alignParentBottom="true">
 
-                </LinearLayout>
+    </android.support.v7.widget.RecyclerView>
 
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/walletRecentTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/confirmed_transactions"
-                style="@style/HeadingText"/>
-
-            <LinearLayout
-                android:id="@+id/walletRecent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingBottom="20dp"
-                android:orientation="vertical"
-                android:animateLayoutChanges="true">
-
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/walletNoTransTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/no_transactions"
-                style="@style/HeadingText"/>
-
-        </LinearLayout>
-
-    </ScrollView>
-</LinearLayout>
+</RelativeLayout>

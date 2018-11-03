@@ -14,8 +14,7 @@
         android:paddingEnd="5dp"
         android:paddingStart="5dp"
         android:text="@string/amount_title"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"
+        style="@style/SubHeadingText"
         android:textAlignment="textEnd"/>
 
     <TextView
@@ -26,8 +25,7 @@
         android:paddingEnd="5dp"
         android:paddingStart="5dp"
         android:text="@string/time_title"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"/>
+        style="@style/SubHeadingText"/>
 
     <TextView
         android:id="@+id/count"
@@ -37,8 +35,7 @@
         android:paddingEnd="5dp"
         android:paddingStart="5dp"
         android:text="@string/confirms_title"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
-        android:textStyle="bold"
+        style="@style/SubHeadingText"
         android:textAlignment="textEnd"/>
 
 </RelativeLayout>

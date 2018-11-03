@@ -74,7 +74,7 @@ public class Transaction implements Comparable
         return Long.compare(date1, date2);
     }
 
-    public void updateView(Context pContext, Bitcoin pBitcoin, ViewGroup pView)
+    public void updateView(Context pContext, Bitcoin pBitcoin, ViewGroup pView, boolean pConfirmCountOnly)
     {
         ViewGroup basicGroup = (ViewGroup)pView.getChildAt(0);
         TextView amountText = basicGroup.findViewById(R.id.amount);
@@ -116,7 +116,12 @@ public class Transaction implements Comparable
         if(count == -1)
             countText.setText(pContext.getString(R.string.not_available_abbreviation));
         else if(block == null)
-            countText.setText(String.format(Locale.getDefault(), "%d", count));
+        {
+            if(pConfirmCountOnly)
+                countText.setText(String.format(Locale.getDefault(), "%d", 0));
+            else
+                countText.setText(String.format(Locale.getDefault(), "%d", count));
+        }
         else if(count > 9)
             countText.setText(pContext.getString(R.string.nine_plus));
         else
