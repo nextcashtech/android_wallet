@@ -83,9 +83,9 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
                 }
             }
         }
-        catch(IOException|JSONException pException)
+        catch(IOException|JSONException|NullPointerException pException)
         {
-            Log.w(logTag, String.format("Exception on http request task : %s", pException.toString()));
+            Log.w(logTag, String.format("Exception on CoinMarketCap http request task : %s", pException.toString()));
         }
         finally
         {
@@ -133,9 +133,9 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
                 }
             }
         }
-        catch(IOException|JSONException pException)
+        catch(IOException|JSONException|NullPointerException pException)
         {
-            Log.w(logTag, String.format("Exception on http request task : %s", pException.toString()));
+            Log.w(logTag, String.format("Exception on CoinBase http request task : %s", pException.toString()));
         }
         finally
         {
@@ -184,9 +184,9 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
                 }
             }
         }
-        catch(IOException|JSONException pException)
+        catch(IOException|JSONException|NullPointerException pException)
         {
-            Log.w(logTag, String.format("Exception on http request task : %s", pException.toString()));
+            Log.w(logTag, String.format("Exception on CoinLib http request task : %s", pException.toString()));
         }
         finally
         {
