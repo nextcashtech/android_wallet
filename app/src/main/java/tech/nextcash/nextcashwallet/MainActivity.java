@@ -26,6 +26,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -150,7 +151,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private Animation mLargeButtonDownAnimation, mLargeButtonUpAnimation;
     private Animation mButtonDownAnimation, mButtonUpAnimation;
     private View.OnTouchListener mButtonTouchListener, mLargeButtonTouchListener;
-
+    private String mTicker;
+    private boolean mActivatingBranch;
 
     public class TransactionRunnable implements Runnable
     {
@@ -317,6 +319,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             settings.setLongValue("beta_message", System.currentTimeMillis() / 1000);
         }
 
+        if(!settings.containsValue(Bitcoin.CHAIN_ID_NAME))
+            mTicker = getString(R.string.sv_ticker);
+        else
+        {
+            switch(settings.intValue(Bitcoin.CHAIN_ID_NAME))
+            {
+            default:
+            case 0:
+            case 2:
+                mTicker = getString(R.string.sv_ticker);
+                break;
+            case 1:
+                mTicker = getString(R.string.abc_ticker);
+                break;
+            }
+        }
+
         mServiceCallBacks = new BitcoinService.CallBacks()
         {
             @Override
@@ -341,6 +360,44 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     public void run()
                     {
                         MainActivity.this.onChainLoad();
+                    }
+                });
+            }
+
+            @Override
+            public void onChainSync()
+            {
+                Log.i(logTag, "Chain Synchronized");
+
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        // Update loading progress
+                        View chainLoadingView = findViewById(R.id.loadingProgress);
+                        if(chainLoadingView != null)
+                        {
+                            TextView message = chainLoadingView.findViewById(R.id.loadingMessage);
+                            if(message != null)
+                                message.setText(R.string.transactions_synchronizing);
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onTransactionSync()
+            {
+                runOnUiThread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        ViewGroup headerView = findViewById(R.id.header);
+                        View chainLoadingView = headerView.findViewById(R.id.loadingProgress);
+                        if(chainLoadingView != null)
+                            headerView.removeView(chainLoadingView);
                     }
                 });
             }
@@ -640,14 +697,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup headerView = findViewById(R.id.header);
 
-        View chainLoadingView = headerView.findViewById(R.id.blockChainLoading);
+        View chainLoadingView = headerView.findViewById(R.id.loadingProgress);
         if(mBitcoin.chainIsLoaded())
         {
             if(chainLoadingView != null)
                 headerView.removeView(chainLoadingView);
         }
         else if(chainLoadingView == null)
-            inflater.inflate(R.layout.block_chain_loading, headerView, true);
+            inflater.inflate(R.layout.loading_progress, headerView, true);
 
         View initialBlockDownloadView = headerView.findViewById(R.id.initialBlockDownloadMessage);
         if(mBitcoin.initialBlockDownloadIsComplete())
@@ -678,11 +735,91 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         Log.i(logTag, "Chain Loaded");
 
-        // Update header
-        ViewGroup headerView = findViewById(R.id.header);
-        View chainLoadingView = headerView.findViewById(R.id.blockChainLoading);
+        // Update loading progress
+        View chainLoadingView = findViewById(R.id.loadingProgress);
         if(chainLoadingView != null)
-            headerView.removeView(chainLoadingView);
+        {
+            TextView message = chainLoadingView.findViewById(R.id.loadingMessage);
+            if(message != null)
+                message.setText(R.string.chain_synchronizing);
+        }
+
+        Settings settings = Settings.getInstance(getApplicationContext().getFilesDir());
+        if(!settings.containsValue(Bitcoin.CHAIN_ID_NAME))
+        {
+            int currentChain = mBitcoin.chainID();
+            switch(currentChain)
+            {
+            default:
+            case Bitcoin.CHAIN_UNKNOWN: // Unspecified
+                // Chain height is still below split, default to SV
+                Log.i(logTag, "Chain unspecified. Setting to SV");
+                settings.setIntValue(Bitcoin.CHAIN_ID_NAME, Bitcoin.CHAIN_SV);
+                activateChainInBackground(Bitcoin.CHAIN_SV);
+                break;
+            case Bitcoin.CHAIN_ABC: // ABC
+                // Already following ABC. Add the invalid hash to stay on this chain.
+                Log.i(logTag, "Chain already on ABC. Setting to ABC");
+                settings.setIntValue(Bitcoin.CHAIN_ID_NAME, Bitcoin.CHAIN_ABC);
+                activateChainInBackground(Bitcoin.CHAIN_ABC);
+                break;
+            case Bitcoin.CHAIN_SV: // SV
+                // Already following SV. Add the invalid hash to stay on this chain.
+                Log.i(logTag, "Chain already on SV. Setting to SV");
+                settings.setIntValue(Bitcoin.CHAIN_ID_NAME, Bitcoin.CHAIN_SV);
+                activateChainInBackground(Bitcoin.CHAIN_SV);
+                break;
+            }
+        }
+    }
+
+    private void activateChainInBackground(int pChainID)
+    {
+        if(mActivatingBranch)
+            return;
+        Settings settings = Settings.getInstance(getApplicationContext().getFilesDir());
+        if(settings.intValue(Bitcoin.CHAIN_ID_NAME) == pChainID)
+            return;
+        mActivatingBranch = true;
+        AsyncTask<Integer, Boolean, Integer> task = new AsyncTask<Integer, Boolean, Integer>()
+        {
+            @Override
+            protected Integer doInBackground(Integer... pChainIDs)
+            {
+                Log.i(logTag, String.format("Activating %s chain in the background", Bitcoin.chainName(pChainIDs[0])));
+                if(mBitcoin.activateChain(pChainIDs[0]))
+                {
+                    Settings settings = Settings.getInstance(getApplicationContext().getFilesDir());
+                    settings.setIntValue(Bitcoin.CHAIN_ID_NAME, pChainIDs[0]);
+                    scheduleExchangeRateUpdate();
+                    mActivatingBranch = false;
+                    return pChainIDs[0];
+                }
+                mActivatingBranch = false;
+                return 0;
+            }
+
+            @Override
+            protected void onPostExecute(Integer pResultChainID)
+            {
+                switch(pResultChainID)
+                {
+                    case 0: // Activate failed
+                        break;
+                    case 1: // ABC
+                        addPersistentMessage(getString(R.string.abc_message));
+                        mTicker = getString(R.string.abc_ticker);
+                        break;
+                    default:
+                    case 2: // SV
+                        addPersistentMessage(getString(R.string.sv_message));
+                        mTicker = getString(R.string.sv_ticker);
+                        break;
+                }
+            }
+        };
+
+        task.execute(pChainID);
     }
 
     private void onUpdate()
@@ -1029,8 +1166,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(mBitcoin.exchangeRate() == 0.0)
             exchangeRate.setText("");
         else
-            exchangeRate.setText(String.format(Locale.getDefault(), "%d BCH = %s %s", 1,
-              mBitcoin.amountText(100000000), mBitcoin.exchangeType()));
+            exchangeRate.setText(String.format(Locale.getDefault(), "%d %s = %s %s", 1,
+              mTicker, mBitcoin.amountText(100000000), mBitcoin.exchangeType()));
 
         boolean areWalletsLoaded = mBitcoin.walletsAreLoaded();
         boolean isChainLoaded = mBitcoin.chainIsLoaded();
@@ -1207,11 +1344,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             if(mBitcoin.exchangeRate() != 0.0)
             {
-                ((TextView)walletView.findViewById(R.id.walletBitcoinBalance)).setText(
-                  Bitcoin.satoshiText(wallet.balance));
+                ((TextView)walletView.findViewById(R.id.walletBitcoinBalance))
+                  .setText(Bitcoin.satoshiText(wallet.balance));
             }
 
-            ((TextView)walletView.findViewById(R.id.walletName)).setText(wallet.name);
+            ((TextView)walletView.findViewById(R.id.walletName))
+              .setText(String.format("%s (%s)", wallet.name, mTicker));
 
             if(wallet.hasPending())
             {
@@ -1377,15 +1515,44 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         View settingsView = inflater.inflate(R.layout.settings, dialogView, false);
         dialogView.addView(settingsView);
 
+        // Configure chain
+        Spinner chainSelection = settingsView.findViewById(R.id.chainOptions);
+        if(mBitcoin.chainIsLoaded())
+        {
+            if(settings.containsValue(Bitcoin.CHAIN_ID_NAME))
+            {
+                switch(settings.intValue(Bitcoin.CHAIN_ID_NAME))
+                {
+                    default:
+                    case 0:
+                    case 2:
+                        chainSelection.setSelection(1); // SV
+                        break;
+                    case 1:
+                        chainSelection.setSelection(0); // ABC
+                        break;
+                }
+            }
+            else
+                chainSelection.setSelection(1); // SV
+            chainSelection.setOnItemSelectedListener(this);
+        }
+        else
+        {
+            chainSelection.setEnabled(false);
+            chainSelection.setSelection(1); // SV
+        }
+
+        // Configure exchange
         Spinner exchangeCurrency = settingsView.findViewById(R.id.exchangeCurrency);
         String[] exchangeTypes = getResources().getStringArray(R.array.exchange_types);
-        exchangeCurrency.setOnItemSelectedListener(this);
         for(int i = 0; i < exchangeTypes.length; i++)
             if(mBitcoin.exchangeType().equals(exchangeTypes[i]))
             {
                 exchangeCurrency.setSelection(i);
                 break;
             }
+        exchangeCurrency.setOnItemSelectedListener(this);
 
         // Configure sync frequency options
         int currentFrequency = settings.intValue(Bitcoin.SYNC_FREQUENCY_NAME);
@@ -1393,7 +1560,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             currentFrequency = 360; // Default to 6 hours
 
         Spinner syncFrequency = settingsView.findViewById(R.id.syncFrequencySpinner);
-        syncFrequency.setOnItemSelectedListener(this);
 
         boolean found = false;
         int[] frequencyValues = getResources().getIntArray(R.array.sync_frequency_values);
@@ -1408,13 +1574,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(!found)
             syncFrequency.setSelection(2); // Default to 6 hours
 
+        syncFrequency.setOnItemSelectedListener(this);
+
         // Configure transaction notifications toggle
         Switch notifyTransactions = settingsView.findViewById(R.id.notifyTransactionsToggle);
-        notifyTransactions.setOnCheckedChangeListener(this);
         if(settings.containsValue("notify_transactions"))
             notifyTransactions.setChecked(settings.boolValue("notify_transactions"));
         else
             notifyTransactions.setChecked(true);
+        notifyTransactions.setOnCheckedChangeListener(this);
 
         // Hide system notification settings for versions before 26
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
@@ -1422,25 +1590,25 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         // Configure pricing source toggles
         Switch coinBaseToggle = settingsView.findViewById(R.id.coinBasePriceToggle);
-        coinBaseToggle.setOnCheckedChangeListener(this);
         if(settings.containsValue(ExchangeRateRequestTask.USE_COINBASE_RATE_NAME))
             coinBaseToggle.setChecked(settings.boolValue(ExchangeRateRequestTask.USE_COINBASE_RATE_NAME));
         else
             coinBaseToggle.setChecked(true);
+        coinBaseToggle.setOnCheckedChangeListener(this);
 
         Switch coinMarketCapToggle = settingsView.findViewById(R.id.coinMarketCapPriceToggle);
-        coinMarketCapToggle.setOnCheckedChangeListener(this);
         if(settings.containsValue(ExchangeRateRequestTask.USE_COINMARKETCAP_RATE_NAME))
             coinMarketCapToggle.setChecked(settings.boolValue(ExchangeRateRequestTask.USE_COINMARKETCAP_RATE_NAME));
         else
             coinMarketCapToggle.setChecked(true);
+        coinMarketCapToggle.setOnCheckedChangeListener(this);
 
         Switch coinLibToggle = settingsView.findViewById(R.id.coinLibPriceToggle);
-        coinLibToggle.setOnCheckedChangeListener(this);
         if(settings.containsValue(ExchangeRateRequestTask.USE_COINLIB_RATE_NAME))
             coinLibToggle.setChecked(settings.boolValue(ExchangeRateRequestTask.USE_COINLIB_RATE_NAME));
         else
             coinLibToggle.setChecked(true);
+        coinLibToggle.setOnCheckedChangeListener(this);
 
         // Add Wallet buttons
         ViewGroup walletsView = settingsView.findViewById(R.id.walletsSettings);
@@ -2951,6 +3119,27 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 Log.i(logTag, String.format("Exchange type set to %s", exchangeTypes[pPosition]));
 
                 scheduleExchangeRateUpdate();
+            }
+        }
+        else if(pParent.getId() == R.id.chainOptions)
+        {
+            if(mBitcoin.chainIsLoaded())
+            {
+                Settings settings = Settings.getInstance(getFilesDir());
+                switch(pPosition)
+                {
+                case 0: // ABC
+                    Log.i(logTag, "Bitcoin ABC chain selected");
+                    activateChainInBackground(Bitcoin.CHAIN_ABC);
+                    break;
+                case 1: // SV
+                    Log.i(logTag, "Bitcoin SV chain selected");
+                    activateChainInBackground(Bitcoin.CHAIN_SV);
+                    break;
+                default:
+                    Log.e(logTag, String.format("Invalid chain select position %d", pPosition));
+                    break;
+                }
             }
         }
     }
@@ -4491,6 +4680,27 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 startActivity(settingsIntent);
             }
             break;
+        case R.id.resetPeers:
+        {
+            AsyncTask<Boolean, Boolean, Boolean> task = new AsyncTask<Boolean, Boolean, Boolean>()
+            {
+                @Override
+                protected Boolean doInBackground(Boolean... pValues)
+                {
+                    Log.i(logTag, "Resetting peers");
+                    mBitcoin.resetPeers();
+                    return true;
+                }
+
+                @Override
+                protected void onPostExecute(Boolean pResult)
+                {
+                    showMessage(getString(R.string.peers_reset), 2000);
+                }
+            };
+            task.execute();
+            break;
+        }
         case R.id.addAddressLabel:
         {
             AddressLabel.Item item = mBitcoin.lookupAddressLabel(mPaymentRequest.address);

@@ -50,8 +50,13 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
         URL url;
         try
         {
-            url = new URL(String.format("https://api.coinmarketcap.com/v1/ticker/bitcoin-cash/?convert=%s",
-              mExchangeType));
+            Settings settings = Settings.getInstance(mContext.getFilesDir());
+            if(settings.intValue(Bitcoin.CHAIN_ID_NAME) == 1)
+                url = new URL(String.format("https://api.coinmarketcap.com/v1/ticker/bitcoin-cash/?convert=%s",
+                  mExchangeType));
+            else
+                url = new URL(String.format("https://api.coinmarketcap.com/v1/ticker/bitcoin-sv/?convert=%s",
+                  mExchangeType));
         }
         catch(MalformedURLException pException)
         {
@@ -101,7 +106,11 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
         URL url;
         try
         {
-            url = new URL("https://api.coinbase.com/v2/exchange-rates?currency=BCH");
+            Settings settings = Settings.getInstance(mContext.getFilesDir());
+            if(settings.intValue(Bitcoin.CHAIN_ID_NAME) == 1)
+                url = new URL("https://api.coinbase.com/v2/exchange-rates?currency=BCH");
+            else
+                url = new URL("https://api.coinbase.com/v2/exchange-rates?currency=BSV");
         }
         catch(MalformedURLException pException)
         {
@@ -151,8 +160,13 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
         URL url;
         try
         {
-            url = new URL(String.format("https://coinlib.io/api/v1/coin?key=a4c3d52c60dc7856&pref=%s&symbol=BCH",
-              mExchangeType));
+            Settings settings = Settings.getInstance(mContext.getFilesDir());
+            if(settings.intValue(Bitcoin.CHAIN_ID_NAME) == 1)
+                url = new URL(String.format("https://coinlib.io/api/v1/coin?key=a4c3d52c60dc7856&pref=%s&symbol=BCH",
+                  mExchangeType));
+            else
+                url = new URL(String.format("https://coinlib.io/api/v1/coin?key=a4c3d52c60dc7856&pref=%s&symbol=BSV",
+                  mExchangeType));
         }
         catch(MalformedURLException pException)
         {

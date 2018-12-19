@@ -35,6 +35,7 @@ public class Bitcoin
     public static final String PIN_CREATED_NAME = "pin_created";
     public static final String EXCHANGE_TYPE_NAME = "exchange_type";
     public static final String EXCHANGE_RATE_NAME = "exchange_rate";
+    public static final String CHAIN_ID_NAME = "chain_id";
     public static final int QR_WIDTH = 200;
 
     private static final String logTag = "Bitcoin";
@@ -288,7 +289,7 @@ public class Bitcoin
     public static native String userAgent();
     public static native String networkName();
 
-    public native void setPath(String pPath);
+    public native void setup(String pPath, int pChainID);
 
     public native boolean loadWallets();
     public native boolean loadChain();
@@ -321,8 +322,31 @@ public class Bitcoin
     // Request the daemon process stop.
     public native boolean stop();
 
+    // Chain IDs
+    public static final int CHAIN_UNKNOWN = 0;
+    public static final int CHAIN_ABC = 1;
+    public static final int CHAIN_SV = 2;
+
+    public native int chainID();
+    public static String chainName(int pChainID)
+    {
+        switch(pChainID)
+        {
+            case CHAIN_ABC:
+                return "ABC";
+            case CHAIN_SV:
+                return "SV";
+            default:
+                return "Unknown";
+        }
+    }
+    public native boolean activateChain(int pChainID);
+
     // Return the number of peers connected to
     public native int peerCount();
+
+    // Clear all known peers and rebuild from seeds.
+    public native void resetPeers();
 
     // Return true if this node is "in sync" with it's peers
     public native int status();

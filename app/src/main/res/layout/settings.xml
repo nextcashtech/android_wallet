@@ -23,9 +23,74 @@
         android:id="@+id/exchangeCurrency"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="5dp"
         android:layout_marginStart="20dp"
         android:entries="@array/exchange_names"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawablePadding="5dp"
+        android:text="@string/title_pricing"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:textAlignment="center"
+        style="@style/SubHeadingText"/>
+
+    <Switch
+        android:id="@+id/coinBasePriceToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="10dp"
+        android:switchPadding="10dp"
+        style="@style/SmallHeadingText"
+        android:text="@string/coinbase"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:autoLink="web"
+        android:text="@string/coinbase_address"/>
+
+    <Switch
+        android:id="@+id/coinMarketCapPriceToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="10dp"
+        android:switchPadding="10dp"
+        style="@style/SmallHeadingText"
+        android:text="@string/coinmarketcap"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:autoLink="web"
+        android:text="@string/coinmarketcap_address"/>
+
+    <Switch
+        android:id="@+id/coinLibPriceToggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="10dp"
+        android:switchPadding="10dp"
+        style="@style/SmallHeadingText"
+        android:text="@string/coinlib"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:autoLink="web"
+        android:text="@string/coinlib_address"/>
 
     <View
         android:layout_width="match_parent"
@@ -55,11 +120,12 @@
         style="@style/SubHeadingText"
         android:text="@string/title_transactions"/>
 
-    <Button
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/systemNotificationSettings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="40dp"
+        style="@style/Button"
         android:text="@string/system_settings"
         android:onClick="onClick"/>
 
@@ -68,70 +134,6 @@
         android:layout_height="2dip"
         android:layout_marginTop="20dp"
         android:background="#ddd" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:drawableStart="@drawable/baseline_attach_money_black_36dp"
-        android:drawablePadding="5dp"
-        android:text="@string/title_pricing"
-        android:layout_marginTop="20dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
-        style="@style/HeadingText"/>
-
-    <Switch
-        android:id="@+id/coinBasePriceToggle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="40dp"
-        android:layout_marginEnd="10dp"
-        android:switchPadding="10dp"
-        style="@style/SubHeadingText"
-        android:text="@string/coinbase"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="50dp"
-        android:autoLink="web"
-        android:text="@string/coinbase_address"/>
-
-    <Switch
-        android:id="@+id/coinMarketCapPriceToggle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:layout_marginStart="40dp"
-        android:layout_marginEnd="10dp"
-        android:switchPadding="10dp"
-        style="@style/SubHeadingText"
-        android:text="@string/coinmarketcap"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="50dp"
-        android:autoLink="web"
-        android:text="@string/coinmarketcap_address"/>
-
-    <Switch
-        android:id="@+id/coinLibPriceToggle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:layout_marginStart="40dp"
-        android:layout_marginEnd="10dp"
-        android:switchPadding="10dp"
-        style="@style/SubHeadingText"
-        android:text="@string/coinlib"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="50dp"
-        android:autoLink="web"
-        android:text="@string/coinlib_address"/>
 
     <View
         android:layout_width="match_parent"
@@ -170,6 +172,64 @@
         android:entries="@array/sync_frequency_titles">
 
     </Spinner>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_marginTop="20dp"
+        android:background="#ddd" />
+
+    <TextView
+        android:id="@+id/chainTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/baseline_call_split_black_36dp"
+        android:drawablePadding="5dp"
+        android:text="@string/chain"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="20dp"
+        style="@style/HeadingText"/>
+
+    <Spinner
+        android:id="@+id/chainOptions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="20dp"
+        android:entries="@array/chain_names"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_marginTop="20dp"
+        android:background="#ddd" />
+
+    <TextView
+        android:id="@+id/peersTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/baseline_people_black_36dp"
+        android:drawablePadding="5dp"
+        android:text="@string/peers"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="20dp"
+        style="@style/HeadingText"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/reset_peers_description"/>
+
+    <tech.nextcash.nextcashwallet.TextButton
+        android:id="@+id/resetPeers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="20dp"
+        style="@style/Button"
+        android:text="@string/reset_peers"/>
 
     <View
         android:layout_width="match_parent"

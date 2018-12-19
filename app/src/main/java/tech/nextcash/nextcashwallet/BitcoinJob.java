@@ -54,6 +54,16 @@ public class BitcoinJob extends JobService
             }
 
             @Override
+            public void onChainSync()
+            {
+            }
+
+            @Override
+            public void onTransactionSync()
+            {
+            }
+
+            @Override
             public boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction)
             {
                 return false;

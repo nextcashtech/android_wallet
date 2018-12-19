@@ -58,9 +58,10 @@ public class BitcoinService extends Service
     private Notification mProgressNotification;
     private boolean mInitialBlockDownloadIsComplete;
     private int mStartBlockHeight, mStartMerkleHeight;
-    private boolean mIsStopped, mRestart;
+    private boolean mIsStopped, mRestart, mChainInSync, mTransInSync;
     private HashMap<String, Integer> mTransactionNotificationIDs;
     private Bitmap mIcon;
+    private int mChainID;
 
 
     public class LocalBinder extends Binder
@@ -93,6 +94,11 @@ public class BitcoinService extends Service
         mTransactionNotificationIDs = new HashMap<>();
         mIcon = null;
         mInitialBlockDownloadIsComplete = false;
+        mChainInSync = false;
+        mTransInSync = false;
+
+        Settings settings = Settings.getInstance(getFilesDir());
+        mChainID = settings.intValue(Bitcoin.CHAIN_ID_NAME);
 
         mBitcoinRunnable = new Runnable()
         {
@@ -106,7 +112,7 @@ public class BitcoinService extends Service
                 updateProgressNotification();
 
                 // Load daemon
-                mBitcoin.setPath(getFilesDir().getPath() + "/bitcoin");
+                mBitcoin.setup(getFilesDir().getPath() + "/bitcoin", mChainID);
 
                 // Start monitor thread
                 if(mMonitorThread == null || !mMonitorThread.isAlive())
@@ -296,6 +302,12 @@ public class BitcoinService extends Service
         // When full node/chain data is loaded.
         void onChainLoad();
 
+        // When nodes agree on current chain
+        void onChainSync();
+
+        // When transaction data has been gathered.
+        void onTransactionSync();
+
         // New transaction or transaction state change
         boolean onTransactionUpdate(int pWalletOffset, Transaction pTransaction);
 
@@ -360,6 +372,20 @@ public class BitcoinService extends Service
         mStartBlockHeight = mBitcoin.headerHeight();
         for(CallBacks callBacks : mCallBacks)
             callBacks.onChainLoad();
+    }
+
+    private synchronized void onChainSync()
+    {
+        mChainInSync = true;
+        for(CallBacks callBacks : mCallBacks)
+            callBacks.onChainSync();
+    }
+
+    private synchronized void onTransactionSync()
+    {
+        mTransInSync = true;
+        for(CallBacks callBacks : mCallBacks)
+            callBacks.onTransactionSync();
     }
 
     private void onFinished()
@@ -447,13 +473,19 @@ public class BitcoinService extends Service
         }
         else if(isInSync)
         {
+            if(!mChainInSync)
+                onChainSync();
             if(mBitcoin.walletCount() == 0 || merkleHeight == blockHeight)
             {
+                if(!mTransInSync)
+                    onTransactionSync();
                 indeterminate = true;
                 notificationLayout.setTextViewText(R.id.title, getString(R.string.monitoring));
             }
             else
             {
+                if(!mTransInSync && mBitcoin.isInRoughSync())
+                    onTransactionSync();
                 if(mStartMerkleHeight > merkleHeight)
                     mStartMerkleHeight = merkleHeight;
                 max = blockHeight - mStartMerkleHeight;
@@ -463,6 +495,8 @@ public class BitcoinService extends Service
         }
         else
         {
+            if(!mTransInSync && mBitcoin.isInRoughSync())
+                onTransactionSync();
             int estimatedHeight = mBitcoin.estimatedHeight();
             max = estimatedHeight - mStartBlockHeight;
             progress = blockHeight - mStartBlockHeight;

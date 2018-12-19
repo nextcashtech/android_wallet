@@ -25,12 +25,38 @@
         Please use for small regular transactions and provide feedback with the \"bug\" button.
     </string>
 
+    <string name="sv_message">
+        Your wallet is following the Bitcoin SV (BSV) chain.
+        You can change this in settings.
+    </string>
+    <string name="sv_ticker">BSV</string>
+
+    <string name="abc_message">
+        Your wallet is following the Bitcoin ABC (BCH) chain.
+        You can change this in settings.
+    </string>
+    <string name="abc_ticker">BCH</string>
+
+    <string name="chain">Chain</string>
+    <string-array name="chain_names">
+        <item>Bitcoin ABC (BCH)</item>
+        <item>Bitcoin SV (BSV)</item>
+    </string-array>
+
     <string name="inactive">Inactive</string>
     <string name="loading">Loading</string>
     <string name="loading_wallets">Loading Wallets</string>
     <string name="loading_chain">Loading Block Chain</string>
     <string name="chain_still_loading">
         Block chain data is loading.
+    </string>
+    <string name="chain_synchronizing">
+        Block chain data is synchronizing with nodes.
+    </string>
+    <string name="transactions_synchronizing">
+        Transaction data is synchronizing.
+    </string>
+    <string name="functions_disabled">
         Some functions will be disabled until it finishes.
     </string>
     <string name="unable_to_find_transaction">Unable to find transaction</string>
@@ -240,6 +266,11 @@
     <string name="hash_title">Hash</string>
     <string name="peer">Node</string>
     <string name="peers">Nodes</string>
+    <string name="reset_peers">Reset Nodes</string>
+    <string name="reset_peers_description">
+        Resetting nodes will clear all known nodes and start finding new ones from the seeds.
+    </string>
+    <string name="peers_reset">Peers reset</string>
     <string name="confirm">Confirm</string>
     <string name="confirms">Confirms</string>
     <string name="name">Name</string>
@@ -413,12 +444,12 @@
     <string name="not_supported">Not Supported Yet</string>
     <string name="legacy_warning">
         This is a \"Legacy\" address! Do not send Bitcoin Cash to it unless you are sure
-        that they want Bitcoin Cash (BCH) and not Bitcoin (BTC).
+        that they want Bitcoin Cash (BCH) or Bitcoin SV (BSV) and not Bitcoin (BTC).
     </string>
     <string-array name="amount_units">
         <item>USD</item>
         <item>bits</item>
-        <item>BCH</item>
+        <item>bitcoins</item>
     </string-array>
     <string-array name="fee_rates">
         <item>Priority</item>

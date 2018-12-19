@@ -28,9 +28,10 @@ extern "C"
                                                                                     jclass pObject);
 
     // Info
-    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setPath(JNIEnv *pEnvironment,
-                                                                             jobject pObject,
-                                                                             jstring pPath);
+    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setup(JNIEnv *pEnvironment,
+                                                                           jobject pObject,
+                                                                           jstring pPath,
+                                                                           jint pChainID);
 
     // Initialization
     JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_setupJNI(JNIEnv *pEnvironment,
@@ -71,9 +72,20 @@ extern "C"
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_stop(JNIEnv *pEnvironment,
                                                                               jobject pObject);
 
+    // Chain IDs
+    //   1 = ABC
+    //   2 = SV
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_chainID(JNIEnv *pEnvironment,
+                                                                             jobject pObject);
+    JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_activateChain(JNIEnv *pEnvironment,
+                                                                                       jobject pObject,
+                                                                                       jint pChainID);
+
     // Status
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_peerCount(JNIEnv *pEnvironment,
                                                                                jobject pObject);
+    JNIEXPORT void JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_resetPeers(JNIEnv *pEnvironment,
+                                                                                jobject pObject);
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_status(JNIEnv *pEnvironment,
                                                                             jobject pObject);
     JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_headerHeight(JNIEnv *pEnvironment,
