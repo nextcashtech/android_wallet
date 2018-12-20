@@ -2017,17 +2017,43 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             amount.setFocusable(false);
         }
 
+        boolean nameSet = false;
         if(mPaymentRequest.address != null)
+        {
             ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.address.toLowerCase());
-        else if(mPaymentRequest.site != null && mPaymentRequest.label != null)
-            ((TextView)sendView.findViewById(R.id.address)).setText(String.format("%s (%s)", mPaymentRequest.site,
-              mPaymentRequest.label));
-        else if(mPaymentRequest.site != null)
-            ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.site);
-        else if(mPaymentRequest.label != null)
-            ((TextView)sendView.findViewById(R.id.address)).setText(mPaymentRequest.label);
+            AddressBook.Item item = mBitcoin.lookupAddress(mPaymentRequest.address);
+            if(item != null)
+            {
+                sendView.findViewById(R.id.saveAddress).setVisibility(View.GONE);
+                sendView.findViewById(R.id.addressName).setVisibility(View.VISIBLE);
+                ((TextView)sendView.findViewById(R.id.addressName)).setText(item.name);
+                nameSet = true;
+            }
+        }
         else
-            ((TextView)sendView.findViewById(R.id.address)).setText("");
+            sendView.findViewById(R.id.address).setVisibility(View.GONE);
+
+        if(!nameSet)
+        {
+            if(mPaymentRequest.site != null && mPaymentRequest.label != null)
+            {
+                sendView.findViewById(R.id.addressName).setVisibility(View.VISIBLE);
+                ((TextView)sendView.findViewById(R.id.addressName)).setText(String.format("%s (%s)",
+                  mPaymentRequest.site, mPaymentRequest.label));
+            }
+            else if(mPaymentRequest.site != null)
+            {
+                sendView.findViewById(R.id.addressName).setVisibility(View.VISIBLE);
+                ((TextView)sendView.findViewById(R.id.addressName)).setText(mPaymentRequest.site);
+            }
+            else if(mPaymentRequest.label != null)
+            {
+                sendView.findViewById(R.id.addressName).setVisibility(View.VISIBLE);
+                ((TextView)sendView.findViewById(R.id.addressName)).setText(mPaymentRequest.label);
+            }
+            else
+                sendView.findViewById(R.id.addressName).setVisibility(View.GONE);
+        }
 
         // Description
         String description = mPaymentRequest.description();

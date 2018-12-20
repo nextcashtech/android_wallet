@@ -10,7 +10,8 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp">
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="5dp">
 
         <TextView
             android:id="@+id/title"
@@ -18,6 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_alignParentStart="true"
+            android:layout_toStartOf="@id/saveAddress"
             style="@style/HeadingText"/>
 
         <TextView
@@ -25,6 +27,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
+            android:layout_toStartOf="@id/saveAddress"
             android:layout_below="@id/title"
             style="@style/SmallHeadingText"/>
 
@@ -39,6 +42,13 @@
 
     </RelativeLayout>
 
+    <TextView
+        android:id="@+id/addressName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        style="@style/SubHeadingText"/>
+
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -46,7 +56,6 @@
             android:id="@+id/address"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="5dp"
             android:maxLines="1"
             android:minWidth="200dp"/>
     </HorizontalScrollView>
