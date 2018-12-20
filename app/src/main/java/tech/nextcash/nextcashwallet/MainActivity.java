@@ -770,6 +770,24 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 activateChainInBackground(Bitcoin.CHAIN_SV);
                 break;
             }
+
+            AsyncTask<Boolean, Boolean, Boolean> task = new AsyncTask<Boolean, Boolean, Boolean>()
+            {
+                @Override
+                protected Boolean doInBackground(Boolean... pValues)
+                {
+                    Log.i(logTag, "Resetting peers");
+                    mBitcoin.resetPeers();
+                    return true;
+                }
+
+                @Override
+                protected void onPostExecute(Boolean pResult)
+                {
+                    showMessage(getString(R.string.peers_reset), 2000);
+                }
+            };
+            task.execute();
         }
     }
 
