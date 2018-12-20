@@ -374,14 +374,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     @Override
                     public void run()
                     {
-                        // Update loading progress
-                        View chainLoadingView = findViewById(R.id.loadingProgress);
-                        if(chainLoadingView != null)
-                        {
-                            TextView message = chainLoadingView.findViewById(R.id.loadingMessage);
-                            if(message != null)
-                                message.setText(R.string.transactions_synchronizing);
-                        }
+                        updateLoading();
                     }
                 });
             }
@@ -394,10 +387,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     @Override
                     public void run()
                     {
-                        ViewGroup headerView = findViewById(R.id.header);
-                        View chainLoadingView = headerView.findViewById(R.id.loadingProgress);
-                        if(chainLoadingView != null)
-                            headerView.removeView(chainLoadingView);
+                        updateLoading();
                     }
                 });
             }
@@ -689,31 +679,60 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mBitcoin.setFinishMode(Bitcoin.FINISH_ON_REQUEST);
     }
 
+    private void updateLoading()
+    {
+        ViewGroup headerView = findViewById(R.id.header);
+        if(headerView == null)
+            return;
+
+        View loadingView = headerView.findViewById(R.id.loadingProgress);
+        int title, message;
+        if(!mBitcoin.chainIsLoaded())
+        {
+            title = R.string.chain_loading;
+            message = R.string.functions_disabled;
+        }
+        else if(!mBitcoin.initialBlockDownloadIsComplete())
+        {
+            title = R.string.initial_block_download_title;
+            message = R.string.initial_block_download_message;
+        }
+        else if(!mBitcoin.isInSync())
+        {
+            title = R.string.chain_synchronizing;
+            message = R.string.functions_disabled;
+        }
+        else if(!mBitcoin.isInRoughSync())
+        {
+            title = R.string.transactions_synchronizing;
+            message = R.string.functions_disabled;
+        }
+        else
+        {
+            if(loadingView != null)
+                headerView.removeView(loadingView);
+            return;
+        }
+
+        if(loadingView == null)
+        {
+            LayoutInflater inflater = getLayoutInflater();
+            inflater.inflate(R.layout.loading_progress, headerView, true);
+            loadingView = headerView.findViewById(R.id.loadingProgress);
+        }
+
+        if(loadingView != null)
+        {
+            ((TextView)loadingView.findViewById(R.id.loadingMessage)).setText(title);
+            ((TextView)loadingView.findViewById(R.id.loadingDescription)).setText(message);
+        }
+    }
+
     private void onWalletsLoad()
     {
         Log.i(logTag, "Wallets Loaded");
 
-        // Update header
-        LayoutInflater inflater = getLayoutInflater();
-        ViewGroup headerView = findViewById(R.id.header);
-
-        View chainLoadingView = headerView.findViewById(R.id.loadingProgress);
-        if(mBitcoin.chainIsLoaded())
-        {
-            if(chainLoadingView != null)
-                headerView.removeView(chainLoadingView);
-        }
-        else if(chainLoadingView == null)
-            inflater.inflate(R.layout.loading_progress, headerView, true);
-
-        View initialBlockDownloadView = headerView.findViewById(R.id.initialBlockDownloadMessage);
-        if(mBitcoin.initialBlockDownloadIsComplete())
-        {
-            if(initialBlockDownloadView != null)
-                headerView.removeView(initialBlockDownloadView);
-        }
-        else if(initialBlockDownloadView == null)
-            inflater.inflate(R.layout.initial_block_download_message, headerView, true);
+        updateLoading();
 
         // Update wallets
         mWalletsNeedUpdated = false; // Force rebuild of wallets
@@ -735,14 +754,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         Log.i(logTag, "Chain Loaded");
 
-        // Update loading progress
-        View chainLoadingView = findViewById(R.id.loadingProgress);
-        if(chainLoadingView != null)
-        {
-            TextView message = chainLoadingView.findViewById(R.id.loadingMessage);
-            if(message != null)
-                message.setText(R.string.chain_synchronizing);
-        }
+        updateLoading();
 
         Settings settings = Settings.getInstance(getApplicationContext().getFilesDir());
         if(!settings.containsValue(Bitcoin.CHAIN_ID_NAME))
@@ -754,19 +766,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case Bitcoin.CHAIN_UNKNOWN: // Unspecified
                 // Chain height is still below split, default to SV
                 Log.i(logTag, "Chain unspecified. Setting to SV");
-                settings.setIntValue(Bitcoin.CHAIN_ID_NAME, Bitcoin.CHAIN_SV);
                 activateChainInBackground(Bitcoin.CHAIN_SV);
                 break;
             case Bitcoin.CHAIN_ABC: // ABC
                 // Already following ABC. Add the invalid hash to stay on this chain.
                 Log.i(logTag, "Chain already on ABC. Setting to ABC");
-                settings.setIntValue(Bitcoin.CHAIN_ID_NAME, Bitcoin.CHAIN_ABC);
                 activateChainInBackground(Bitcoin.CHAIN_ABC);
                 break;
             case Bitcoin.CHAIN_SV: // SV
                 // Already following SV. Add the invalid hash to stay on this chain.
                 Log.i(logTag, "Chain already on SV. Setting to SV");
-                settings.setIntValue(Bitcoin.CHAIN_ID_NAME, Bitcoin.CHAIN_SV);
                 activateChainInBackground(Bitcoin.CHAIN_SV);
                 break;
             }
@@ -787,6 +796,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     showMessage(getString(R.string.peers_reset), 2000);
                 }
             };
+
             task.execute();
         }
     }
@@ -795,9 +805,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         if(mActivatingBranch)
             return;
+
         Settings settings = Settings.getInstance(getApplicationContext().getFilesDir());
         if(settings.intValue(Bitcoin.CHAIN_ID_NAME) == pChainID)
             return;
+
         mActivatingBranch = true;
         AsyncTask<Integer, Boolean, Integer> task = new AsyncTask<Integer, Boolean, Integer>()
         {
@@ -807,9 +819,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 Log.i(logTag, String.format("Activating %s chain in the background", Bitcoin.chainName(pChainIDs[0])));
                 if(mBitcoin.activateChain(pChainIDs[0]))
                 {
-                    Settings settings = Settings.getInstance(getApplicationContext().getFilesDir());
-                    settings.setIntValue(Bitcoin.CHAIN_ID_NAME, pChainIDs[0]);
-                    scheduleExchangeRateUpdate();
                     mActivatingBranch = false;
                     return pChainIDs[0];
                 }
@@ -820,20 +829,25 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             @Override
             protected void onPostExecute(Integer pResultChainID)
             {
+                Settings settings = Settings.getInstance(getApplicationContext().getFilesDir());
                 switch(pResultChainID)
                 {
-                    case 0: // Activate failed
-                        break;
-                    case 1: // ABC
-                        addPersistentMessage(getString(R.string.abc_message));
-                        mTicker = getString(R.string.abc_ticker);
-                        break;
-                    default:
-                    case 2: // SV
-                        addPersistentMessage(getString(R.string.sv_message));
-                        mTicker = getString(R.string.sv_ticker);
-                        break;
+                case Bitcoin.CHAIN_UNKNOWN: // Activate failed
+                    return;
+                case Bitcoin.CHAIN_ABC: // ABC
+                    mTicker = getString(R.string.abc_ticker);
+                    addPersistentMessage(getString(R.string.abc_message));
+                    break;
+                default:
+                case Bitcoin.CHAIN_SV: // SV
+                    mTicker = getString(R.string.sv_ticker);
+                    addPersistentMessage(getString(R.string.sv_message));
+                    break;
                 }
+
+                settings.setIntValue(Bitcoin.CHAIN_ID_NAME, pResultChainID);
+                scheduleExchangeRateUpdate();
+                updateStatus();
             }
         };
 
@@ -1250,13 +1264,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             peerCountField.setTextColor(Color.BLACK);
         }
 
-        if(mBitcoin.initialBlockDownloadIsComplete())
-        {
-            View ibdMessage = findViewById(R.id.initialBlockDownloadMessage);
-            if(ibdMessage != null)
-                ibdMessage.setVisibility(View.GONE);
-        }
-
         // Run again in 2 seconds
         mDelayHandler.removeCallbacks(mStatusUpdateRunnable);
         mDelayHandler.postDelayed(mStatusUpdateRunnable, 2000);
@@ -1312,14 +1319,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         boolean rebuildNeeded;
         View walletView;
         int walletIndex;
-
-        if(mBitcoin.initialBlockDownloadIsComplete())
-        {
-            ViewGroup headerView = findViewById(R.id.header);
-            View initialBlockDownloadView = headerView.findViewById(R.id.initialBlockDownloadMessage);
-            if(initialBlockDownloadView != null)
-                headerView.removeView(initialBlockDownloadView);
-        }
 
         synchronized(mBitcoin)
         {

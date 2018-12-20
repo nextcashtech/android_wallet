@@ -33,9 +33,10 @@
             android:layout_height="wrap_content"
             style="@style/SmallHeadingText"
             android:textColor="#555"
-            android:text="@string/chain_still_loading"/>
+            android:text="@string/chain_loading"/>
 
         <TextView
+            android:id="@+id/loadingDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/functions_disabled"/>

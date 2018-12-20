@@ -823,7 +823,10 @@ extern "C"
 
         // Check if we are already on desired chain.
         if(daemon->chain()->hashHeight(desiredHash) != BitCoin::Chain::INVALID_HEIGHT)
+        {
+            daemon->monitor()->incrementChange();
             return JNI_TRUE;
+        }
 
         // Revert to chain height before split.
         daemon->monitor()->incrementChange();

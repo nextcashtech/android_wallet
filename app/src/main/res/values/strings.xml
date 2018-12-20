@@ -3,8 +3,9 @@
     <string name="action_settings">Settings</string>
     <string name="action_add_wallet">Add Wallet</string>
     <string name="default_wallet_name">Main</string>
+    <string name="initial_block_download_title">Downloading block chain.</string>
     <string name="initial_block_download_message">
-        The initial block download is not yet complete.
+        The initial block download is not complete.
         It might take an hour or more.
         It may take a few minutes to find some initial nodes.
         You will not be able to send or confirm transactions until it is complete.
@@ -47,11 +48,11 @@
     <string name="loading">Loading</string>
     <string name="loading_wallets">Loading Wallets</string>
     <string name="loading_chain">Loading Block Chain</string>
-    <string name="chain_still_loading">
+    <string name="chain_loading">
         Block chain data is loading.
     </string>
     <string name="chain_synchronizing">
-        Block chain data is synchronizing with nodes.
+        Block chain data is synchronizing.
     </string>
     <string name="transactions_synchronizing">
         Transaction data is synchronizing.
@@ -270,7 +271,7 @@
     <string name="reset_peers_description">
         Resetting nodes will clear all known nodes and start finding new ones from the seeds.
     </string>
-    <string name="peers_reset">Peers reset</string>
+    <string name="peers_reset">Nodes reset</string>
     <string name="confirm">Confirm</string>
     <string name="confirms">Confirms</string>
     <string name="name">Name</string>
