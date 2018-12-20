@@ -253,13 +253,14 @@ public class Bitcoin
     public int estimatedHeight()
     {
         int height = headerHeight();
-        if(height < sSampleBlockHeight)
+        Block block = null;
+        if(height > sSampleBlockHeight)
+            block = getBlockFromHeight(height);
+
+        if(block == null)
             return sSampleBlockHeight + (int)(((System.currentTimeMillis() / 1000L) - sSampleTime) / sSecondsPerBlock);
         else
-        {
-            Block block = getBlockFromHeight(height);
             return height + (int)(((System.currentTimeMillis() / 1000L) - block.time) / sSecondsPerBlock);
-        }
     }
 
     // Estimated P2PKH transaction size based on input count
