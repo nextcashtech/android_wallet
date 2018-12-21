@@ -31,12 +31,12 @@ public class MainApp extends Application
     {
         bitcoin = new Bitcoin();
 
-        AsyncTask initializeTask = new AsyncTask()
+        AsyncTask<Boolean, Boolean, Boolean> initializeTask = new AsyncTask<Boolean, Boolean, Boolean>()
         {
             @Override
-            protected Object doInBackground(Object[] objects)
+            protected Boolean doInBackground(Boolean[] pValues)
             {
-                bitcoin.initialize(getApplicationContext());
+                bitcoin.initialize(MainApp.this);
                 return null;
             }
         };

@@ -1295,6 +1295,9 @@ extern "C"
             pEnvironment->SetObjectField(pWallet, instance->jWalletUpdatedTransactionsID,
               updatedTransactions);
         }
+        else
+            pEnvironment->SetObjectField(pWallet, instance->jWalletUpdatedTransactionsID,
+              pEnvironment->NewObjectArray((jsize)0, instance->jTransactionClass, NULL));
 
         if(hasPending)
             pendingBalance = instance->daemon->monitor()->balance(chainKeys->begin(), chainKeys->end(), true);

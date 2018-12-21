@@ -756,49 +756,45 @@ public class BitcoinService extends Service
                 if(wallets != null)
                     for(Wallet wallet : wallets)
                     {
-                        // Check for new transactions and notify
-                        if(wallet.updatedTransactions != null)
+                        // Notify of new transaction
+                        for(Transaction transaction : wallet.updatedTransactions)
                         {
-                            // Notify of new transaction
-                            for(Transaction transaction : wallet.updatedTransactions)
+                            if(transaction.block == null)
                             {
-                                if(transaction.block == null)
-                                {
-                                    Log.d(logTag, String.format("Updated pending transaction found : %s",
-                                      transaction.hash));
+                                Log.d(logTag, String.format("Updated pending transaction found : %s",
+                                  transaction.hash));
 
-                                    // Pending
-                                    if(!addToPendingFile(transaction.hash, offset))
-                                        continue; // Already notified about this pending transaction
+                                // Pending
+                                if(!addToPendingFile(transaction.hash, offset))
+                                    continue; // Already notified about this pending transaction
 
-                                    if(transaction.amount > 0)
-                                        title = getString(R.string.pending_receive_title);
-                                    else
-                                        title = getString(R.string.pending_send_title);
-                                }
+                                if(transaction.amount > 0)
+                                    title = getString(R.string.pending_receive_title);
                                 else
-                                {
-                                    Log.d(logTag, String.format("Updated confirmed transaction found : %s",
-                                      transaction.hash));
-
-                                    // Confirmed
-                                    removeFromPendingFile(transaction.hash, offset);
-
-                                    if(transaction.amount > 0)
-                                        title = getString(R.string.confirmed_receive_title);
-                                    else
-                                        title = getString(R.string.confirmed_send_title);
-                                }
-
-                                if(wallet.isSynchronized || transaction.block != null)
-                                    for(CallBacks callBacks : mCallBacks)
-                                        if(callBacks.onTransactionUpdate(offset, transaction))
-                                            break;
-
-                                if(wallet.isSynchronized)
-                                    notify(title, transaction.notificationDescription(getApplicationContext(),
-                                      mBitcoin), offset, transaction.hash);
+                                    title = getString(R.string.pending_send_title);
                             }
+                            else
+                            {
+                                Log.d(logTag, String.format("Updated confirmed transaction found : %s",
+                                  transaction.hash));
+
+                                // Confirmed
+                                removeFromPendingFile(transaction.hash, offset);
+
+                                if(transaction.amount > 0)
+                                    title = getString(R.string.confirmed_receive_title);
+                                else
+                                    title = getString(R.string.confirmed_send_title);
+                            }
+
+                            if(wallet.isSynchronized || transaction.block != null)
+                                for(CallBacks callBacks : mCallBacks)
+                                    if(callBacks.onTransactionUpdate(offset, transaction))
+                                        break;
+
+                            if(wallet.isSynchronized)
+                                notify(title, transaction.notificationDescription(getApplicationContext(),
+                                  mBitcoin), offset, transaction.hash);
                         }
 
                         offset++;

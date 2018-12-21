@@ -222,7 +222,6 @@ public class TransactionData
             return false;
         }
 
-
         mItemsHaveBeenAdded = false;
         return true;
     }

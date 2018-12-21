@@ -561,6 +561,10 @@ public class Bitcoin
                     if(updateTransactionData(transaction, offset))
                         dataUpdated = true;
 
+                for(Transaction transaction : mWallets[offset].updatedTransactions)
+                    if(updateTransactionData(transaction, offset))
+                        dataUpdated = true;
+
                 // Sort most recent first
                 Arrays.sort(mWallets[offset].transactions, Collections.<Transaction>reverseOrder());
             }
