@@ -93,17 +93,20 @@ public class TransactionData
         String costType;
         long costDate;
 
+        long notifiedDate; // Time/Date of confirmation by app
+
         public Item()
         {
             hash = null;
             amount = 0L;
             comment = null;
-            date = 0;
+            date = 0L;
             exchangeRate = 0.0;
             exchangeType = null;
             cost = 0.0;
             costType = null;
             costDate = 0L;
+            notifiedDate = 0L;
         }
 
         public Item(String pTransactionID, long pAmount)
@@ -117,6 +120,7 @@ public class TransactionData
             cost = 0.0;
             costType = null;
             costDate = 0L;
+            notifiedDate = 0L;
         }
 
         public void read(DataInputStream pStream, int pVersion) throws IOException
@@ -136,6 +140,10 @@ public class TransactionData
                 costDate = pStream.readLong();
             else
                 costDate = 0L;
+            if(pVersion > 3)
+                notifiedDate = pStream.readLong();
+            else
+                notifiedDate = date;
         }
 
         public void write(DataOutputStream pStream) throws IOException
@@ -149,6 +157,7 @@ public class TransactionData
             pStream.writeDouble(cost);
             writeString(pStream, costType);
             pStream.writeLong(costDate);
+            pStream.writeLong(notifiedDate);
         }
     }
 
@@ -196,8 +205,11 @@ public class TransactionData
             DataInputStream stream = new DataInputStream(buffer);
 
             // Version
+            //   2 - Add amount
+            //   3 - Add cost date
+            //   4 - Add notified date
             int version = stream.readInt();
-            if(version != 1 && version != 2 && version != 3)
+            if(version < 0 || version > 4)
             {
                 Log.e(logTag, String.format("Unknown version : %d", version));
                 return false;
@@ -236,7 +248,7 @@ public class TransactionData
             DataOutputStream stream = new DataOutputStream(fileOutputStream);
 
             // Version
-            stream.writeInt(3);
+            stream.writeInt(4);
 
             // Count
             stream.writeInt(mItems.size());

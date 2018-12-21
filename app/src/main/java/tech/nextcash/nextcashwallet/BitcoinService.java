@@ -719,8 +719,6 @@ public class BitcoinService extends Service
 
     private void monitor()
     {
-        String title;
-
         Log.i(logTag, "Starting monitoring.");
 
         while(!mIsStopped)
@@ -753,6 +751,8 @@ public class BitcoinService extends Service
 
                 int offset = 0;
                 Wallet[] wallets = mBitcoin.wallets();
+                String title;
+                boolean transactionDataModified = false;
                 if(wallets != null)
                     for(Wallet wallet : wallets)
                     {
@@ -761,25 +761,28 @@ public class BitcoinService extends Service
                         {
                             if(transaction.block == null)
                             {
+                                // Pending
                                 Log.d(logTag, String.format("Updated pending transaction found : %s",
                                   transaction.hash));
 
-                                // Pending
-                                if(!addToPendingFile(transaction.hash, offset))
+                                if(transaction.data.notifiedDate > 0L || !addToPendingFile(transaction.hash, offset))
                                     continue; // Already notified about this pending transaction
 
-                                if(transaction.amount > 0)
+                                if(transaction.amount > 0L)
                                     title = getString(R.string.pending_receive_title);
                                 else
                                     title = getString(R.string.pending_send_title);
                             }
                             else
                             {
+                                // Confirmed
                                 Log.d(logTag, String.format("Updated confirmed transaction found : %s",
                                   transaction.hash));
 
-                                // Confirmed
                                 removeFromPendingFile(transaction.hash, offset);
+
+                                if(transaction.data.notifiedDate > 0L)
+                                    continue; // Already notified about this confirmed transaction
 
                                 if(transaction.amount > 0)
                                     title = getString(R.string.confirmed_receive_title);
@@ -793,8 +796,15 @@ public class BitcoinService extends Service
                                         break;
 
                             if(wallet.isSynchronized)
-                                notify(title, transaction.notificationDescription(getApplicationContext(),
-                                  mBitcoin), offset, transaction.hash);
+                            {
+                                notify(title, transaction.notificationDescription(getApplicationContext(), mBitcoin),
+                                  offset, transaction.hash);
+                                if(transaction.block != null)
+                                {
+                                    transaction.data.notifiedDate = System.currentTimeMillis() / 1000L;
+                                    transactionDataModified = true;
+                                }
+                            }
                         }
 
                         offset++;
@@ -803,6 +813,9 @@ public class BitcoinService extends Service
                 for(CallBacks callBacks : mCallBacks)
                     if(callBacks.onUpdate())
                         break;
+
+                if(transactionDataModified)
+                    mBitcoin.saveTransactionData();
             }
 
             updateProgressNotification();

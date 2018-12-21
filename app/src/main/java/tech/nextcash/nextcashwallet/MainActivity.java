@@ -3991,7 +3991,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         if(recentWasEmpty)
                             transactionViewGroup.addView(transactionView); // Add in original order
                         else
+                        {
                             transactionViewGroup.addView(transactionView, 1); // Insert new at front
+                            // Remove all but 3 most recent
+                            while(transactionViewGroup.getChildCount() > 4)
+                                transactionViewGroup.removeViewAt(transactionViewGroup.getChildCount() - 1);
+                        }
                     }
                 }
             }
