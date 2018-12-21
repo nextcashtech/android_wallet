@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         @Override
         public void run()
         {
-            showMessage(mTransaction.description(getApplicationContext(), mBitcoin), 2000);
+            showMessage(mTransaction.notificationDescription(getApplicationContext(), mBitcoin), 2000);
         }
     }
 

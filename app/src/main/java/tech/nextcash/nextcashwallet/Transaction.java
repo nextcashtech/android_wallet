@@ -35,7 +35,7 @@ public class Transaction implements Comparable
         data = null;
     }
 
-    public String description(Context pContext, Bitcoin pBitcoin)
+    public String notificationDescription(Context pContext, Bitcoin pBitcoin)
     {
         int startString, endString;
 

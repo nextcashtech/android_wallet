@@ -796,8 +796,8 @@ public class BitcoinService extends Service
                                             break;
 
                                 if(wallet.isSynchronized)
-                                    notify(title, transaction.description(getApplicationContext(), mBitcoin), offset,
-                                      transaction.hash);
+                                    notify(title, transaction.notificationDescription(getApplicationContext(),
+                                      mBitcoin), offset, transaction.hash);
                             }
                         }
 
