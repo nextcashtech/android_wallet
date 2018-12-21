@@ -135,12 +135,6 @@
         android:layout_marginTop="20dp"
         android:background="#ddd" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="2dip"
-        android:layout_marginTop="20dp"
-        android:background="#ddd" />
-
     <TextView
         android:id="@+id/syncFrequencyTitle"
         android:layout_width="match_parent"
