@@ -26,22 +26,24 @@
         Please use for small regular transactions and provide feedback with the \"bug\" button.
     </string>
 
-    <string name="sv_message">
-        Your wallet is following the Bitcoin SV (BSV) chain.
-        You can change this in settings.
-    </string>
-    <string name="sv_ticker">BSV</string>
-
-    <string name="abc_message">
-        Your wallet is following the Bitcoin ABC (BCH) chain.
-        You can change this in settings.
-    </string>
-    <string name="abc_ticker">BCH</string>
-
     <string name="chain">Chain</string>
+    <string-array name="chain_tickers">
+        <item>BCH</item>
+        <item>BSV</item>
+    </string-array>
     <string-array name="chain_names">
-        <item>Bitcoin ABC (BCH)</item>
+        <item>Bitcoin Cash (BCH)</item>
         <item>Bitcoin SV (BSV)</item>
+    </string-array>
+    <string-array name="chain_message">
+        <item>
+            Your wallet is following the Bitcoin Cash (BCH) chain.
+            You can change this in settings.
+        </item>
+        <item>
+            Your wallet is following the Bitcoin SV (BSV) chain.
+            You can change this in settings.
+        </item>
     </string-array>
 
     <string name="inactive">Inactive</string>

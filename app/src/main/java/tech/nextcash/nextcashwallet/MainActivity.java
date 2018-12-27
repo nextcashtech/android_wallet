@@ -320,18 +320,18 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         if(!settings.containsValue(Bitcoin.CHAIN_ID_NAME))
-            mTicker = getString(R.string.sv_ticker);
+            mTicker = getResources().getStringArray(R.array.chain_tickers)[1];
         else
         {
             switch(settings.intValue(Bitcoin.CHAIN_ID_NAME))
             {
             default:
             case 0:
-            case 2:
-                mTicker = getString(R.string.sv_ticker);
+            case 2: // SV
+                mTicker = getResources().getStringArray(R.array.chain_tickers)[1];
                 break;
-            case 1:
-                mTicker = getString(R.string.abc_ticker);
+            case 1: // ABC
+                mTicker = getResources().getStringArray(R.array.chain_tickers)[0];
                 break;
             }
         }
@@ -835,13 +835,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 case Bitcoin.CHAIN_UNKNOWN: // Activate failed
                     return;
                 case Bitcoin.CHAIN_ABC: // ABC
-                    mTicker = getString(R.string.abc_ticker);
-                    addPersistentMessage(getString(R.string.abc_message));
+                    mTicker = getResources().getStringArray(R.array.chain_tickers)[0];
+                    addPersistentMessage(getResources().getStringArray(R.array.chain_message)[0]);
                     break;
                 default:
                 case Bitcoin.CHAIN_SV: // SV
-                    mTicker = getString(R.string.sv_ticker);
-                    addPersistentMessage(getString(R.string.sv_message));
+                    mTicker = getResources().getStringArray(R.array.chain_tickers)[1];
+                    addPersistentMessage(getResources().getStringArray(R.array.chain_message)[1]);
                     break;
                 }
 
