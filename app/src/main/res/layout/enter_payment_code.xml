@@ -40,25 +40,53 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <tech.nextcash.nextcashwallet.ImageButton
+        <LinearLayout
             android:id="@+id/scanPaymentCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
             app:layout_constraintEnd_toStartOf="@id/openAddressBook"
-            app:layout_constraintStart_toStartOf="parent"
-            style="@style/SmallButton"
-            android:layout_width="@dimen/image_button_size"
-            android:layout_height="@dimen/image_button_size"
-            android:src="@drawable/ic_scan_white_36dp"
-            android:contentDescription="@string/scan"/>
+            app:layout_constraintStart_toStartOf="parent">
 
-        <tech.nextcash.nextcashwallet.ImageButton
+            <tech.nextcash.nextcashwallet.ImageButton
+                style="@style/SmallButton"
+                android:layout_width="@dimen/image_button_size"
+                android:layout_height="@dimen/image_button_size"
+                android:src="@drawable/ic_scan_white_36dp"
+                android:contentDescription="@string/scan"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/SmallHeadingText"
+                android:text="@string/scan"
+                android:layout_gravity="center"/>
+
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/openAddressBook"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
             app:layout_constraintStart_toEndOf="@id/scanPaymentCode"
-            app:layout_constraintEnd_toEndOf="parent"
-            style="@style/SmallButton"
-            android:layout_width="@dimen/image_button_size"
-            android:layout_height="@dimen/image_button_size"
-            android:src="@drawable/baseline_list_white_36dp"
-            android:contentDescription="@string/address_book"/>
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <tech.nextcash.nextcashwallet.ImageButton
+                style="@style/SmallButton"
+                android:layout_width="@dimen/image_button_size"
+                android:layout_height="@dimen/image_button_size"
+                android:src="@drawable/baseline_people_white_36dp"
+                android:contentDescription="@string/address_book"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/SmallHeadingText"
+                android:text="@string/contacts"
+                android:layout_gravity="center"/>
+
+        </LinearLayout>
 
     </android.support.constraint.ConstraintLayout>
 

@@ -203,7 +203,7 @@
         android:id="@+id/peersTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:drawableStart="@drawable/baseline_people_black_36dp"
+        android:drawableStart="@drawable/baseline_dns_black_36dp"
         android:drawablePadding="5dp"
         android:text="@string/peers"
         android:layout_marginTop="20dp"

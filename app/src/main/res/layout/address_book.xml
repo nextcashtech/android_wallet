@@ -7,12 +7,22 @@
     android:gravity="center_horizontal"
     android:padding="20dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        style="@style/HeadingText"
-        android:textAlignment="center"
-        android:text="@string/address_book"/>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="@dimen/button_padding"
+            android:src="@drawable/baseline_people_black_36dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/HeadingText"
+            android:textAlignment="center"
+            android:text="@string/address_book"/>
+    </LinearLayout>
 
     <TextView
         android:layout_width="match_parent"

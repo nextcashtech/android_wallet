@@ -235,6 +235,7 @@
     <string name="must_specify_address_name">Address and name must be specified</string>
     <string name="address_not_found">Address not found in current wallet</string>
     <string name="address_book">Address Book</string>
+    <string name="contacts">Contacts</string>
     <string name="address_book_description">
         When using saved addresses please ensure the recipient still has access to the address.
         If sending a large amount it is best to request a new payment address.
@@ -478,6 +479,7 @@
     <string name="output">Output</string>
     <string name="coins_being_sent">Coins being sent/created</string>
     <string name="enter_payment_code">Enter Payment Code</string>
+    <string name="enter">Enter</string>
     <string name="scan">Scan</string>
 
     <string name="mnemonic_seed_entropy">Entropy</string>
