@@ -18,6 +18,7 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitArray;
 import com.google.zxing.common.BitMatrix;
+import com.google.zxing.common.StringUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -333,12 +334,12 @@ public class Bitcoin
     {
         switch(pChainID)
         {
-            case CHAIN_ABC:
-                return "ABC";
-            case CHAIN_SV:
-                return "SV";
-            default:
-                return "Unknown";
+        case CHAIN_ABC:
+            return "ABC";
+        case CHAIN_SV:
+            return "SV";
+        default:
+            return "Unknown";
         }
     }
     public native boolean activateChain(int pChainID);
@@ -361,8 +362,9 @@ public class Bitcoin
     // Block height of latest key monitoring pass.
     public native int merkleHeight();
 
-    public native String getNextReceiveAddress(int pWalletOffset, int pChainIndex);
-    public native byte[] getNextReceiveOutput(int pWalletOffset, int pChainIndex);
+    // pType is 0 for receiving and 1 for change.
+    public native String getNextReceiveAddress(int pWalletOffset, int pType);
+    public native byte[] getNextReceiveOutput(int pWalletOffset, int pType);
 
     public native boolean containsAddress(int pWalletOffset, String pAddress);
 
@@ -411,6 +413,10 @@ public class Bitcoin
     //   1 = invalid encoding
     //   2 = not main net
     public native int isValidPrivateKey(String pPrivateKey);
+
+    public native KeyData decodeKey(String pEncodedText);
+
+    public native String publicKey(int pWalletOffset, int pType);
 
     public void onWalletsLoaded()
     {
@@ -662,27 +668,124 @@ public class Bitcoin
 
     public native boolean getTransaction(int pWalletOffset, String pID, FullTransaction pTransaction);
 
+    public native int getGap(int pWalletOffset);
+
     public native boolean setName(int pOffset, String pName);
-
     public native boolean setIsBackedUp(int pOffset);
+    public native boolean setGap(int pOffset, int pGap); // Number of addresses after "used" to monitor
 
+    // Path Derivation methods
     public static final int BIP0044_DERIVATION = 0;
     public static final int BIP0032_DERIVATION = 1;
     public static final int SIMPLE_DERIVATION  = 2;
+    public static final int CUSTOM_DERIVATION  = 3;
+    public static final int INDIVIDUAL_DERIVATION = 4;
+
+    // Coin Indices
+    public static final long HARDENED_INDEX = 0x80000000L;
+    public static final long PURPOSE_44 = 0x8000002cL; // BTC
+    public static final long COIN_DEFAULT = 0x80000000L; // BTC
+    public static final long COIN_ABC = 0x80000091L;
+    public static final long COIN_SV = 0x800000ecL;
+
+    // Default BIP-0044 account
+    public static final long ACCOUNT_DEFAULT = 0x80000000L;
+
+    public long coinIndex()
+    {
+        switch(mSettings.intValue(CHAIN_ID_NAME))
+        {
+        case CHAIN_ABC:
+            return COIN_ABC;
+        case CHAIN_SV:
+            return COIN_SV;
+        default:
+            return COIN_DEFAULT;
+        }
+    }
+
+    public int chain()
+    {
+        return mSettings.intValue(CHAIN_ID_NAME);
+    }
+
+    public static long[] accountDerivationPath(int pDerivationMethod, long pCoin, long pAccount)
+    {
+        switch(pDerivationMethod)
+        {
+        case BIP0044_DERIVATION:
+            return new long[] { PURPOSE_44,
+              pCoin,
+              pAccount };
+        case BIP0032_DERIVATION:
+            return new long[] { pAccount };
+        case SIMPLE_DERIVATION:
+        case INDIVIDUAL_DERIVATION:
+        case CUSTOM_DERIVATION:
+        default:
+            return new long[] { };
+        }
+    }
+
+    public static long[] accountDerivationPath(int pDerivationMethod, long pCoinIndex)
+    {
+        return accountDerivationPath(pDerivationMethod, pCoinIndex, ACCOUNT_DEFAULT);
+    }
+
+    public long[] accountDerivationPath(int pDerivationMethod)
+    {
+        return accountDerivationPath(pDerivationMethod, coinIndex(), ACCOUNT_DEFAULT);
+    }
+
+    public static long derivationPathCoin(long pDerivationPath[])
+    {
+        if(pDerivationPath.length > 1 && pDerivationPath[0] == PURPOSE_44)
+            return pDerivationPath[1];
+        else
+            return COIN_DEFAULT;
+    }
+
+    public static String indexText(long pIndex)
+    {
+        if(pIndex >= HARDENED_INDEX)
+            return String.format(Locale.getDefault(), "%d'", pIndex - HARDENED_INDEX);
+        else
+            return String.format(Locale.getDefault(), "%d", pIndex);
+    }
+
+    public static String derivationPathText(long pPath[])
+    {
+        StringBuilder result = new StringBuilder();
+        String delimiter = "/";
+        result.append("m");
+        for(long index : pPath)
+        {
+            result.append(delimiter);
+            result.append(indexText(index));
+        }
+        return result.toString();
+    }
+
+    // Key import types
+    public static final int BIP0032_CHAIN = 0; // Chain keys, must have 2 specified
+    public static final int BIP0032_ACCOUNT = 1; // Account key, must have one non-hardened or private key specified.
+    public static final int ADDRESS_ONLY = 2; // Individual address.
 
     // Load a key from BIP-0032 encoded text.
-    public native int loadKey(String pPassCode, String pEncodedKey, int pDerivationPath, String pName,
-      long pRecoverTime);
+    // pType is BIP0032_CHAIN, BIP0032_ACCOUNT, or ADDRESS_ONLY
+    public native int importKeys(String pPassCode, int pType, String pEncodedKeys[], String pName, long pRecoverTime,
+      int pGap);
 
     public native boolean isValidSeedWord(String pWord);
     public native String[] getMnemonicWords(String pStartingWith);
 
     // Add a key from a mnemonic seed.
-    public native int addSeed(String pPassCode, String pMnemonicSeed, int pDerivationPath, String pName,
-      boolean pIsBackedUp, long pRecoverTime);
+    public native int addSeed(String pPassCode, String pMnemonicSeed, int pDerivationMethod, long pAccountPath[],
+      long pReceivingIndex, long pChangeIndex, String pName, boolean pIsBackedUp, long pRecoverTime, int pGap);
 
     // Add a key from an encoded private key.
-    public native int addPrivateKey(String pPassCode, String pPrivateKey, String pName, long pRecoverTime);
+    public native int addPrivateKey(String pPassCode, String pPrivateKey, int pDerivationMethod, long pAccountPath[],
+      long pReceivingIndex, long pChangeIndex, String pName, long pRecoverTime);
 
     public native int removeKey(String pPassCode, int pOffset);
 
@@ -690,7 +793,8 @@ public class Bitcoin
     public native String seed(String pPasscode, int pOffset);
     public native boolean seedIsValid(String pSeed);
 
-    public native boolean hasPassCode();
+    public native int derivationPathMethod(int pOffset);
+    public native long[] derivationPath(int pOffset, int pChainOffset);
 
     // Send a P2PKH (Pay to Public Key Hash) payment
     // Amount in satoshis

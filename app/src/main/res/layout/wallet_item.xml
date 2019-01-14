@@ -108,11 +108,23 @@
             android:gravity="end">
 
             <ImageView
-                android:id="@+id/walletBackup"
+                android:id="@+id/editWallet"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
-                android:layout_toStartOf="@+id/walletSend"
+                android:layout_alignParentStart="true"
+                android:src="@drawable/ic_edit_black_36dp"
+                android:padding="5dp"
+                android:layout_marginEnd="5dp"
+                android:contentDescription="@string/title_edit_wallet"
+                android:onClick="onClick"/>
+
+            <ImageView
+                android:id="@+id/backupWallet"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_toStartOf="@+id/walletHistory"
                 android:src="@drawable/baseline_backup_black_36dp"
                 android:padding="5dp"
                 android:layout_marginEnd="5dp"
@@ -120,15 +132,15 @@
                 android:onClick="onClick"/>
 
             <ImageView
-                android:id="@+id/walletSend"
+                android:id="@+id/walletHistory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
                 android:layout_toStartOf="@+id/walletReceive"
-                android:src="@drawable/ic_send_black_36dp"
+                android:src="@drawable/ic_history_black_36dp"
                 android:padding="5dp"
                 android:layout_marginEnd="5dp"
-                android:contentDescription="@string/send"
+                android:contentDescription="@string/history"
                 android:onClick="onClick"/>
 
             <ImageView
@@ -136,7 +148,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
-                android:layout_toStartOf="@+id/walletHistory"
+                android:layout_toStartOf="@+id/walletSend"
                 android:src="@drawable/ic_add_circle_black_36dp"
                 android:padding="5dp"
                 android:layout_marginEnd="5dp"
@@ -144,15 +156,15 @@
                 android:onClick="onClick"/>
 
             <ImageView
-                android:id="@+id/walletHistory"
+                android:id="@+id/walletSend"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
                 android:layout_alignParentEnd="true"
-                android:src="@drawable/ic_history_black_36dp"
+                android:src="@drawable/ic_send_black_36dp"
                 android:padding="5dp"
                 android:layout_marginEnd="5dp"
-                android:contentDescription="@string/history"
+                android:contentDescription="@string/send"
                 android:onClick="onClick"/>
 
         </RelativeLayout>

@@ -9,8 +9,7 @@
     <RelativeLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp">
+        android:layout_height="wrap_content">
 
         <TextView
             android:id="@+id/nameLabel"
@@ -36,8 +35,38 @@
             android:id="@+id/updateWalletName"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            style="@style/Button"
-            android:minWidth="20dp"
+            style="@style/SmallButton"
+            android:text="@string/update"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/gapTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            style="@style/SubHeadingText"
+            android:text="@string/address_gap"/>
+
+        <EditText
+            android:id="@+id/addressGap"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/gapTitle"
+            android:layout_centerVertical="true"
+            android:inputType="number"/>
+
+        <tech.nextcash.nextcashwallet.TextButton
+            android:id="@+id/updateGap"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            style="@style/SmallButton"
             android:text="@string/update"/>
 
     </RelativeLayout>
@@ -53,6 +82,11 @@
         android:id="@+id/backupWallet"
         style="@style/Button"
         android:text="@string/backup_wallet"/>
+
+    <tech.nextcash.nextcashwallet.TextButton
+        android:id="@+id/displayPublicKeys"
+        style="@style/Button"
+        android:text="@string/public_keys"/>
 
     <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/removeWallet"

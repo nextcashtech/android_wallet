@@ -40,10 +40,53 @@
         android:layout_marginBottom="20dp"
         android:background="#ddd" />
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/gapTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            style="@style/SubHeadingText"
+            android:text="@string/address_gap"/>
+
+        <EditText
+            android:id="@+id/addressGap"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/gapTitle"
+            android:layout_centerVertical="true"
+            android:inputType="number"/>
+
+        <tech.nextcash.nextcashwallet.TextButton
+            android:id="@+id/updateGap"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            style="@style/SmallButton"
+            android:text="@string/update"/>
+
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
+        android:background="#ddd" />
+
     <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/backupWallet"
         style="@style/Button"
         android:text="@string/backup_wallet"/>
+
+    <tech.nextcash.nextcashwallet.TextButton
+        android:id="@+id/displayPublicKeys"
+        style="@style/Button"
+        android:text="@string/public_keys"/>
 
     <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/removeWallet"

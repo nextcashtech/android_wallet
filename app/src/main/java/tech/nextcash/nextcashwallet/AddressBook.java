@@ -56,7 +56,7 @@ public class AddressBook
     // Do not change the order or Type enumeration. The file format depends on the ordinals not changing.
     public enum Type { NONE, ADDRESS, CHAIN_KEY }
 
-    public class Item implements Comparable
+    public class Item implements Comparable<Item>
     {
         Type type;
         String address;
@@ -88,10 +88,8 @@ public class AddressBook
         }
 
         @Override
-        public int compareTo(@NonNull Object pOther)
+        public int compareTo(@NonNull Item pOther)
         {
-            if(pOther == null || pOther.getClass() != Item.class)
-                return 0;
             return name.compareTo(((Item)pOther).name);
         }
     }

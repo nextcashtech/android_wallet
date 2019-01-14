@@ -4,15 +4,12 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_horizontal"
-    android:padding="20dp">
+    android:gravity="center_horizontal">
 
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         style="@style/HeadingText"
-        android:gravity="center"
-        android:textAlignment="center"
         android:text="@string/labeled_addresses"/>
 
     <TextView
@@ -23,16 +20,13 @@
 
     <TextView
         android:id="@+id/walletName"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        style="@style/SmallHeadingText"
-        android:gravity="center"
-        android:textAlignment="center"/>
+        style="@style/SmallHeadingText"/>
 
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAlignment="center"
         android:layout_marginTop="5dp"
         android:textStyle="bold"
         android:text="@string/swipe_to_delete"/>

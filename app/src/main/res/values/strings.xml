@@ -124,8 +124,19 @@
     <string name="remove_wallet">Remove Wallet</string>
     <string name="import_bip0032_key">Import BIP-0032 Key</string>
     <string name="scan_private_key">Scan Private Key</string>
-    <string name="title_import_bip0032_key">Enter BIP-0032 Encoded Key</string>
-    <string name="derivation_path">Derive Path</string>
+    <string name="scan_receiving_key">Scan Receiving Key</string>
+    <string name="scan_change_key">Scan Change Key</string>
+    <string name="scan_account_key">Scan Account Key</string>
+    <string name="scan_address">Scan Address</string>
+    <string name="title_import_bip0032_key">Enter BIP-0032 Key(s)</string>
+    <string name="xpub_quoted">\"xpub\"</string>
+    <string name="derivation_path">Derivation Path</string>
+    <string name="custom_derivation_path">Custom Derivation Path</string>
+    <string name="address_gap">Address Gap</string>
+    <string name="default_gap">20</string>
+    <string name="purpose">Purpose</string>
+    <string name="coin">Coin</string>
+    <string name="hard">Hard</string>
     <string name="import_text">Import</string>
     <string name="success_key_import">Successfully imported key</string>
     <string name="failed_key_import">Failed to import key</string>
@@ -133,6 +144,7 @@
     <string name="failed_key_import_exists">Key already in wallet</string>
     <string name="failed_key_import_method">Invalid derivation method</string>
     <string name="failed_update_name">Failed to update name</string>
+    <string name="failed_update_gap">Failed to update address gap</string>
     <string name="success_remove_wallet">Successfully removed wallet</string>
     <string name="failed_remove_wallet">Failed to remove wallet</string>
     <string name="failed_generate_address">Failed to generate address</string>
@@ -161,11 +173,54 @@
         View Only. Wallet has a \"public only\" key and can not spend.
     </string>
     <string name="wallet_view_only">Wallet is view only</string>
-    <string-array name="derivation_methods">
-        <item>BIP-0044</item>
-        <item>BIP-0032</item>
-        <item>SIMPLE</item>
+    <string name="type">Type</string>
+    <string name="receiving_external">Receiving/External</string>
+    <string name="change_internal">Change/Internal</string>
+    <string name="change">Change</string>
+    <string name="account">Account</string>
+    <string name="chains">Chains</string>
+    <string name="account_path">Account Path</string>
+    <string name="to_be_determined">TBD</string>
+    <string name="derivation_backup_note">Save this derivation path with your seed.</string>
+    <string-array name="xpub_types">
+        <item>Chain</item>
+        <item>Account</item>
+        <item>Address</item>
     </string-array>
+    <string-array name="xpub_type_descriptions">
+        <item>
+            Chain level keys. Two must be specified.
+            The first is the receiving/external chain key and the second is the change/internal chain key.
+        </item>
+        <item>
+            Account level key. This can\'t be a \"hardened\" key.
+            The child keys at index 0 and 1 will be used as the receiving/external and change/internal keys respectively.
+        </item>
+        <item>
+            Address only. This can be any address.
+        </item>
+    </string-array>
+    <string-array name="derivation_methods">
+        <item>BIP-0044 Standard</item>
+        <item>BIP-0044 BCH</item>
+        <item>BIP-0044 BSV</item>
+        <item>BIP-0032</item>
+        <item>Simple</item>
+        <item>Custom</item>
+    </string-array>
+    <string name="invalid_derviation_path">Invalid Derivation Path</string>
+    <string name="public_keys">Public Keys</string>
+    <string name="public_keys_description">
+        Public keys allow you to monitor/watch transactions without the ability to spend/create transactions.
+        You must have both \"chain\" keys to see all transactions and the amounts.
+        Scroll down if both aren\'t visible.
+    </string>
+    <string name="public_keys_single_description">
+        Public keys allow you to monitor/watch transactions without the ability to spend/create transactions.
+        This wallet only uses one \"chain\" key.
+    </string>
+    <string name="failed_to_get_public_keys">Failed to retrieve public keys.</string>
+    <string name="public_key_clipboard">Public key copied to clipboard</string>
     <string name="recover_date">
         Select a date before the wallet(key) was originally created to specify which blocks to query
         for related transactions.
@@ -383,7 +438,7 @@
     <string name="wallet_seed">Wallet Seed</string>
     <string name="enter_wallet_seed">Enter Wallet Seed</string>
     <string name="wallet_seed_description">
-        These words are the \"mnemonic seed\" for your new wallet.
+        These words are the \"mnemonic seed\" for your wallet.
         You need to write this down and store this in a safe place so you can recover your wallet if
         you lose access to this device or forget your passcode.
         No one else can recover your bitcoins for you.

@@ -19,18 +19,18 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
     private Context mContext;
     private Bitcoin mBitcoin;
     private String mPasscode;
-    private String mKey;
-    private int mDerivationMethod;
+    private int mType;
+    private String mKeys[];
     private long mRecoverDate;
 
-    public ImportKeyTask(Context pContext, Bitcoin pBitcoin, String pPasscode, String pKey, int pDerivationMethod,
+    public ImportKeyTask(Context pContext, Bitcoin pBitcoin, String pPasscode, int pType, String pKeys[],
       long pRecoverDate)
     {
         mContext = pContext;
         mBitcoin = pBitcoin;
         mPasscode = pPasscode;
-        mKey = pKey;
-        mDerivationMethod = pDerivationMethod;
+        mType = pType;
+        mKeys = pKeys;
         mRecoverDate = pRecoverDate;
     }
 
@@ -39,7 +39,7 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
     {
         String name = String.format(Locale.getDefault(), "%s %d", mContext.getString(R.string.wallet),
           mBitcoin.walletCount() + 1);
-        return mBitcoin.loadKey(mPasscode, mKey, mDerivationMethod, name, mRecoverDate);
+        return mBitcoin.importKeys(mPasscode, mType, mKeys, name, mRecoverDate, 0);
     }
 
     @Override
@@ -51,21 +51,25 @@ public class ImportKeyTask extends AsyncTask<String, Integer, Integer>
         // Send intent back to activity
         switch(pResult)
         {
-            case 0: // Success
-                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.success_key_import);
-                break;
-            case 1: // Unknown error
-                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_key_import);
-                break;
-            case 2: // Invalid format
-                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_key_import_format);
-                break;
-            case 3: // Already exists
-                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_key_import_exists);
-                break;
-            case 4: // Invalid derivation method
-                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_key_import_method);
-                break;
+        case 0: // Success
+            finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.success_key_import);
+            break;
+        default:
+        case 1: // Unknown error
+            finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_key_import);
+            break;
+        case 2: // Invalid format
+            finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_key_import_format);
+            break;
+        case 3: // Already exists
+            finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_key_import_exists);
+            break;
+        case 4: // Invalid derivation method
+            finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_key_import_method);
+            break;
+        case 5: // Invalid pass code
+            finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_invalid_passcode);
+            break;
         }
 
         mContext.sendBroadcast(finishIntent);

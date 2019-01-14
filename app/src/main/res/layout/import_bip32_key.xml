@@ -1,48 +1,191 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         style="@style/HeadingText"
         android:gravity="center"
-        android:padding="5dp"
+        android:paddingTop="5dp"
         android:textAlignment="center"
-        android:text="@string/title_import_bip0032_key"
-        android:labelFor="@id/importText"/>
+        android:text="@string/title_import_bip0032_key"/>
 
-    <EditText
-        android:id="@+id/importText"
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:inputType="textNoSuggestions|textMultiLine"/>
+        style="@style/SmallHeadingText"
+        android:gravity="center"
+        android:textAlignment="center"
+        android:text="@string/xpub_quoted"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="10dp">
+        android:orientation="horizontal"
+        android:layout_gravity="center_vertical"
+        android:paddingTop="20dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:textStyle="bold"
-            android:text="@string/derivation_path"/>
+            style="@style/SubHeadingText"
+            android:layout_marginEnd="@dimen/button_padding"
+            android:text="@string/type"/>
 
         <Spinner
-            android:id="@+id/derivationMethodSpinner"
+            android:id="@+id/typeSpinner"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:entries="@array/derivation_methods"/>
+            android:entries="@array/xpub_types"/>
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/typeDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@array/xpub_type_descriptions"/>
+
+    <EditText
+        android:id="@+id/receivingKeyText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:inputType="textNoSuggestions|textMultiLine"/>
+
+    <LinearLayout
+        android:id="@+id/receivingKeyLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SubHeadingText"
+            android:text="@string/receiving_external"
+            android:labelFor="@id/receivingKeyText"/>
+
+        <tech.nextcash.nextcashwallet.ImageButton
+            android:id="@+id/scanReceivingKey"
+            style="@style/SmallButton"
+            android:layout_width="@dimen/image_button_size"
+            android:layout_height="@dimen/image_button_size"
+            android:src="@drawable/ic_scan_white_36dp"
+            android:contentDescription="@string/scan"/>
+
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/changeKeyText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:inputType="textNoSuggestions|textMultiLine"/>
+
+    <LinearLayout
+        android:id="@+id/changeKeyLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/SubHeadingText"
+            android:gravity="center"
+            android:layout_marginBottom="20dp"
+            android:text="@string/change_internal"
+            android:labelFor="@id/changeKeyText"/>
+
+        <tech.nextcash.nextcashwallet.ImageButton
+            android:id="@+id/scanChangeKey"
+            style="@style/SmallButton"
+            android:layout_width="@dimen/image_button_size"
+            android:layout_height="@dimen/image_button_size"
+            android:src="@drawable/ic_scan_white_36dp"
+            android:contentDescription="@string/scan"/>
+
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/accountKeyText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:inputType="textNoSuggestions|textMultiLine"
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:id="@+id/accountKeyLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            style="@style/SubHeadingText"
+            android:gravity="center"
+            android:text="@string/account"
+            android:labelFor="@id/accountKeyText"/>
+
+        <tech.nextcash.nextcashwallet.ImageButton
+            android:id="@+id/scanAccountKey"
+            style="@style/SmallButton"
+            android:layout_width="@dimen/image_button_size"
+            android:layout_height="@dimen/image_button_size"
+            android:src="@drawable/ic_scan_white_36dp"
+            android:contentDescription="@string/scan"/>
+
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/addressText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:inputType="textNoSuggestions|textMultiLine"
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:id="@+id/addressLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            style="@style/SubHeadingText"
+            android:gravity="center"
+            android:text="@string/address"
+            android:labelFor="@id/addressText"/>
+
+        <tech.nextcash.nextcashwallet.ImageButton
+            android:id="@+id/scanAddressKey"
+            style="@style/SmallButton"
+            android:layout_width="@dimen/image_button_size"
+            android:layout_height="@dimen/image_button_size"
+            android:src="@drawable/ic_scan_white_36dp"
+            android:contentDescription="@string/scan"/>
 
     </LinearLayout>
 
     <tech.nextcash.nextcashwallet.TextButton
-        android:id="@+id/loadKey"
+        android:id="@+id/loadBIP32Key"
         style="@style/Button"
         android:text="@string/import_text"/>
 

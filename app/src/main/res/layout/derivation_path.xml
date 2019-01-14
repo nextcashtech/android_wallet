@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/HeadingText"
+        android:text="@string/custom_derivation_path"/>
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/hard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="5dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/valueBarrier"
+            style="@style/SmallHeadingText"
+            android:text="@string/hard"/>
+
+        <TextView
+            android:id="@+id/purpose"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/purposeValue"
+            app:layout_constraintBottom_toBottomOf="@id/purposeValue"
+            android:labelFor="@id/purposeValue"
+            style="@style/SmallHeadingText"
+            android:text="@string/purpose"/>
+
+        <TextView
+            android:id="@+id/coin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/coinValue"
+            app:layout_constraintBottom_toBottomOf="@id/coinValue"
+            android:labelFor="@id/coinValue"
+            style="@style/SmallHeadingText"
+            android:text="@string/coin"/>
+
+        <TextView
+            android:id="@+id/account"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/accountValue"
+            app:layout_constraintBottom_toBottomOf="@id/accountValue"
+            android:labelFor="@id/accountValue"
+            style="@style/SmallHeadingText"
+            android:text="@string/account"/>
+
+        <TextView
+            android:id="@+id/receivingChain"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/receivingChainValue"
+            app:layout_constraintBottom_toBottomOf="@id/receivingChainValue"
+            android:labelFor="@id/receivingChainValue"
+            style="@style/SmallHeadingText"
+            android:text="@string/receive"/>
+
+        <TextView
+            android:id="@+id/changeChain"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/changeChainValue"
+            app:layout_constraintBottom_toBottomOf="@id/changeChainValue"
+            android:labelFor="@id/changeChainValue"
+            style="@style/SmallHeadingText"
+            android:text="@string/change"/>
+
+        <android.support.constraint.Barrier
+            android:id="@+id/nameBarrier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierDirection="end"
+            app:constraint_referenced_ids="purpose,coin,account,receivingChain,changeChain"/>
+
+        <EditText
+            android:id="@+id/purposeValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            app:layout_constraintTop_toBottomOf="@id/hard"
+            app:layout_constraintStart_toEndOf="@id/nameBarrier"
+            android:minWidth="120dp"
+            android:inputType="number"
+            android:text="44"/>
+
+        <EditText
+            android:id="@+id/coinValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            app:layout_constraintTop_toBottomOf="@id/purposeValue"
+            app:layout_constraintStart_toEndOf="@id/nameBarrier"
+            android:minWidth="120dp"
+            android:inputType="number"
+            android:text="127"/>
+
+        <EditText
+            android:id="@+id/accountValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            app:layout_constraintTop_toBottomOf="@id/coinValue"
+            app:layout_constraintStart_toEndOf="@id/nameBarrier"
+            android:minWidth="120dp"
+            android:inputType="number"
+            android:text="0"/>
+
+        <TextView
+            android:id="@+id/chain_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/accountValue"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:paddingTop="10dp"
+            style="@style/SubHeadingText"
+            android:text="@string/chains"/>
+
+        <EditText
+            android:id="@+id/receivingChainValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            app:layout_constraintTop_toBottomOf="@id/chain_title"
+            app:layout_constraintStart_toEndOf="@id/nameBarrier"
+            android:minWidth="120dp"
+            android:inputType="number"
+            android:text="0"/>
+
+        <EditText
+            android:id="@+id/changeChainValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            app:layout_constraintTop_toBottomOf="@id/receivingChainValue"
+            app:layout_constraintStart_toEndOf="@id/nameBarrier"
+            android:minWidth="120dp"
+            android:inputType="number"
+            android:text="1"/>
+
+        <android.support.constraint.Barrier
+            android:id="@+id/valueBarrier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            app:barrierDirection="end"
+            app:constraint_referenced_ids="purposeValue,coinValue,accountValue,receivingChainValue,changeChainValue"/>
+
+        <Switch
+            android:id="@+id/purposeHard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/valueBarrier"
+            app:layout_constraintTop_toTopOf="@id/purposeValue"
+            app:layout_constraintBottom_toBottomOf="@id/purposeValue"/>
+
+        <Switch
+            android:id="@+id/coinHard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/valueBarrier"
+            app:layout_constraintTop_toTopOf="@id/coinValue"
+            app:layout_constraintBottom_toBottomOf="@id/coinValue"/>
+
+        <Switch
+            android:id="@+id/accountHard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/valueBarrier"
+            app:layout_constraintTop_toTopOf="@id/accountValue"
+            app:layout_constraintBottom_toBottomOf="@id/accountValue"/>
+
+        <Switch
+            android:id="@+id/receivingChainHard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/valueBarrier"
+            app:layout_constraintTop_toTopOf="@id/receivingChainValue"
+            app:layout_constraintBottom_toBottomOf="@id/receivingChainValue"/>
+
+        <Switch
+            android:id="@+id/changeChainHard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toEndOf="@id/valueBarrier"
+            app:layout_constraintTop_toTopOf="@id/changeChainValue"
+            app:layout_constraintBottom_toBottomOf="@id/changeChainValue"/>
+
+    </android.support.constraint.ConstraintLayout>
+
+    <TextView
+        android:id="@+id/derivationPath"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        style="@style/SubHeadingText"
+        android:text="m/44'/236'/0'"/>
+
+    <tech.nextcash.nextcashwallet.TextButton
+        android:id="@+id/acceptDerivationPath"
+        style="@style/Button"
+        android:text="@string/continue_string"/>
+
+</LinearLayout>

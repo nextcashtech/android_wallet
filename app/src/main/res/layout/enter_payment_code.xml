@@ -4,9 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_marginLeft="10dp"
-    android:layout_marginRight="10dp">
+    android:layout_height="match_parent">
 
     <TextView
         android:layout_width="match_parent"
@@ -41,14 +39,15 @@
         android:layout_height="wrap_content">
 
         <LinearLayout
-            android:id="@+id/scanPaymentCode"
+            android:id="@+id/scanPaymentCodeGroup"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            app:layout_constraintEnd_toStartOf="@id/openAddressBook"
+            app:layout_constraintEnd_toStartOf="@id/openAddressBookGroup"
             app:layout_constraintStart_toStartOf="parent">
 
             <tech.nextcash.nextcashwallet.ImageButton
+                android:id="@+id/scanPaymentCode"
                 style="@style/SmallButton"
                 android:layout_width="@dimen/image_button_size"
                 android:layout_height="@dimen/image_button_size"
@@ -65,14 +64,15 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/openAddressBook"
+            android:id="@+id/openAddressBookGroup"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            app:layout_constraintStart_toEndOf="@id/scanPaymentCode"
+            app:layout_constraintStart_toEndOf="@id/scanPaymentCodeGroup"
             app:layout_constraintEnd_toEndOf="parent">
 
             <tech.nextcash.nextcashwallet.ImageButton
+                android:id="@+id/openAddressBook"
                 style="@style/SmallButton"
                 android:layout_width="@dimen/image_button_size"
                 android:layout_height="@dimen/image_button_size"

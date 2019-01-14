@@ -8,8 +8,6 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
         android:layout_marginTop="10dp"
         android:text="@string/enter_wallet_seed"
         android:textAlignment="center"
@@ -18,16 +16,12 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
         android:layout_marginTop="10dp"
         android:text="@string/wallet_seed_recover_description"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
         android:layout_marginTop="10dp"
         android:background="#aaa">
         <TextView
@@ -43,7 +37,8 @@
         android:background="@color/colorPositive"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
         android:padding="5dp"
         style="@style/HeadingText"
         android:textAlignment="center"
@@ -67,8 +62,6 @@
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
         android:padding="5dp"
         android:background="#eee">
         <LinearLayout
@@ -85,8 +78,6 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
         android:layout_marginTop="10dp">
 
         <TextView
@@ -119,9 +110,37 @@
 
     </RelativeLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center_vertical"
+        android:paddingTop="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/SubHeadingText"
+            android:text="@string/derivation_path"/>
+
+        <Spinner
+            android:id="@+id/derivationSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/derivation_methods"/>
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/derivationPath"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="m/44'/0'/0'"/>
+
     <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/importSeed"
         style="@style/Button"
-        android:text="@string/okay"/>
+        android:text="@string/import_text"/>
 
 </LinearLayout>

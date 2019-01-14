@@ -3,8 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="20dp">
+    android:layout_height="match_parent">
 
     <TextView
         android:id="@+id/scanTitle"
@@ -54,15 +53,17 @@
         android:contentDescription="@string/scan"/>
 
     <LinearLayout
-        android:id="@+id/enterPaymentCode"
+        android:id="@+id/enterPaymentCodeGroup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintTop_toBottomOf="@id/camera"
-        app:layout_constraintEnd_toStartOf="@id/openAddressBook"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintEnd_toStartOf="@id/openAddressBookGroup"
+        app:layout_constraintStart_toStartOf="parent"
+        android:visibility="gone">
 
         <tech.nextcash.nextcashwallet.ImageButton
+            android:id="@+id/enterPaymentCode"
             style="@style/SmallButton"
             android:layout_width="@dimen/image_button_size"
             android:layout_height="@dimen/image_button_size"
@@ -79,15 +80,17 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/openAddressBook"
+        android:id="@+id/openAddressBookGroup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintTop_toBottomOf="@id/camera"
-        app:layout_constraintStart_toEndOf="@id/enterPaymentCode"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintStart_toEndOf="@id/enterPaymentCodeGroup"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:visibility="gone">
 
         <tech.nextcash.nextcashwallet.ImageButton
+            android:id="@+id/openAddressBook"
             style="@style/SmallButton"
             android:layout_width="@dimen/image_button_size"
             android:layout_height="@dimen/image_button_size"

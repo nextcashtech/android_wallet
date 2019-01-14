@@ -91,36 +91,46 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static final String ACTION_DISPLAY_DIALOG = "DISPLAY_DIALOG";
     public static final String ACTION_DISPLAY_SETTINGS = "DISPLAY_SETTINGS";
     public static final String ACTION_DISPLAY_INFO = "DISPLAY_INFO";
-    public static final String ACTION_DISPLAY_REQUEST_PAYMENT = "DISPLAY_REQUEST_PAYMENT";
+    public static final String ACTION_PAYMENT_QR = "PAYMENT_QR";
     public static final String ACTION_DISPLAY_ENTER_PAYMENT = "DISPLAY_ENTER_PAYMENT";
     public static final String ACTION_ACKNOWLEDGE_PAYMENT = "ACKNOWLEDGE_PAYMENT";
     public static final String ACTION_CLEAR_PAYMENT = "CLEAR_PAYMENT";
     public static final String ACTION_EXCHANGE_RATE_UPDATED = "EXCHANGE_RATE_UPDATED";
     public static final String ACTION_EXCHANGE_RATE_FIELD = "EXCHANGE_RATE";
+    public static final String ACTION_RECEIVING_QR = "RECEIVING_QR";
+    public static final String ACTION_CHANGE_QR = "CHANGE_QR";
 
     private Handler mDelayHandler;
     private Runnable mStatusUpdateRunnable, mRateUpdateRunnable, mClearFinishOnBack, mClearNotification,
       mRequestExpiresUpdater, mRequestTransactionRunnable, mUndoDeleteRunnable, mConfirmDeleteRunnable;
 
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
-      IMPORT_PRIVATE_KEY, IMPORT_WALLET, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, TRANSACTION_HISTORY, TRANSACTION,
+      IMPORT_PRIVATE_KEY, IMPORT_BIP32, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, TRANSACTION_HISTORY, TRANSACTION,
       SCAN, RECEIVE, ENTER_PAYMENT_CODE, CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP,
-      SETTINGS, ADDRESS_LABELS, ADDRESS_BOOK }
+      SETTINGS, ADDRESS_LABELS, ADDRESS_BOOK, PUBLIC_KEYS, DERIVATION_PATH }
     private enum TextEntryMode { NONE, SAVE_ADDRESS, LABEL_ADDRESS, RECEIVE_AMOUNT, RECEIVE_LABEL, RECEIVE_MESSAGE,
       TRANSACTION_COMMENT, TRANSACTION_COST_AMOUNT, TRANSACTION_COST_DATE }
     private Mode mMode, mPreviousMode, mPreviousTransactionMode, mPreviousReceiveMode;
     private TextEntryMode mTextEntryMode;
     private boolean mWalletsNeedUpdated;
     private enum AuthorizedTask { NONE, INITIALIZE, ADD_KEY, BACKUP_KEY, REMOVE_KEY, SIGN_TRANSACTION }
-    private enum ScanMode {SCAN_PAYMENT_CODE, SCAN_PRIVATE_KEY}
+    private enum ScanMode {SCAN_PAYMENT_CODE, SCAN_PRIVATE_KEY, SCAN_RECEIVING_KEY, SCAN_CHANGE_KEY, SCAN_ACCOUNT_KEY,
+      SCAN_ADDRESS_KEY }
+    private enum BIP32Mode { BIP32_CHAIN, BIP32_ACCOUNT, BIP32_ADDRESS }
     private AuthorizedTask mAuthorizedTask;
-    private String mKeyToLoad, mEncodedPrivateKey, mSeed;
+    private BIP32Mode mBIP32Mode;
+    private String mEncodedPrivateKey, mEncodedReceivingKey, mEncodedChangeKey, mEncodedAccountKey, mEncodedAddressKey;
+    private String mSeed;
+    private int mKeyType;
+    private String mKeysToLoad[];
     private int mSeedEntropyBytes;
     private long mRecoverDate;
     private boolean mSeedIsBackedUp;
     private int mCurrentWalletIndex;
     private boolean mSeedBackupOnly;
-    private int mDerivationPathMethodToLoad;
+    private int mDerivationPathMethod;
+    private long mAccountDerivationPath[];
+    private long mReceivingIndex, mChangeIndex;
     private Bitcoin mBitcoin;
     private boolean mFinishOnBack;
     private BitcoinService.CallBacks mServiceCallBacks;
@@ -130,9 +140,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private BroadcastReceiver mReceiver;
     private PaymentRequest mPaymentRequest;
     private boolean mIsSupportURI;
-    private Bitmap mQRCode;
+    private Bitmap mQRCode, mQRCode2;
     private boolean mDontUpdatePaymentAmount;
-    private TextWatcher mSeedWordWatcher, mAmountWatcher, mRequestAmountWatcher, mEnteredAmountWatcher;
+    private TextWatcher mSeedWordWatcher, mAmountWatcher, mEnteredAmountWatcher;
     private int mRequestedTransactionWalletIndex, mHistoryToShowWalletIndex;
     private String mRequestedTransactionID;
     private int mRequestedTransactionAttempts;
@@ -233,8 +243,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mScanner = new Scanner(this, new Handler(getMainLooper()));
         mPIN = null;
         mEncodedPrivateKey = null;
-        mKeyToLoad = null;
+        mKeyType = 0;
+        mKeysToLoad = null;
         mSeed = null;
+        mSeedIsBackedUp = false;
         mAddressBookAdapter = null;
         mAddressLabelAdapter = null;
         mDeleteIcon = getResources().getDrawable(R.drawable.baseline_delete_white_36dp);
@@ -243,6 +255,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mNegativeColorPaint.setColor(getResources().getColor(R.color.colorNegative));
         mEnteredAmountWatcher = null;
         mTextEntryMode = TextEntryMode.NONE;
+        mBIP32Mode = BIP32Mode.BIP32_CHAIN;
 
         mLargeButtonDownAnimation = new ScaleAnimation(1.0f, 0.97f, 1.0f, 0.90f,
           Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
@@ -521,7 +534,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     Log.i(logTag, "Display settings action received");
                     displaySettings();
                     break;
-                case ACTION_DISPLAY_REQUEST_PAYMENT:
+                case ACTION_PAYMENT_QR:
                     Log.i(logTag, "Display request payment action received");
                     displayReceive();
                     break;
@@ -557,6 +570,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         updateWallets(); // Update transaction amounts with new exchange rate
                     }
                     break;
+                case ACTION_RECEIVING_QR:
+                    if(mEncodedReceivingKey.equals(mEncodedChangeKey))
+                        displayPublicKeys();
+                    else
+                    {
+                        if(mQRCode2 == null)
+                            mQRCode2 = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
+                        CreateQRCode createChangeQR = new CreateQRCode(getApplicationContext(), mBitcoin,
+                          mEncodedChangeKey, mQRCode2, CreateQRCode.Type.CHANGE_CHAIN);
+                        createChangeQR.execute();
+                    }
+                    break;
+                case ACTION_CHANGE_QR:
+                    displayPublicKeys();
+                    break;
                 }
             }
         };
@@ -571,9 +599,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         filter.addAction(ACTION_DISPLAY_INFO);
         filter.addAction(ACTION_ACKNOWLEDGE_PAYMENT);
         filter.addAction(ACTION_CLEAR_PAYMENT);
-        filter.addAction(ACTION_DISPLAY_REQUEST_PAYMENT);
+        filter.addAction(ACTION_PAYMENT_QR);
         filter.addAction(ACTION_DISPLAY_ENTER_PAYMENT);
         filter.addAction(ACTION_EXCHANGE_RATE_UPDATED);
+        filter.addAction(ACTION_RECEIVING_QR);
+        filter.addAction(ACTION_CHANGE_QR);
         registerReceiver(mReceiver, filter);
 
         LayoutInflater inflater = getLayoutInflater();
@@ -644,8 +674,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         if(!settings.containsValue("add_wallet_message"))
         {
-            addPersistentMessage(getString(R.string.add_wallet_message));
-            settings.setLongValue("add_wallet_message", System.currentTimeMillis() / 1000);
             mAuthorizedTask = AuthorizedTask.INITIALIZE;
             displayAuthorize();
         }
@@ -875,7 +903,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case RECOVER_WALLET:
                 break;
-            case IMPORT_WALLET:
+            case IMPORT_BIP32:
                 break;
             case IMPORT_PRIVATE_KEY:
                 break;
@@ -913,6 +941,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             case HELP:
                 break;
             case SETTINGS:
+                break;
+            case PUBLIC_KEYS:
+                break;
+            case DERIVATION_PATH:
                 break;
         }
     }
@@ -1019,7 +1051,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case RECOVER_WALLET:
                 break;
-            case IMPORT_WALLET:
+            case IMPORT_BIP32:
                 break;
             case IMPORT_PRIVATE_KEY:
                 break;
@@ -1062,6 +1094,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             case SETTINGS:
                 pState.putString("State", "Settings");
+                break;
+            case PUBLIC_KEYS:
+                break;
+            case DERIVATION_PATH:
                 break;
         }
         super.onSaveInstanceState(pState);
@@ -1389,14 +1425,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             // Set listener for wallet controls
-            RelativeLayout controls = walletView.findViewById(R.id.walletControls);
+            ViewGroup controls = walletView.findViewById(R.id.walletControls);
             for(int index = 0; index < controls.getChildCount(); index++)
                 controls.getChildAt(index).setOnTouchListener(mButtonTouchListener);
 
             if(!wallet.isBackedUp && wallet.isPrivate)
-                walletView.findViewById(R.id.walletBackup).setVisibility(View.VISIBLE);
+                walletView.findViewById(R.id.backupWallet).setVisibility(View.VISIBLE);
             else
-                walletView.findViewById(R.id.walletBackup).setVisibility(View.GONE);
+                walletView.findViewById(R.id.backupWallet).setVisibility(View.GONE);
 
             if(wallet.isPrivate && wallet.isSynchronized && mBitcoin.chainIsLoaded() &&
               mBitcoin.initialBlockDownloadIsComplete() && mBitcoin.isInRoughSync())
@@ -1508,6 +1544,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 Log.i(logTag, "CoinLib pricing turned on");
             else
                 Log.i(logTag, "CoinLib pricing turned off");
+            break;
+        case R.id.purposeHard:
+        case R.id.coinHard:
+        case R.id.accountHard:
+        case R.id.receivingChainHard:
+        case R.id.changeChainHard:
+            updateDerivationPath();
             break;
         }
     }
@@ -1627,23 +1670,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             coinLibToggle.setChecked(true);
         coinLibToggle.setOnCheckedChangeListener(this);
 
-        // Add Wallet buttons
-        ViewGroup walletsView = settingsView.findViewById(R.id.walletsSettings);
-        TextButton button;
-        int offset = 0;
-
-        for(Wallet wallet : mBitcoin.wallets())
-        {
-            // Edit button
-            button = (TextButton)inflater.inflate(R.layout.button, walletsView, false);
-            button.setId(R.id.editWallet);
-            button.setTag(offset);
-            button.setText(wallet.name);
-            button.setOnTouchListener(mButtonTouchListener);
-            walletsView.addView(button);
-            offset++;
-        }
-
         showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.SETTINGS;
@@ -1705,53 +1731,52 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         switch(item.getItemId())
         {
-            case android.R.id.home:
-                if(mConfirmDeleteRunnable != null)
-                {
-                    mDelayHandler.removeCallbacks(mConfirmDeleteRunnable);
-                    mConfirmDeleteRunnable.run();
-                    mConfirmDeleteRunnable = null;
-                    mUndoDeleteRunnable = null;
-                }
+        case android.R.id.home:
+            if(mConfirmDeleteRunnable != null)
+            {
+                mDelayHandler.removeCallbacks(mConfirmDeleteRunnable);
+                mConfirmDeleteRunnable.run();
+                mConfirmDeleteRunnable = null;
+                mUndoDeleteRunnable = null;
+            }
 
-                if(mTextEntryMode != TextEntryMode.NONE)
-                {
-                    findViewById(R.id.amountDialog).setVisibility(View.GONE);
-                    findViewById(R.id.textDialog).setVisibility(View.GONE);
-                    findViewById(R.id.dateDialog).setVisibility(View.GONE);
-                    mTextEntryMode = TextEntryMode.NONE;
-                }
+            if(mTextEntryMode != TextEntryMode.NONE)
+            {
+                findViewById(R.id.amountDialog).setVisibility(View.GONE);
+                findViewById(R.id.textDialog).setVisibility(View.GONE);
+                findViewById(R.id.dateDialog).setVisibility(View.GONE);
+                mTextEntryMode = TextEntryMode.NONE;
+            }
 
-                if(mMode == Mode.AUTHORIZE && mAuthorizedTask == AuthorizedTask.INITIALIZE)
-                    showMessage(getString(R.string.must_create_pin), 2000);
-                else
-                    displayWallets();
-                return true;
-            case R.id.action_settings:
-                displaySettings();
-                return true;
-            case R.id.action_help:
-                displayHelp();
-                return true;
-            case R.id.action_info:
-                displayInfo();
-                return true;
+            if(mMode == Mode.AUTHORIZE && mAuthorizedTask == AuthorizedTask.INITIALIZE)
+                showMessage(getString(R.string.must_create_pin), 2000);
+            else
+                displayWallets();
+            return true;
+        case R.id.action_settings:
+            displaySettings();
+            return true;
+        case R.id.action_help:
+            displayHelp();
+            return true;
+        case R.id.action_info:
+            displayInfo();
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
     @Override
-    public void onRequestPermissionsResult(int pRequestCode, @NonNull String[] pPermissions, @NonNull int[] pGrantResults)
+    public void onRequestPermissionsResult(int pRequestCode, @NonNull String[] pPermissions,
+      @NonNull int[] pGrantResults)
     {
-        switch(pRequestCode)
+        if(pRequestCode == CAMERA_PERMISSION_REQUEST_CODE)
         {
-        case CAMERA_PERMISSION_REQUEST_CODE:
             if(pGrantResults[0] == PackageManager.PERMISSION_GRANTED)
-                displayScanner(ScanMode.SCAN_PAYMENT_CODE);
-            else
+                displayScanner(mScanMode);
+            else if(mScanMode == ScanMode.SCAN_PAYMENT_CODE)
                 displayEnterPaymentCode();
-            break;
         }
         super.onRequestPermissionsResult(pRequestCode, pPermissions, pGrantResults);
     }
@@ -2443,8 +2468,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onScannerResult(String pResult)
     {
-        if(mScanMode == ScanMode.SCAN_PAYMENT_CODE)
+        switch(mScanMode)
         {
+        case SCAN_PAYMENT_CODE:
             mPaymentRequest = mBitcoin.decodePaymentCode(pResult);
             if(mPaymentRequest != null && mPaymentRequest.format != PaymentRequest.FORMAT_INVALID)
                 displayPaymentDetails();
@@ -2453,26 +2479,42 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 showMessage(getString(R.string.invalid_payment_code), 2000);
                 displayWallets();
             }
-        }
-        else
-        {
+            break;
+        case SCAN_PRIVATE_KEY:
             mEncodedPrivateKey = pResult;
             switch(mBitcoin.isValidPrivateKey(mEncodedPrivateKey))
             {
-                case 0: // Valid
-                    displaySelectRecoverDate();
-                    break;
-                case 1 : // Invalid
-                    showMessage(getString(R.string.invalid_private_key), 2000);
-                    mEncodedPrivateKey = null;
-                    displayWallets();
-                    break;
-                case 2: // Not mainnet
-                    showMessage(getString(R.string.invalid_private_network), 2000);
-                    mEncodedPrivateKey = null;
-                    displayWallets();
-                    break;
+            case 0: // Valid
+                displaySelectRecoverDate();
+                break;
+            case 1 : // Invalid
+                showMessage(getString(R.string.invalid_private_key), 2000);
+                mEncodedPrivateKey = null;
+                displayWallets();
+                break;
+            case 2: // Not mainnet
+                showMessage(getString(R.string.invalid_private_network), 2000);
+                mEncodedPrivateKey = null;
+                displayWallets();
+                break;
             }
+            break;
+        case SCAN_RECEIVING_KEY:
+            mEncodedReceivingKey = pResult;
+            displayImportBIP32Key();
+            break;
+        case SCAN_CHANGE_KEY:
+            mEncodedChangeKey = pResult;
+            displayImportBIP32Key();
+            break;
+        case SCAN_ACCOUNT_KEY:
+            mEncodedAccountKey = pResult;
+            displayImportBIP32Key();
+            break;
+        case SCAN_ADDRESS_KEY:
+            mEncodedAddressKey = pResult;
+            displayImportBIP32Key();
+            break;
         }
     }
 
@@ -2500,15 +2542,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public synchronized void displayScanner(ScanMode pMode)
     {
+        mScanMode = pMode;
+
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
         {
             if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
               PackageManager.PERMISSION_GRANTED)
             {
                 // Request permission
-                String[] permissions = {Manifest.permission.CAMERA};
+                String[] permissions = { Manifest.permission.CAMERA };
                 requestPermissions(permissions, CAMERA_PERMISSION_REQUEST_CODE);
-                displayProgress();
                 return;
             }
         }
@@ -2521,15 +2564,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ActionBar actionBar = getSupportActionBar();
         if(actionBar != null)
         {
-            if(pMode == ScanMode.SCAN_PAYMENT_CODE)
+            actionBar.setTitle(" " + getString(R.string.scan));
+
+            switch(pMode)
             {
+            case SCAN_PAYMENT_CODE:
                 actionBar.setIcon(R.drawable.ic_send_black_36dp);
-                actionBar.setTitle(" " + getString(R.string.scan_payment_code));
-            }
-            else
-            {
+                break;
+            case SCAN_PRIVATE_KEY:
+            case SCAN_RECEIVING_KEY:
+            case SCAN_CHANGE_KEY:
+            case SCAN_ACCOUNT_KEY:
+            case SCAN_ADDRESS_KEY:
+            default:
                 actionBar.setIcon(R.drawable.ic_scan_black_36dp);
-                actionBar.setTitle(" " + getString(R.string.scan_private_key));
+                break;
             }
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
@@ -2540,17 +2589,33 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         scanView.findViewById(R.id.enterPaymentCode).setOnTouchListener(mButtonTouchListener);
         scanView.findViewById(R.id.openAddressBook).setOnTouchListener(mButtonTouchListener);
 
-        if(pMode != ScanMode.SCAN_PAYMENT_CODE)
+        switch(pMode)
         {
+        case SCAN_PAYMENT_CODE:
+            ((TextView)scanView.findViewById(R.id.scanTitle)).setText(R.string.scan_payment_code);
+            scanView.findViewById(R.id.enterPaymentCodeGroup).setVisibility(View.VISIBLE);
+            scanView.findViewById(R.id.openAddressBookGroup).setVisibility(View.VISIBLE);
+            break;
+        case SCAN_PRIVATE_KEY:
             ((TextView)scanView.findViewById(R.id.scanTitle)).setText(R.string.scan_private_key);
-            scanView.findViewById(R.id.enterPaymentCode).setVisibility(View.GONE);
-            scanView.findViewById(R.id.openAddressBook).setVisibility(View.GONE);
+            break;
+        case SCAN_RECEIVING_KEY:
+            ((TextView)scanView.findViewById(R.id.scanTitle)).setText(R.string.scan_receiving_key);
+            break;
+        case SCAN_CHANGE_KEY:
+            ((TextView)scanView.findViewById(R.id.scanTitle)).setText(R.string.scan_change_key);
+            break;
+        case SCAN_ACCOUNT_KEY:
+            ((TextView)scanView.findViewById(R.id.scanTitle)).setText(R.string.scan_account_key);
+            break;
+        case SCAN_ADDRESS_KEY:
+            ((TextView)scanView.findViewById(R.id.scanTitle)).setText(R.string.scan_address);
+            break;
         }
 
         showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
         mMode = Mode.SCAN;
-        mScanMode = pMode;
 
         ScannerView cameraView = scanView.findViewById(R.id.camera);
         cameraView.setCamera(mScanner);
@@ -2675,6 +2740,214 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             showView(R.id.dialog);
             mMode = Mode.RECEIVE;
         }
+    }
+
+    public synchronized void displayPublicKeys()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.baseline_vpn_key_black_36dp);
+            actionBar.setTitle(" " + getString(R.string.public_keys));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup publicKeysView = (ViewGroup)inflater.inflate(R.layout.public_keys, dialogView, false);
+        dialogView.addView(publicKeysView);
+
+        // Wallet name
+        ((TextView)publicKeysView.findViewById(R.id.walletName)).setText(mBitcoin.wallet(mCurrentWalletIndex).name);
+
+        // Receiving key
+        ((ImageView)publicKeysView.findViewById(R.id.receivingKeyImage)).setImageBitmap(mQRCode);
+        ((TextView)publicKeysView.findViewById(R.id.receivingKeyText)).setText(mEncodedReceivingKey);
+
+        // Change key
+        if(!mEncodedReceivingKey.equals(mEncodedChangeKey))
+        {
+            ((ImageView)publicKeysView.findViewById(R.id.changeKeyImage)).setImageBitmap(mQRCode2);
+            ((TextView)publicKeysView.findViewById(R.id.changeKeyText)).setText(mEncodedChangeKey);
+        }
+        else
+        {
+            // Hide change key and change description to only mention one key.
+            publicKeysView.findViewById(R.id.changeGroup).setVisibility(View.GONE);
+            ((TextView)publicKeysView.findViewById(R.id.description)).setText(R.string.public_keys_single_description);
+        }
+
+        showView(R.id.dialog);
+        mMode = Mode.PUBLIC_KEYS;
+    }
+
+    public synchronized void updateDerivationPath()
+    {
+        try
+        {
+            mAccountDerivationPath = new long[3];
+
+            mAccountDerivationPath[0] =
+              Integer.parseInt(((TextView)findViewById(R.id.purposeValue)).getText().toString());
+            if(((Switch)findViewById(R.id.purposeHard)).isChecked())
+                mAccountDerivationPath[0] += Bitcoin.HARDENED_INDEX;
+
+            mAccountDerivationPath[1] =
+              Integer.parseInt(((TextView)findViewById(R.id.coinValue)).getText().toString());
+            if(((Switch)findViewById(R.id.coinHard)).isChecked())
+                mAccountDerivationPath[1] += Bitcoin.HARDENED_INDEX;
+
+            mAccountDerivationPath[2] =
+              Integer.parseInt(((TextView)findViewById(R.id.accountValue)).getText().toString());
+            if(((Switch)findViewById(R.id.accountHard)).isChecked())
+                mAccountDerivationPath[2] += Bitcoin.HARDENED_INDEX;
+
+            ((TextView)findViewById(R.id.derivationPath)).setText(Bitcoin.derivationPathText(mAccountDerivationPath));
+
+            mReceivingIndex =
+              Integer.parseInt(((TextView)findViewById(R.id.receivingChainValue)).getText().toString());
+            if(((Switch)findViewById(R.id.receivingChainHard)).isChecked())
+                mReceivingIndex += Bitcoin.HARDENED_INDEX;
+
+            mChangeIndex = Integer.parseInt(((TextView)findViewById(R.id.changeChainValue)).getText().toString());
+            if(((Switch)findViewById(R.id.changeChainHard)).isChecked())
+                mChangeIndex += Bitcoin.HARDENED_INDEX;
+        }
+        catch(Exception pException)
+        {
+            showMessage(getString(R.string.invalid_derviation_path), 2000);
+        }
+    }
+
+    public synchronized void displayDerivationPath()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup dialogView = findViewById(R.id.dialog);
+
+        dialogView.removeAllViews();
+
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(null);
+            actionBar.setTitle(" " + getString(R.string.derivation_path));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup pathView = (ViewGroup)inflater.inflate(R.layout.derivation_path, dialogView, false);
+        dialogView.addView(pathView);
+
+        TextWatcher textWatcher = new TextWatcher()
+        {
+            @Override
+            public void beforeTextChanged(CharSequence pString, int pStart, int pCount, int pAfter) {}
+
+            @Override
+            public void onTextChanged(CharSequence pString, int pStart, int pBefore, int pCount)
+            {
+                updateDerivationPath();
+            }
+
+            @Override
+            public void afterTextChanged(Editable pString) {}
+        };
+
+        // Set values to default path
+        if(mAccountDerivationPath == null)
+            mAccountDerivationPath = mBitcoin.accountDerivationPath(Bitcoin.BIP0044_DERIVATION);
+
+        if(mAccountDerivationPath[0] >= Bitcoin.HARDENED_INDEX)
+        {
+            ((TextView)pathView.findViewById(R.id.purposeValue)).setText(String.format(Locale.getDefault(), "%d",
+              mAccountDerivationPath[0] - Bitcoin.HARDENED_INDEX));
+            ((Switch)pathView.findViewById(R.id.purposeHard)).setChecked(true);
+        }
+        else
+        {
+            ((TextView)pathView.findViewById(R.id.purposeValue)).setText(String.format(Locale.getDefault(), "%d",
+              mAccountDerivationPath[0]));
+            ((Switch)pathView.findViewById(R.id.purposeHard)).setChecked(false);
+        }
+        ((EditText)pathView.findViewById(R.id.purposeValue)).addTextChangedListener(textWatcher);
+        ((Switch)pathView.findViewById(R.id.purposeHard)).setOnCheckedChangeListener(this);
+
+        if(mAccountDerivationPath[1] >= Bitcoin.HARDENED_INDEX)
+        {
+            ((TextView)pathView.findViewById(R.id.coinValue)).setText(String.format(Locale.getDefault(), "%d",
+              mAccountDerivationPath[1] - Bitcoin.HARDENED_INDEX));
+            ((Switch)pathView.findViewById(R.id.coinHard)).setChecked(true);
+        }
+        else
+        {
+            ((TextView)pathView.findViewById(R.id.coinValue)).setText(String.format(Locale.getDefault(), "%d",
+              mAccountDerivationPath[1]));
+            ((Switch)pathView.findViewById(R.id.coinHard)).setChecked(false);
+        }
+        ((EditText)pathView.findViewById(R.id.coinValue)).addTextChangedListener(textWatcher);
+        ((Switch)pathView.findViewById(R.id.coinHard)).setOnCheckedChangeListener(this);
+
+        if(mAccountDerivationPath[2] >= Bitcoin.HARDENED_INDEX)
+        {
+            ((TextView)pathView.findViewById(R.id.accountValue)).setText(String.format(Locale.getDefault(), "%d",
+              mAccountDerivationPath[2] - Bitcoin.HARDENED_INDEX));
+            ((Switch)pathView.findViewById(R.id.accountHard)).setChecked(true);
+        }
+        else
+        {
+            ((TextView)pathView.findViewById(R.id.accountValue)).setText(String.format(Locale.getDefault(), "%d",
+              mAccountDerivationPath[2]));
+            ((Switch)pathView.findViewById(R.id.accountHard)).setChecked(false);
+        }
+        ((EditText)pathView.findViewById(R.id.accountValue)).addTextChangedListener(textWatcher);
+        ((Switch)pathView.findViewById(R.id.accountHard)).setOnCheckedChangeListener(this);
+
+        ((TextView)pathView.findViewById(R.id.derivationPath))
+          .setText(Bitcoin.derivationPathText(mAccountDerivationPath));
+
+        mReceivingIndex = 0;
+        if(mReceivingIndex >= Bitcoin.HARDENED_INDEX)
+        {
+            ((TextView)pathView.findViewById(R.id.receivingChainValue)).setText(String.format(Locale.getDefault(),
+              "%d",
+              mReceivingIndex - Bitcoin.HARDENED_INDEX));
+            ((Switch)pathView.findViewById(R.id.receivingChainHard)).setChecked(true);
+        }
+        else
+        {
+            ((TextView)pathView.findViewById(R.id.receivingChainValue)).setText(String.format(Locale.getDefault(),
+              "%d",
+              mReceivingIndex));
+            ((Switch)pathView.findViewById(R.id.receivingChainHard)).setChecked(false);
+        }
+        ((EditText)pathView.findViewById(R.id.receivingChainValue)).addTextChangedListener(textWatcher);
+        ((Switch)pathView.findViewById(R.id.receivingChainHard)).setOnCheckedChangeListener(this);
+
+        mChangeIndex = 1;
+        if(mChangeIndex >= Bitcoin.HARDENED_INDEX)
+        {
+            ((TextView)pathView.findViewById(R.id.changeChainValue)).setText(String.format(Locale.getDefault(),
+              "%d",
+              mChangeIndex - Bitcoin.HARDENED_INDEX));
+            ((Switch)pathView.findViewById(R.id.changeChainHard)).setChecked(true);
+        }
+        else
+        {
+            ((TextView)pathView.findViewById(R.id.changeChainValue)).setText(String.format(Locale.getDefault(),
+              "%d",
+              mChangeIndex));
+            ((Switch)pathView.findViewById(R.id.changeChainHard)).setChecked(false);
+        }
+        ((EditText)pathView.findViewById(R.id.changeChainValue)).addTextChangedListener(textWatcher);
+        ((Switch)pathView.findViewById(R.id.changeChainHard)).setOnCheckedChangeListener(this);
+
+        pathView.findViewById(R.id.acceptDerivationPath).setOnTouchListener(mButtonTouchListener);
+
+        showView(R.id.dialog);
+        mPreviousMode = mMode;
+        mMode = Mode.DERIVATION_PATH;
     }
 
     public synchronized void displayAddressLabels()
@@ -2965,10 +3238,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
-        mMode = Mode.IMPORT_WALLET;
+        mMode = Mode.IMPORT_BIP32;
     }
 
-    public synchronized void displayEnterImportKey()
+    public synchronized void displayImportBIP32Key()
     {
         LayoutInflater inflater = getLayoutInflater();
         ViewGroup dialogView = findViewById(R.id.dialog);
@@ -2979,12 +3252,68 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
           false);
         dialogView.addView(importView);
 
-        importView.findViewById(R.id.loadKey).setOnTouchListener(mButtonTouchListener);
+        Spinner typeSpinner = importView.findViewById(R.id.typeSpinner);
+        String descriptions[] = getResources().getStringArray(R.array.xpub_type_descriptions);
+
+        switch(mBIP32Mode)
+        {
+        case BIP32_CHAIN:
+            typeSpinner.setSelection(0);
+            ((TextView)findViewById(R.id.typeDescription)).setText(descriptions[0]);
+            findViewById(R.id.accountKeyText).setVisibility(View.GONE);
+            findViewById(R.id.accountKeyLabel).setVisibility(View.GONE);
+            findViewById(R.id.receivingKeyText).setVisibility(View.VISIBLE);
+            findViewById(R.id.receivingKeyLabel).setVisibility(View.VISIBLE);
+            findViewById(R.id.changeKeyText).setVisibility(View.VISIBLE);
+            findViewById(R.id.changeKeyLabel).setVisibility(View.VISIBLE);
+            findViewById(R.id.addressText).setVisibility(View.GONE);
+            findViewById(R.id.addressLabel).setVisibility(View.GONE);
+            if(mEncodedReceivingKey != null)
+                ((TextView)findViewById(R.id.receivingKeyText)).setText(mEncodedReceivingKey);
+            if(mEncodedChangeKey != null)
+                ((TextView)findViewById(R.id.changeKeyText)).setText(mEncodedChangeKey);
+            break;
+        case BIP32_ACCOUNT:
+            typeSpinner.setSelection(1);
+            ((TextView)findViewById(R.id.typeDescription)).setText(descriptions[1]);
+            findViewById(R.id.accountKeyText).setVisibility(View.VISIBLE);
+            findViewById(R.id.accountKeyLabel).setVisibility(View.VISIBLE);
+            findViewById(R.id.receivingKeyText).setVisibility(View.GONE);
+            findViewById(R.id.receivingKeyLabel).setVisibility(View.GONE);
+            findViewById(R.id.changeKeyText).setVisibility(View.GONE);
+            findViewById(R.id.changeKeyLabel).setVisibility(View.GONE);
+            findViewById(R.id.addressText).setVisibility(View.GONE);
+            findViewById(R.id.addressLabel).setVisibility(View.GONE);
+            if(mEncodedAccountKey != null)
+                ((TextView)findViewById(R.id.accountKeyText)).setText(mEncodedAccountKey);
+            break;
+        case BIP32_ADDRESS:
+            typeSpinner.setSelection(2);
+            ((TextView)findViewById(R.id.typeDescription)).setText(descriptions[2]);
+            findViewById(R.id.accountKeyText).setVisibility(View.GONE);
+            findViewById(R.id.accountKeyLabel).setVisibility(View.GONE);
+            findViewById(R.id.receivingKeyText).setVisibility(View.GONE);
+            findViewById(R.id.receivingKeyLabel).setVisibility(View.GONE);
+            findViewById(R.id.changeKeyText).setVisibility(View.GONE);
+            findViewById(R.id.changeKeyLabel).setVisibility(View.GONE);
+            findViewById(R.id.addressText).setVisibility(View.VISIBLE);
+            findViewById(R.id.addressLabel).setVisibility(View.VISIBLE);
+            if(mEncodedAddressKey != null)
+                ((TextView)findViewById(R.id.addressText)).setText(mEncodedAddressKey);
+            break;
+        }
+
+        typeSpinner.setOnItemSelectedListener(this);
+
+        importView.findViewById(R.id.scanReceivingKey).setOnTouchListener(mButtonTouchListener);
+        importView.findViewById(R.id.scanChangeKey).setOnTouchListener(mButtonTouchListener);
+        importView.findViewById(R.id.scanAccountKey).setOnTouchListener(mButtonTouchListener);
+        importView.findViewById(R.id.scanAddressKey).setOnTouchListener(mButtonTouchListener);
+        importView.findViewById(R.id.loadBIP32Key).setOnTouchListener(mButtonTouchListener);
 
         showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
-        focusOnText((EditText)dialogView.findViewById(R.id.importText));
-        mMode = Mode.IMPORT_WALLET;
+        mMode = Mode.IMPORT_BIP32;
     }
 
     public synchronized void displayCreateWallet()
@@ -3009,23 +3338,48 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         createWallet.findViewById(R.id.verifySeedSaved).setOnTouchListener(mButtonTouchListener);
 
         mSeedIsBackedUp = false;
-        mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION;
+        mDerivationPathMethod = Bitcoin.BIP0044_DERIVATION;
+        mAccountDerivationPath = Bitcoin.accountDerivationPath(mDerivationPathMethod, mBitcoin.coinIndex());
+        mReceivingIndex = 0;
+        mChangeIndex = 1;
         mSeedBackupOnly = false;
+
+        // Derivation path
+        Spinner derivationMethodSpinner = createWallet.findViewById(R.id.derivationSpinner);
+        derivationMethodSpinner.setOnItemSelectedListener(this);
+
+        switch(mBitcoin.chain())
+        {
+        default:
+        case Bitcoin.CHAIN_UNKNOWN:
+            derivationMethodSpinner.setSelection(0);
+            break;
+        case Bitcoin.CHAIN_ABC:
+            derivationMethodSpinner.setSelection(1);
+            break;
+        case Bitcoin.CHAIN_SV:
+            derivationMethodSpinner.setSelection(2);
+            break;
+        }
+
+        ((TextView)createWallet.findViewById(R.id.derivationPath))
+          .setText(Bitcoin.derivationPathText(mAccountDerivationPath));
 
         Spinner entropy = createWallet.findViewById(R.id.seedEntropy);
         entropy.setOnItemSelectedListener(this);
 
         int entropyPosition = 0;
-        if(mSeedEntropyBytes != 0)
+        if(mSeedEntropyBytes == 0)
+            mSeedEntropyBytes = 24;
+        mSeed = mBitcoin.generateMnemonicSeed(mSeedEntropyBytes);
+        mRecoverDate = System.currentTimeMillis() / 1000L;
+        int[] values = getResources().getIntArray(R.array.mnemonic_seed_length_values);
+        int offset = 0;
+        for(int value : values)
         {
-            int[] values = getResources().getIntArray(R.array.mnemonic_seed_length_values);
-            int offset = 0;
-            for(int value : values)
-            {
-                if(value == mSeedEntropyBytes)
-                    entropyPosition = offset;
-                offset++;
-            }
+            if(value == mSeedEntropyBytes)
+                entropyPosition = offset;
+            offset++;
         }
         entropy.setSelection(entropyPosition);
 
@@ -3064,6 +3418,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     mSeedEntropyBytes = values[pPosition];
                     mSeed = mBitcoin.generateMnemonicSeed(mSeedEntropyBytes);
                     mSeedIsBackedUp = false;
+                    mRecoverDate = System.currentTimeMillis() / 1000L;
                 }
                 ((TextView)findViewById(R.id.seed)).setText(mSeed);
             }
@@ -3184,6 +3539,87 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     break;
                 }
             }
+        }
+        else if(pParent.getId() == R.id.typeSpinner)
+        {
+            String descriptions[] = getResources().getStringArray(R.array.xpub_type_descriptions);
+            switch(pPosition)
+            {
+            case 0: // Chain
+                mBIP32Mode = BIP32Mode.BIP32_CHAIN;
+                ((TextView)findViewById(R.id.typeDescription)).setText(descriptions[pPosition]);
+                findViewById(R.id.accountKeyText).setVisibility(View.GONE);
+                findViewById(R.id.accountKeyLabel).setVisibility(View.GONE);
+                findViewById(R.id.receivingKeyText).setVisibility(View.VISIBLE);
+                findViewById(R.id.receivingKeyLabel).setVisibility(View.VISIBLE);
+                findViewById(R.id.changeKeyText).setVisibility(View.VISIBLE);
+                findViewById(R.id.changeKeyLabel).setVisibility(View.VISIBLE);
+                findViewById(R.id.addressText).setVisibility(View.GONE);
+                findViewById(R.id.addressLabel).setVisibility(View.GONE);
+                break;
+            case 1: // Account
+                mBIP32Mode = BIP32Mode.BIP32_ACCOUNT;
+                ((TextView)findViewById(R.id.typeDescription)).setText(descriptions[pPosition]);
+                findViewById(R.id.accountKeyText).setVisibility(View.VISIBLE);
+                findViewById(R.id.accountKeyLabel).setVisibility(View.VISIBLE);
+                findViewById(R.id.receivingKeyText).setVisibility(View.GONE);
+                findViewById(R.id.receivingKeyLabel).setVisibility(View.GONE);
+                findViewById(R.id.changeKeyText).setVisibility(View.GONE);
+                findViewById(R.id.changeKeyLabel).setVisibility(View.GONE);
+                findViewById(R.id.addressText).setVisibility(View.GONE);
+                findViewById(R.id.addressLabel).setVisibility(View.GONE);
+                break;
+            case 2: // Address
+                mBIP32Mode = BIP32Mode.BIP32_ADDRESS;
+                ((TextView)findViewById(R.id.typeDescription)).setText(descriptions[pPosition]);
+                findViewById(R.id.accountKeyText).setVisibility(View.GONE);
+                findViewById(R.id.accountKeyLabel).setVisibility(View.GONE);
+                findViewById(R.id.receivingKeyText).setVisibility(View.GONE);
+                findViewById(R.id.receivingKeyLabel).setVisibility(View.GONE);
+                findViewById(R.id.changeKeyText).setVisibility(View.GONE);
+                findViewById(R.id.changeKeyLabel).setVisibility(View.GONE);
+                findViewById(R.id.addressText).setVisibility(View.VISIBLE);
+                findViewById(R.id.addressLabel).setVisibility(View.VISIBLE);
+                break;
+            default:
+                break;
+            }
+        }
+        else if(pParent.getId() == R.id.derivationSpinner)
+        {
+            switch(pPosition)
+            {
+            default:
+            case 0: // BIP-0044 Standard
+                mDerivationPathMethod = Bitcoin.BIP0044_DERIVATION;
+                mAccountDerivationPath = Bitcoin.accountDerivationPath(mDerivationPathMethod, Bitcoin.COIN_DEFAULT);
+                break;
+            case 1: // BIP-0044 BCH
+                mDerivationPathMethod = Bitcoin.BIP0044_DERIVATION;
+                mAccountDerivationPath = Bitcoin.accountDerivationPath(mDerivationPathMethod, Bitcoin.COIN_ABC);
+                break;
+            case 2: // BIP-0044 BSV
+                mDerivationPathMethod = Bitcoin.BIP0044_DERIVATION;
+                mAccountDerivationPath = Bitcoin.accountDerivationPath(mDerivationPathMethod, Bitcoin.COIN_SV);
+                break;
+            case 3: // BIP-0032
+                mDerivationPathMethod = Bitcoin.BIP0032_DERIVATION;
+                mAccountDerivationPath = mBitcoin.accountDerivationPath(mDerivationPathMethod);
+                break;
+            case 4: // Simple
+                mDerivationPathMethod = Bitcoin.SIMPLE_DERIVATION;
+                mAccountDerivationPath = mBitcoin.accountDerivationPath(mDerivationPathMethod);
+                break;
+            case 5: // Custom
+                mDerivationPathMethod = Bitcoin.CUSTOM_DERIVATION;
+                mAccountDerivationPath = null;
+                break;
+            }
+
+            if(mAccountDerivationPath == null)
+                ((TextView)findViewById(R.id.derivationPath)).setText(getString(R.string.to_be_determined));
+            else
+                ((TextView)findViewById(R.id.derivationPath)).setText(mBitcoin.derivationPathText(mAccountDerivationPath));
         }
     }
 
@@ -3438,7 +3874,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         else
                         {
                             mAuthorizedTask = AuthorizedTask.ADD_KEY;
-                            mKeyToLoad = null;
+                            mKeysToLoad = null;
                             mEncodedPrivateKey = null;
                             mSeedIsBackedUp = true;
                             mRecoverDate = System.currentTimeMillis() / 1000L;
@@ -3478,6 +3914,32 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         dialogView.addView(enterSeed);
 
         enterSeed.findViewById(R.id.importSeed).setOnTouchListener(mButtonTouchListener);
+
+        // Derivation path
+        Spinner derivationMethodSpinner = enterSeed.findViewById(R.id.derivationSpinner);
+        derivationMethodSpinner.setOnItemSelectedListener(this);
+
+        mDerivationPathMethod = Bitcoin.BIP0044_DERIVATION;
+        mAccountDerivationPath = mBitcoin.accountDerivationPath(mDerivationPathMethod);
+        mReceivingIndex = 0;
+        mChangeIndex = 1;
+
+        switch(mBitcoin.chain())
+        {
+        default:
+        case Bitcoin.CHAIN_UNKNOWN:
+            derivationMethodSpinner.setSelection(0);
+            break;
+        case Bitcoin.CHAIN_ABC:
+            derivationMethodSpinner.setSelection(1);
+            break;
+        case Bitcoin.CHAIN_SV:
+            derivationMethodSpinner.setSelection(2);
+            break;
+        }
+
+        ((TextView)enterSeed.findViewById(R.id.derivationPath))
+          .setText(Bitcoin.derivationPathText(mAccountDerivationPath));
 
         if(mSeedWordWatcher == null)
         {
@@ -3533,6 +3995,53 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         viewSeed.findViewById(R.id.verifySeedSaved).setOnTouchListener(mButtonTouchListener);
 
+        // Derivation path
+        Spinner derivationPathSpinner = viewSeed.findViewById(R.id.derivationSpinner);
+        derivationPathSpinner.setEnabled(false);
+
+        mDerivationPathMethod = mBitcoin.derivationPathMethod(mCurrentWalletIndex);
+        long chainPath[] = mBitcoin.derivationPath(mCurrentWalletIndex, 0);
+        mReceivingIndex = 0;
+        mChangeIndex = 1;
+
+        if(chainPath.length == 0)
+            mAccountDerivationPath = new long[0];
+        else
+        {
+            mAccountDerivationPath = new long[chainPath.length - 1];
+            System.arraycopy(chainPath, 0, mAccountDerivationPath, 0, mAccountDerivationPath.length);
+        }
+
+        ((TextView)viewSeed.findViewById(R.id.derivationPath))
+          .setText(Bitcoin.derivationPathText(mAccountDerivationPath));
+
+        switch(mDerivationPathMethod)
+        {
+        case Bitcoin.BIP0044_DERIVATION:
+        {
+            long coin = Bitcoin.derivationPathCoin(mAccountDerivationPath);
+            if(coin == Bitcoin.COIN_DEFAULT)
+                derivationPathSpinner.setSelection(0); // BIP-0044 Standard
+            else if(coin == Bitcoin.COIN_ABC)
+                derivationPathSpinner.setSelection(1); // BIP-0044 BCH
+            else if(coin == Bitcoin.COIN_SV)
+                derivationPathSpinner.setSelection(2); // BIP-0044 BSV
+            break;
+        }
+        case Bitcoin.BIP0032_DERIVATION:
+            derivationPathSpinner.setSelection(3);
+            break;
+        case Bitcoin.SIMPLE_DERIVATION:
+            derivationPathSpinner.setSelection(4);
+            break;
+        case Bitcoin.INDIVIDUAL_DERIVATION:
+        case Bitcoin.CUSTOM_DERIVATION:
+        default:
+            derivationPathSpinner.setSelection(5);
+            break;
+        }
+
+        // Seed
         mSeed = mBitcoin.seed(pPassCode, mCurrentWalletIndex);
         if(mSeed == null)
         {
@@ -3731,23 +4240,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             switch(mAuthorizedTask)
             {
-                case NONE:
-                    break;
-                case INITIALIZE:
-                    messageView.setText(getString(R.string.create_pin));
-                    break;
-                case ADD_KEY:
-                    messageView.setText(getString(R.string.add_wallet));
-                    break;
-                case BACKUP_KEY:
-                    messageView.setText(getString(R.string.backup_wallet));
-                    break;
-                case REMOVE_KEY:
-                    messageView.setText(getString(R.string.remove_wallet));
-                    break;
-                case SIGN_TRANSACTION:
-                    messageView.setText(getString(R.string.send_payment));
-                    break;
+            case NONE:
+                break;
+            case INITIALIZE:
+                messageView.setText(getString(R.string.create_pin));
+                break;
+            case ADD_KEY:
+                messageView.setText(getString(R.string.add_wallet));
+                break;
+            case BACKUP_KEY:
+                messageView.setText(getString(R.string.backup_wallet));
+                break;
+            case REMOVE_KEY:
+                messageView.setText(getString(R.string.remove_wallet));
+                break;
+            case SIGN_TRANSACTION:
+                messageView.setText(getString(R.string.send_payment));
+                break;
             }
         }
 
@@ -3779,11 +4288,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ViewGroup editWallet = (ViewGroup)inflater.inflate(R.layout.edit_wallet, dialogView, false);
 
         editWallet.findViewById(R.id.updateWalletName).setOnTouchListener(mButtonTouchListener);
+        editWallet.findViewById(R.id.updateGap).setOnTouchListener(mButtonTouchListener);
         editWallet.findViewById(R.id.backupWallet).setOnTouchListener(mButtonTouchListener);
+        editWallet.findViewById(R.id.displayPublicKeys).setOnTouchListener(mButtonTouchListener);
         editWallet.findViewById(R.id.removeWallet).setOnTouchListener(mButtonTouchListener);
 
         // Set Name
         ((EditText)editWallet.findViewById(R.id.name)).setText(wallet.name);
+
+        // Set Gap
+        ((EditText)editWallet.findViewById(R.id.addressGap))
+          .setText(String.format(Locale.getDefault(), "%d", mBitcoin.getGap(mCurrentWalletIndex)));
 
         if(!wallet.isPrivate)
             editWallet.findViewById(R.id.backupWallet).setVisibility(View.GONE);
@@ -4185,8 +4700,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             if(mQRCode == null)
                 mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
             mIsSupportURI = true;
-            CreateAddressTask task = new CreateAddressTask(getApplicationContext(), mBitcoin, mPaymentRequest,
-              mQRCode);
+            CreateQRCode task = new CreateQRCode(getApplicationContext(), mBitcoin, mPaymentRequest.uri,
+              mQRCode, CreateQRCode.Type.PAYMENT_CODE);
             task.execute();
             break;
         }
@@ -4211,14 +4726,56 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 mSeed = null;
                 displayWallets();
             }
-            else
+            else if(mDerivationPathMethod == Bitcoin.CUSTOM_DERIVATION)
+                displayDerivationPath();
+            else // Authorize creation
             {
                 mAuthorizedTask = AuthorizedTask.ADD_KEY;
-                mKeyToLoad = null;
+                mKeysToLoad = null;
                 mEncodedPrivateKey = null;
                 mRecoverDate = System.currentTimeMillis() / 1000L;
                 displayAuthorize();
             }
+            break;
+        case R.id.acceptDerivationPath:
+            try
+            {
+                mAccountDerivationPath = new long[3];
+
+                mAccountDerivationPath[0] =
+                  Integer.parseInt(((TextView)findViewById(R.id.purposeValue)).getText().toString());
+                if(((Switch)findViewById(R.id.purposeHard)).isChecked())
+                    mAccountDerivationPath[0] += Bitcoin.HARDENED_INDEX;
+
+                mAccountDerivationPath[1] =
+                  Integer.parseInt(((TextView)findViewById(R.id.coinValue)).getText().toString());
+                if(((Switch)findViewById(R.id.coinHard)).isChecked())
+                    mAccountDerivationPath[1] += Bitcoin.HARDENED_INDEX;
+
+                mAccountDerivationPath[2] =
+                  Integer.parseInt(((TextView)findViewById(R.id.accountValue)).getText().toString());
+                if(((Switch)findViewById(R.id.accountHard)).isChecked())
+                    mAccountDerivationPath[2] += Bitcoin.HARDENED_INDEX;
+
+                mReceivingIndex =
+                  Integer.parseInt(((TextView)findViewById(R.id.receivingChainValue)).getText().toString());
+                if(((Switch)findViewById(R.id.receivingChainHard)).isChecked())
+                    mReceivingIndex += Bitcoin.HARDENED_INDEX;
+
+                mChangeIndex = Integer.parseInt(((TextView)findViewById(R.id.changeChainValue)).getText().toString());
+                if(((Switch)findViewById(R.id.changeChainHard)).isChecked())
+                    mChangeIndex += Bitcoin.HARDENED_INDEX;
+            }
+            catch(Exception pException)
+            {
+                showMessage(getString(R.string.invalid_derviation_path), 2000);
+                break;
+            }
+
+            mAuthorizedTask = AuthorizedTask.ADD_KEY;
+            mKeysToLoad = null;
+            mEncodedPrivateKey = null;
+            displayAuthorize();
             break;
         case R.id.recoverWallet:
             displayRecoverWallet();
@@ -4281,16 +4838,20 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.importSeed:
         {
             mSeed = ((TextView)findViewById(R.id.seed)).getText().toString();
-            mDerivationPathMethodToLoad = Bitcoin.BIP0044_DERIVATION; // TODO Add options to specify this
-            mKeyToLoad = null;
+            mKeysToLoad = null;
             mEncodedPrivateKey = null;
             mSeedIsBackedUp = true;
 
             View invalidDescription = findViewById(R.id.invalidDescription);
             if(mBitcoin.seedIsValid(mSeed) || invalidDescription.getVisibility() == View.VISIBLE)
             {
-                mAuthorizedTask = AuthorizedTask.ADD_KEY;
-                displayAuthorize();
+                if(mDerivationPathMethod == Bitcoin.CUSTOM_DERIVATION)
+                    displayDerivationPath();
+                else
+                {
+                    mAuthorizedTask = AuthorizedTask.ADD_KEY;
+                    displayAuthorize();
+                }
             }
             else
                 invalidDescription.setVisibility(View.VISIBLE);
@@ -4326,16 +4887,56 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
 
             mRecoverDate = date.getTimeInMillis() / 1000L;
-            displayEnterImportKey();
+            displayImportBIP32Key();
             break;
         }
-        case R.id.loadKey: // Import BIP-0032 encoded key
+        case R.id.scanReceivingKey: // Scan receiving chain key
+            mEncodedReceivingKey = ((TextView)findViewById(R.id.receivingKeyText)).getText().toString();
+            mEncodedChangeKey = ((TextView)findViewById(R.id.changeKeyText)).getText().toString();
+            displayScanner(ScanMode.SCAN_RECEIVING_KEY);
+            break;
+        case R.id.scanChangeKey: // Scan change chain key
+            mEncodedReceivingKey = ((TextView)findViewById(R.id.receivingKeyText)).getText().toString();
+            mEncodedChangeKey = ((TextView)findViewById(R.id.changeKeyText)).getText().toString();
+            displayScanner(ScanMode.SCAN_CHANGE_KEY);
+            break;
+        case R.id.scanAccountKey: // Scan account key
+            mEncodedAccountKey = ((TextView)findViewById(R.id.accountKeyText)).getText().toString();
+            displayScanner(ScanMode.SCAN_ACCOUNT_KEY);
+            break;
+        case R.id.scanAddressKey: // Scan address key
+            mEncodedAddressKey = ((TextView)findViewById(R.id.addressText)).getText().toString();
+            displayScanner(ScanMode.SCAN_ADDRESS_KEY);
+            break;
+        case R.id.loadBIP32Key: // Import BIP-0032 encoded key(s)
         {
-            mAuthorizedTask = AuthorizedTask.ADD_KEY;
-            mKeyToLoad = ((EditText)findViewById(R.id.importText)).getText().toString();
-            mDerivationPathMethodToLoad = ((Spinner)findViewById(R.id.derivationMethodSpinner)).getSelectedItemPosition();
+            switch(mBIP32Mode)
+            {
+            case BIP32_CHAIN:
+                mKeyType = Bitcoin.BIP0032_CHAIN;
+                mKeysToLoad = new String[2];
+                mEncodedReceivingKey = ((TextView)findViewById(R.id.receivingKeyText)).getText().toString();
+                mEncodedChangeKey = ((TextView)findViewById(R.id.changeKeyText)).getText().toString();
+                mKeysToLoad[0] = mEncodedReceivingKey;
+                mKeysToLoad[1] = mEncodedChangeKey;
+                break;
+            case BIP32_ACCOUNT:
+                mKeyType = Bitcoin.BIP0032_ACCOUNT;
+                mKeysToLoad = new String[1];
+                mEncodedAccountKey = ((TextView)findViewById(R.id.accountKeyText)).getText().toString();
+                mKeysToLoad[0] = mEncodedAccountKey;
+                break;
+            case BIP32_ADDRESS:
+                mKeyType = Bitcoin.ADDRESS_ONLY;
+                mKeysToLoad = new String[1];
+                mEncodedAddressKey = ((TextView)findViewById(R.id.addressText)).getText().toString();
+                mKeysToLoad[0] = mEncodedAddressKey;
+            default:
+                break;
+            }
             mEncodedPrivateKey = null;
             mSeed = null;
+            mAuthorizedTask = AuthorizedTask.ADD_KEY;
             displayAuthorize();
             break;
         }
@@ -4350,6 +4951,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 showMessage(getString(R.string.failed_update_name), 2000);
             break;
         }
+        case R.id.updateGap:
+            EditText gapView = findViewById(R.id.addressGap);
+            if(gapView != null)
+            {
+                try
+                {
+                    int gap = Integer.parseInt(gapView.getText().toString());
+                    mBitcoin.setGap(mCurrentWalletIndex, gap);
+                }
+                catch(Exception pException)
+                {
+                    showMessage(getString(R.string.failed_update_gap), 2000);
+                }
+            }
+            else
+                showMessage(getString(R.string.failed_update_gap), 2000);
+            break;
         case R.id.backupWallet:
             mSeedBackupOnly = true;
             mAuthorizedTask = AuthorizedTask.BACKUP_KEY;
@@ -4476,10 +5094,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             showMessage(getString(R.string.seed_matches), 2000);
                             displayWallets();
                         }
+                        else if(mDerivationPathMethod == Bitcoin.CUSTOM_DERIVATION)
+                            displayDerivationPath();
                         else
                         {
                             mAuthorizedTask = AuthorizedTask.ADD_KEY;
-                            mKeyToLoad = null;
+                            mKeysToLoad = null;
                             mEncodedPrivateKey = null;
                             mSeedIsBackedUp = true;
                             mRecoverDate = System.currentTimeMillis() / 1000L;
@@ -4583,8 +5203,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.walletSend:
         {
-            ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
-            mCurrentWalletIndex = (int)walletView.getTag();
             Wallet wallet = mBitcoin.wallet(mCurrentWalletIndex);
             if(!wallet.isPrivate)
                 showMessage(getString(R.string.wallet_view_only), 2000);
@@ -4616,15 +5234,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 showMessage(getString(R.string.still_syncing), 2000);
             break;
         }
-        case R.id.walletBackup:
-        {
-            ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
-            mCurrentWalletIndex = (int)walletView.getTag();
-            mSeedBackupOnly = true;
-            mAuthorizedTask = AuthorizedTask.BACKUP_KEY;
-            displayAuthorize();
-            break;
-        }
         case R.id.scanPaymentCode:
             displayScanner(ScanMode.SCAN_PAYMENT_CODE);
             break;
@@ -4646,8 +5255,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mPreviousReceiveMode = mMode;
             displayProgress();
 
-            ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
-            mCurrentWalletIndex = (int)walletView.getTag();
             mPaymentRequest = new PaymentRequest();
             String address = mBitcoin.getNextReceiveAddress(mCurrentWalletIndex, 0);
             if(address == null)
@@ -4666,25 +5273,39 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 if(mQRCode == null)
                     mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
                 mIsSupportURI = false;
-                CreateAddressTask task = new CreateAddressTask(getApplicationContext(), mBitcoin, mPaymentRequest,
-                  mQRCode);
+                CreateQRCode task = new CreateQRCode(getApplicationContext(), mBitcoin, mPaymentRequest.uri,
+                  mQRCode, CreateQRCode.Type.PAYMENT_CODE);
                 task.execute();
             }
             break;
         }
-        case R.id.walletHistory:
+        case R.id.displayPublicKeys:
         {
-            ViewGroup walletView = (ViewGroup)pView.getParent().getParent().getParent();
-            mCurrentWalletIndex = (int)walletView.getTag();
+            mPreviousReceiveMode = mMode;
+            displayProgress();
+
+            mEncodedReceivingKey = mBitcoin.publicKey(mCurrentWalletIndex, 0);
+            mEncodedChangeKey = mBitcoin.publicKey(mCurrentWalletIndex, 1);
+
+            if(mEncodedReceivingKey == null || mEncodedChangeKey == null)
+            {
+                showMessage(getString(R.string.failed_to_get_public_keys), 2000);
+                break;
+            }
+
+            if(mQRCode == null)
+                mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
+            CreateQRCode createReceivingQR = new CreateQRCode(getApplicationContext(), mBitcoin, mEncodedReceivingKey,
+              mQRCode, CreateQRCode.Type.RECEIVING_CHAIN);
+            createReceivingQR.execute();
+            break;
+        }
+        case R.id.walletHistory:
             displayWalletHistory();
             break;
-        }
         case R.id.editWallet:
-        {
-            mCurrentWalletIndex = (int)pView.getTag();
             displayEditWallet();
             break;
-        }
         case R.id.walletTransaction:
         {
             TransactionData.ID id = (TransactionData.ID)pView.getTag();
@@ -4700,6 +5321,30 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 ClipData clip = ClipData.newPlainText("Bitcoin Cash Payment Code", mPaymentRequest.uri);
                 manager.setPrimaryClip(clip);
                 showMessage(getString(R.string.payment_code_clipboard), 2000);
+            }
+            break;
+        }
+        case R.id.receivingKeyImage:
+        case R.id.receivingKeyText:
+        {
+            ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+            if(manager != null)
+            {
+                ClipData clip = ClipData.newPlainText("Bitcoin Cash Public Key", mEncodedReceivingKey);
+                manager.setPrimaryClip(clip);
+                showMessage(getString(R.string.public_key_clipboard), 2000);
+            }
+            break;
+        }
+        case R.id.changeKeyImage:
+        case R.id.changeKeyText:
+        {
+            ClipboardManager manager = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+            if(manager != null)
+            {
+                ClipData clip = ClipData.newPlainText("Bitcoin Cash Public Key", mEncodedChangeKey);
+                manager.setPrimaryClip(clip);
+                showMessage(getString(R.string.public_key_clipboard), 2000);
             }
             break;
         }
@@ -4777,9 +5422,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     mPaymentRequest.amount = item.amount;
                     if(mQRCode == null)
                         mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
-                    CreatePaymentRequestTask task = new CreatePaymentRequestTask(getApplicationContext(), mBitcoin,
-                      mPaymentRequest, mQRCode);
-                    task.execute();
+                    if(!mPaymentRequest.encode())
+                        showMessage(getString(R.string.failed_generate_payment_code), 2000);
+                    else
+                    {
+                        CreateQRCode task = new CreateQRCode(getApplicationContext(), mBitcoin,
+                          mPaymentRequest.uri, mQRCode, CreateQRCode.Type.PAYMENT_CODE);
+                        task.execute();
+                    }
                 }
             }
             break;
@@ -4999,9 +5649,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 if(mQRCode == null)
                     mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
-                CreatePaymentRequestTask amountTask = new CreatePaymentRequestTask(getApplicationContext(), mBitcoin,
-                  mPaymentRequest, mQRCode);
-                amountTask.execute();
+                if(!mPaymentRequest.encode())
+                    showMessage(getString(R.string.failed_generate_payment_code), 2000);
+                else
+                {
+                    CreateQRCode task = new CreateQRCode(getApplicationContext(), mBitcoin,
+                      mPaymentRequest.uri, mQRCode, CreateQRCode.Type.PAYMENT_CODE);
+                    task.execute();
+                }
                 break;
             }
             case RECEIVE_LABEL:
@@ -5009,18 +5664,28 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 mPaymentRequest.setLabel(enteredText);
                 if(mQRCode == null)
                     mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
-                CreatePaymentRequestTask labelTask = new CreatePaymentRequestTask(getApplicationContext(), mBitcoin,
-                  mPaymentRequest, mQRCode);
-                labelTask.execute();
+                if(!mPaymentRequest.encode())
+                    showMessage(getString(R.string.failed_generate_payment_code), 2000);
+                else
+                {
+                    CreateQRCode task = new CreateQRCode(getApplicationContext(), mBitcoin,
+                      mPaymentRequest.uri, mQRCode, CreateQRCode.Type.PAYMENT_CODE);
+                    task.execute();
+                }
                 break;
             case RECEIVE_MESSAGE:
                 enteredText = enteredText.trim();
                 mPaymentRequest.setMessage(enteredText);
                 if(mQRCode == null)
                     mQRCode = Bitmap.createBitmap(Bitcoin.QR_WIDTH, Bitcoin.QR_WIDTH, Bitmap.Config.ARGB_8888);
-                CreatePaymentRequestTask messageTask = new CreatePaymentRequestTask(getApplicationContext(), mBitcoin,
-                  mPaymentRequest, mQRCode);
-                messageTask.execute();
+                if(!mPaymentRequest.encode())
+                    showMessage(getString(R.string.failed_generate_payment_code), 2000);
+                else
+                {
+                    CreateQRCode task = new CreateQRCode(getApplicationContext(), mBitcoin,
+                      mPaymentRequest.uri, mQRCode, CreateQRCode.Type.PAYMENT_CODE);
+                    task.execute();
+                }
                 break;
             case TRANSACTION_COMMENT:
                 enteredText = enteredText.trim();
@@ -5244,82 +5909,86 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             mPIN = null;
             switch(mAuthorizedTask)
             {
-                case INITIALIZE:
+            case INITIALIZE:
+            {
+                displayProgress();
+                String seed = mBitcoin.generateMnemonicSeed(24);
+                if(seed == null || seed.length() == 0)
                 {
-                    displayProgress();
-                    String seed = mBitcoin.generateMnemonicSeed(24);
-                    if(seed == null || seed.length() == 0)
+                    showMessage(getString(R.string.failed_generate_key), 2000);
+                    displayWallets();
+                    mService.stop();
+                    finish();
+                }
+                else
+                {
+                    mAccountDerivationPath = mBitcoin.accountDerivationPath(Bitcoin.BIP0044_DERIVATION);
+                    mReceivingIndex = 0;
+                    mChangeIndex = 1;
+                    CreateKeyTask task = new CreateKeyTask(getApplicationContext(), mBitcoin, pin, seed,
+                      Bitcoin.BIP0044_DERIVATION, mAccountDerivationPath, mReceivingIndex, mChangeIndex,
+                      false,System.currentTimeMillis() / 1000L, true);
+                    task.execute();
+                }
+                break;
+            }
+            case ADD_KEY:
+            {
+                displayProgress();
+                if(mKeysToLoad != null)
+                {
+                    ImportKeyTask task = new ImportKeyTask(getApplicationContext(), mBitcoin, pin, mKeyType,
+                      mKeysToLoad, mRecoverDate);
+                    task.execute();
+                    mKeysToLoad = null;
+                }
+                else if(mEncodedPrivateKey != null)
+                {
+                    ImportEncodedKeyTask task = new ImportEncodedKeyTask(getApplicationContext(), mBitcoin, pin,
+                      mEncodedPrivateKey, mRecoverDate);
+                    task.execute();
+                    mEncodedPrivateKey = null;
+                }
+                else
+                {
+                    CreateKeyTask task = new CreateKeyTask(getApplicationContext(), mBitcoin, pin, mSeed,
+                      mDerivationPathMethod, mAccountDerivationPath, mReceivingIndex, mChangeIndex, mSeedIsBackedUp,
+                      mRecoverDate, false);
+                    task.execute();
+                    mSeed = null;
+                }
+                break;
+            }
+            case BACKUP_KEY:
+                displayBackupWallet(pin);
+                break;
+            case REMOVE_KEY:
+            {
+                displayProgress();
+                RemoveKeyTask task = new RemoveKeyTask(this, mBitcoin, pin, mCurrentWalletIndex);
+                task.execute();
+                break;
+            }
+            case SIGN_TRANSACTION:
+            {
+                if(mPaymentRequest != null && mPaymentRequest.protocolDetails != null &&
+                  mPaymentRequest.protocolDetails.hasExpires())
+                {
+                    if(mPaymentRequest.protocolDetails.getExpires() <= (System.currentTimeMillis() / 1000L) + 5)
                     {
-                        showMessage(getString(R.string.failed_generate_key), 2000);
+                        showMessage(getString(R.string.request_expired), 2000);
+                        mPaymentRequest = null;
                         displayWallets();
-                        mService.stop();
-                        finish();
+                        break;
                     }
-                    else
-                    {
-                        CreateKeyTask task = new CreateKeyTask(getApplicationContext(), mBitcoin, pin, seed,
-                          Bitcoin.BIP0044_DERIVATION, false,
-                          System.currentTimeMillis() / 1000L);
-                        task.execute();
-                    }
-                    break;
                 }
-                case ADD_KEY:
-                {
-                    displayProgress();
-                    if(mKeyToLoad != null)
-                    {
-                        ImportKeyTask task = new ImportKeyTask(getApplicationContext(), mBitcoin, pin, mKeyToLoad,
-                          mDerivationPathMethodToLoad, mRecoverDate);
-                        task.execute();
-                        mKeyToLoad = null;
-                    }
-                    else if(mEncodedPrivateKey != null)
-                    {
-                        ImportEncodedKeyTask task = new ImportEncodedKeyTask(getApplicationContext(), mBitcoin, pin,
-                          mEncodedPrivateKey, mRecoverDate);
-                        task.execute();
-                        mEncodedPrivateKey = null;
-                    }
-                    else
-                    {
-                        CreateKeyTask task = new CreateKeyTask(getApplicationContext(), mBitcoin, pin, mSeed,
-                          mDerivationPathMethodToLoad, mSeedIsBackedUp, mRecoverDate);
-                        task.execute();
-                        mSeed = null;
-                    }
-                    break;
-                }
-                case BACKUP_KEY:
-                    displayBackupWallet(pin);
-                    break;
-                case REMOVE_KEY:
-                {
-                    displayProgress();
-                    RemoveKeyTask task = new RemoveKeyTask(this, mBitcoin, pin, mCurrentWalletIndex);
-                    task.execute();
-                    break;
-                }
-                case SIGN_TRANSACTION:
-                {
-                    if(mPaymentRequest != null && mPaymentRequest.protocolDetails != null &&
-                      mPaymentRequest.protocolDetails.hasExpires())
-                    {
-                        if(mPaymentRequest.protocolDetails.getExpires() <= (System.currentTimeMillis() / 1000L) + 5)
-                        {
-                            showMessage(getString(R.string.request_expired), 2000);
-                            mPaymentRequest = null;
-                            displayWallets();
-                            break;
-                        }
-                    }
 
-                    displayProgress();
-                    CreateTransactionTask task = new CreateTransactionTask(getApplicationContext(), mBitcoin, pin,
-                      mCurrentWalletIndex, mPaymentRequest);
-                    task.execute();
-                    break;
-                }
+                displayProgress();
+                CreateTransactionTask task = new CreateTransactionTask(getApplicationContext(), mBitcoin, pin,
+                  mCurrentWalletIndex, mPaymentRequest);
+                task.execute();
+                break;
+            }
             }
             break;
         }
@@ -5425,17 +6094,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case ADD_WALLET:
             mSeed = null;
-            mKeyToLoad = null;
+            mKeysToLoad = null;
             mEncodedPrivateKey = null;
             mRecoverDate = 0L;
             mSeedEntropyBytes = 0;
             break;
         case CREATE_WALLET:
         case RECOVER_WALLET:
-        case IMPORT_WALLET:
+        case IMPORT_BIP32:
         case IMPORT_PRIVATE_KEY:
             mSeed = null;
-            mKeyToLoad = null;
+            mKeysToLoad = null;
             mEncodedPrivateKey = null;
             mRecoverDate = 0L;
             mSeedEntropyBytes = 0;
@@ -5448,8 +6117,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayEditWallet();
             return;
         case EDIT_WALLET:
-            displaySettings();
-            return;
+            break;
         case TRANSACTION_HISTORY:
             break;
         case TRANSACTION:
@@ -5476,18 +6144,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case ENTER_PAYMENT_CODE:
             break;
         case CLIPBOARD_PAYMENT_CODE:
-                break;
+            break;
         case ENTER_PAYMENT_DETAILS:
             mDelayHandler.removeCallbacks(mRequestExpiresUpdater);
-            displayEnterPaymentCode();
-            return;
+            break;
         case AUTHORIZE:
             // Hide PIN entry
             switch(mAuthorizedTask)
             {
             case NONE:
                 mSeed = null;
-                mKeyToLoad = null;
+                mKeysToLoad = null;
                 mEncodedPrivateKey = null;
                 mRecoverDate = 0L;
                 mSeedEntropyBytes = 0;
@@ -5522,6 +6189,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case SETTINGS:
             break;
+        case PUBLIC_KEYS:
+            displayEditWallet();
+            return;
+        case DERIVATION_PATH:
+            if(mPreviousMode == Mode.VERIFY_SEED)
+                displayCreateWallet();
+            return;
         }
 
         displayWallets(); // Go back to main wallets view
