@@ -40,7 +40,7 @@ public class RemoveKeyTask extends AsyncTask<String, Integer, Integer>
     protected void onPostExecute(Integer pResult)
     {
         Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
-        finishIntent.setAction(MainActivity.ACTION_DISPLAY_SETTINGS);
+        finishIntent.setAction(MainActivity.ACTION_DISPLAY_WALLETS);
 
         // Send intent back to activity
         switch(pResult)
