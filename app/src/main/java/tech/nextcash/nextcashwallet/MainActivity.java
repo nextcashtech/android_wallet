@@ -2124,6 +2124,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     public synchronized void openTransaction(int pWalletOffset, String pTransactionHash, long pAmount)
     {
+        if(pTransactionHash == null)
+            return;
+
         if(mRequestedTransactionID != null && !mRequestedTransactionID.equals(pTransactionHash))
             mRequestedTransactionAttempts = 0;
         mRequestedTransactionWalletIndex = pWalletOffset;

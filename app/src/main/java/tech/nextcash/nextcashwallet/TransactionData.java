@@ -171,6 +171,9 @@ public class TransactionData
 
     public synchronized Item getData(String pTransactionID, long pAmount)
     {
+        if(pTransactionID == null)
+            return null;
+
         for(Item item : mItems)
             if(item.hash.equals(pTransactionID))
             {
