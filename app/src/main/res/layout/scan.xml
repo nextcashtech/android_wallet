@@ -13,7 +13,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         style="@style/HeadingText"
-        android:padding="5dp"
         android:text="@string/scan_payment_code"/>
 
     <tech.nextcash.nextcashwallet.ScannerView

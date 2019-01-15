@@ -13,7 +13,6 @@
         android:layout_height="wrap_content"
         style="@style/HeadingText"
         android:gravity="center"
-        android:padding="5dp"
         android:textAlignment="center"
         android:text="@string/receive_payment_code"/>
 

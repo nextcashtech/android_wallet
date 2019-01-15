@@ -8,7 +8,6 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
         android:text="@string/enter_wallet_seed"
         android:textAlignment="center"
         style="@style/HeadingText"/>
