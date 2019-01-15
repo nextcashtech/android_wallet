@@ -1428,12 +1428,14 @@ extern "C"
               pEnvironment->NewObjectArray((jsize)0, instance->jTransactionClass, NULL));
 
         if(hasPending)
-            pendingBalance = instance->daemon->monitor()->balance(chainKeys->begin(), chainKeys->end(), true);
+            pendingBalance = instance->daemon->monitor()->balance(chainKeys->begin(),
+              chainKeys->end(), true);
         else
             pendingBalance = balance;
 
         pEnvironment->SetObjectField(pWallet, instance->jWalletNameID,
-          pEnvironment->NewStringUTF(instance->daemon->keyStore()->name((unsigned int)pOffset).text()));
+          pEnvironment->NewStringUTF(instance->daemon->keyStore()
+          ->name((unsigned int)pOffset).text()));
         pEnvironment->SetBooleanField(pWallet, instance->jWalletIsPrivateID,
           (jboolean)instance->daemon->keyStore()->hasPrivate((unsigned int)pOffset));
         pEnvironment->SetBooleanField(pWallet, instance->jWalletIsSynchronizedID,
@@ -1473,7 +1475,7 @@ extern "C"
                 jobject wallet = pEnvironment->GetObjectArrayElement(wallets, pOffset);
                 pEnvironment->SetObjectField(wallet, instance->jWalletNameID, pName);
             }
-            instance->daemon->monitor()->incrementChange();
+            instance->daemon->monitor()->incrementChange(); // Trigger interface update
         }
 
         return result;
@@ -1488,7 +1490,7 @@ extern "C"
             return JNI_FALSE;
 
         daemon->keyStore()->setBackedUp((unsigned int)pOffset);
-        daemon->monitor()->incrementChange();
+        daemon->monitor()->incrementChange(); // Trigger interface update
 
         return (jboolean)savePublicKeys(daemon);
     }
@@ -1503,7 +1505,7 @@ extern "C"
             return JNI_FALSE;
 
         daemon->keyStore()->setGap((unsigned int)pOffset, pGap);
-        daemon->monitor()->incrementChange();
+        daemon->monitor()->refreshKeyStore(); // Add any new addresses to monitor.
 
         return (jboolean)savePublicKeys(daemon);
     }
