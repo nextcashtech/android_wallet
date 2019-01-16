@@ -33,22 +33,23 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.security.auth.x500.X500Principal;
 
 
-public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Integer>
+// Fetch BIP-0070 payment request data from server.
+public class GetPaymentRequest extends AsyncTask<String, Integer, Integer>
 {
-    public static final String logTag = "ProcessPaymentRequest";
+    public static final String logTag = "GetPaymentRequest";
 
     private Context mContext;
     private PaymentRequest mPaymentRequest;
     private URL mURL;
     private HttpURLConnection mConnection;
-    private PaymentRequestBufferProtocols.PaymentRequest mProtocolRequest;
 
     private static final String REQUEST_TYPE = "application/bitcoincash-paymentrequest";
 
-    private String mName, mMessage;
+    private String mMessage;
     private boolean mIsFailed;
 
-    public ProcessPaymentRequestTask(Context pContext, PaymentRequest pPaymentRequest)
+    // pPaymentRequest payment request in which to put received data.
+    public GetPaymentRequest(Context pContext, PaymentRequest pPaymentRequest)
     {
         mContext = pContext;
         mPaymentRequest = pPaymentRequest;
@@ -139,16 +140,16 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
 
                 // Parse out CN
                 String fields[] = principal.getName().split(",");
-                mName = null;
+                String name = null;
                 for(String field : fields)
                     if(field.startsWith("CN="))
                     {
-                        mName = field.substring(3);
-                        mPaymentRequest.label = mName;
+                        name = field.substring(3);
+                        mPaymentRequest.label = name;
                         break;
                     }
-                if(mName != null)
-                    Log.d(logTag, String.format("Certificate name : %s", mName));
+                if(name != null)
+                    Log.d(logTag, String.format("Certificate name : %s", name));
             }
 
             return true;
@@ -198,9 +199,13 @@ public class ProcessPaymentRequestTask extends AsyncTask<String, Integer, Intege
                 return false;
             }
 
-            mProtocolRequest = PaymentRequestBufferProtocols.PaymentRequest.parseFrom(mConnection.getInputStream());
+            PaymentRequestBufferProtocols.PaymentRequest request =
+              PaymentRequestBufferProtocols.PaymentRequest.parseFrom(mConnection.getInputStream());
             mPaymentRequest.protocolDetails =
-              PaymentRequestBufferProtocols.PaymentDetails.parseFrom(mProtocolRequest.getSerializedPaymentDetails());
+              PaymentRequestBufferProtocols.PaymentDetails.parseFrom(request.getSerializedPaymentDetails());
+
+            // TODO Verify BIP-0070 PKI certificate
+            //if(request.hasPkiType())
         }
         catch(IOException pException)
         {

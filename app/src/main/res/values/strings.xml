@@ -482,7 +482,7 @@
     <string name="failed_invalid_passcode">Invalid pass code</string>
     <string name="failed_invalid_seed">Invalid seed</string>
     <string name="failed_retrieve_seed">Failed to retrieve seed</string>
-    <string name="failed_payment_code">Failed to get payment code</string>
+    <string name="failed_payment_request">Failed to get payment request</string>
     <string name="failed_payment_amount">Failed to get payment amount</string>
     <string name="send_payment">Send Payment</string>
     <string name="payment_details">Payment Details</string>

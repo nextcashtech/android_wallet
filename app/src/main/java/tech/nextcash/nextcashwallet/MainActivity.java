@@ -93,7 +93,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static final String ACTION_DISPLAY_INFO = "DISPLAY_INFO";
     public static final String ACTION_PAYMENT_QR = "PAYMENT_QR";
     public static final String ACTION_DISPLAY_ENTER_PAYMENT = "DISPLAY_ENTER_PAYMENT";
-    public static final String ACTION_ACKNOWLEDGE_PAYMENT = "ACKNOWLEDGE_PAYMENT";
     public static final String ACTION_CLEAR_PAYMENT = "CLEAR_PAYMENT";
     public static final String ACTION_EXCHANGE_RATE_UPDATED = "EXCHANGE_RATE_UPDATED";
     public static final String ACTION_EXCHANGE_RATE_FIELD = "EXCHANGE_RATE";
@@ -542,20 +541,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     Log.i(logTag, "Display enter payment details action received");
                     displayPaymentDetails();
                     break;
-                case ACTION_ACKNOWLEDGE_PAYMENT:
-                    Log.i(logTag, "Acknowledge payment action received");
-                    if(mPaymentRequest != null && mPaymentRequest.protocolDetails != null &&
-                      mPaymentRequest.protocolDetails.hasPaymentUrl())
-                    {
-                        byte rawTransaction[] = pIntent.getExtras().getByteArray(ACTION_RAW_TRANSACTION_FIELD);
-                        FinishPaymentRequestTask finishPaymentRequestTask =
-                          new FinishPaymentRequestTask(getApplicationContext(), mBitcoin, mCurrentWalletIndex,
-                            mPaymentRequest, rawTransaction);
-                        finishPaymentRequestTask.execute();
-                    }
-                    else
-                        displayWallets();
-                    break;
                 case ACTION_CLEAR_PAYMENT:
                     Log.i(logTag, "Clear payment action received");
                     mPaymentRequest = null;
@@ -589,6 +574,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
         };
 
+        // Setup intent action filters.
         IntentFilter filter = new IntentFilter(ACTIVITY_ACTION);
         filter.addAction(ACTION_SHOW_MESSAGE);
         filter.addAction(ACTION_DISPLAY_WALLETS);
@@ -597,7 +583,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         filter.addAction(ACTION_DISPLAY_DIALOG);
         filter.addAction(ACTION_DISPLAY_SETTINGS);
         filter.addAction(ACTION_DISPLAY_INFO);
-        filter.addAction(ACTION_ACKNOWLEDGE_PAYMENT);
         filter.addAction(ACTION_CLEAR_PAYMENT);
         filter.addAction(ACTION_PAYMENT_QR);
         filter.addAction(ACTION_DISPLAY_ENTER_PAYMENT);
@@ -607,9 +592,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         registerReceiver(mReceiver, filter);
 
         LayoutInflater inflater = getLayoutInflater();
-
         RelativeLayout root = findViewById(R.id.root);
 
+        // Setup PIN entry view.
         View pinView = inflater.inflate(R.layout.pin_entry, root, false);
         pinView.setVisibility(View.GONE);
         pinView.findViewById(R.id.one).setOnTouchListener(mButtonTouchListener);
@@ -626,16 +611,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         pinView.findViewById(R.id.authorize).setOnTouchListener(mButtonTouchListener);
         root.addView(pinView);
 
+        // Setup text dialog.
         View textDialog = inflater.inflate(R.layout.text_dialog, root, false);
         textDialog.setVisibility(View.GONE);
         textDialog.findViewById(R.id.textDialogOkay).setOnTouchListener(mButtonTouchListener);
         root.addView(textDialog);
 
+        // Setup amount dialog.
         View amountDialog = inflater.inflate(R.layout.amount_dialog, root, false);
         amountDialog.setVisibility(View.GONE);
         amountDialog.findViewById(R.id.textDialogOkay).setOnTouchListener(mButtonTouchListener);
         root.addView(amountDialog);
 
+        // Setup date dialog.
         View dateDialog = inflater.inflate(R.layout.date_dialog, root, false);
         dateDialog.setVisibility(View.GONE);
         dateDialog.findViewById(R.id.dateDialogOkay).setOnTouchListener(mButtonTouchListener);
@@ -889,63 +877,63 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         switch(mMode)
         {
-            case LOADING_WALLETS:
-                break;
-            case LOADING_CHAIN:
-                break;
-            case IN_PROGRESS:
-                break;
-            case WALLETS:
-                break;
-            case ADD_WALLET:
-                break;
-            case CREATE_WALLET:
-                break;
-            case RECOVER_WALLET:
-                break;
-            case IMPORT_BIP32:
-                break;
-            case IMPORT_PRIVATE_KEY:
-                break;
-            case VERIFY_SEED:
-                break;
-            case BACKUP_WALLET:
-                break;
-            case EDIT_WALLET:
-                break;
-            case TRANSACTION_HISTORY:
-                displayWalletHistory(); // Reload
-                break;
-            case TRANSACTION:
-                if(mTransaction != null)
-                    openTransaction(mTransactionWalletIndex, mTransaction.hash, mTransaction.amount()); // Reload
-                break;
-            case SCAN:
-                break;
-            case RECEIVE:
-                break;
-            case ADDRESS_LABELS:
-                break;
-            case ADDRESS_BOOK:
-                break;
-            case ENTER_PAYMENT_CODE:
-                break;
-            case CLIPBOARD_PAYMENT_CODE:
-                break;
-            case ENTER_PAYMENT_DETAILS:
-                break;
-            case AUTHORIZE:
-                break;
-            case INFO:
-                break;
-            case HELP:
-                break;
-            case SETTINGS:
-                break;
-            case PUBLIC_KEYS:
-                break;
-            case DERIVATION_PATH:
-                break;
+        case LOADING_WALLETS:
+            break;
+        case LOADING_CHAIN:
+            break;
+        case IN_PROGRESS:
+            break;
+        case WALLETS:
+            break;
+        case ADD_WALLET:
+            break;
+        case CREATE_WALLET:
+            break;
+        case RECOVER_WALLET:
+            break;
+        case IMPORT_BIP32:
+            break;
+        case IMPORT_PRIVATE_KEY:
+            break;
+        case VERIFY_SEED:
+            break;
+        case BACKUP_WALLET:
+            break;
+        case EDIT_WALLET:
+            break;
+        case TRANSACTION_HISTORY:
+            displayWalletHistory(); // Reload
+            break;
+        case TRANSACTION:
+            if(mTransaction != null)
+                openTransaction(mTransactionWalletIndex, mTransaction.hash, mTransaction.amount()); // Reload
+            break;
+        case SCAN:
+            break;
+        case RECEIVE:
+            break;
+        case ADDRESS_LABELS:
+            break;
+        case ADDRESS_BOOK:
+            break;
+        case ENTER_PAYMENT_CODE:
+            break;
+        case CLIPBOARD_PAYMENT_CODE:
+            break;
+        case ENTER_PAYMENT_DETAILS:
+            break;
+        case AUTHORIZE:
+            break;
+        case INFO:
+            break;
+        case HELP:
+            break;
+        case SETTINGS:
+            break;
+        case PUBLIC_KEYS:
+            break;
+        case DERIVATION_PATH:
+            break;
         }
     }
 
@@ -1037,68 +1025,68 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         switch(mMode)
         {
-            case LOADING_WALLETS:
-                break;
-            case LOADING_CHAIN:
-                break;
-            case IN_PROGRESS:
-                break;
-            case WALLETS:
-                break;
-            case ADD_WALLET:
-                break;
-            case CREATE_WALLET:
-                break;
-            case RECOVER_WALLET:
-                break;
-            case IMPORT_BIP32:
-                break;
-            case IMPORT_PRIVATE_KEY:
-                break;
-            case VERIFY_SEED:
-                break;
-            case BACKUP_WALLET:
-                break;
-            case EDIT_WALLET:
-                break;
-            case TRANSACTION_HISTORY:
-                pState.putString("State", "History");
-                pState.putInt("Wallet", mCurrentWalletIndex);
-                break;
-            case TRANSACTION:
-                pState.putString("State", "Transaction");
-                pState.putString("Transaction", ((TextView)findViewById(R.id.id)).getText().toString());
-                pState.putInt("Wallet", mCurrentWalletIndex);
-                break;
-            case SCAN:
-                break;
-            case RECEIVE:
-                break;
-            case ADDRESS_LABELS:
-                break;
-            case ADDRESS_BOOK:
-                break;
-            case ENTER_PAYMENT_CODE:
-                break;
-            case CLIPBOARD_PAYMENT_CODE:
-                break;
-            case ENTER_PAYMENT_DETAILS:
-                break;
-            case AUTHORIZE:
-                break;
-            case INFO:
-                pState.putString("State", "Info");
-                break;
-            case HELP:
-                pState.putString("State", "Help");
-                break;
-            case SETTINGS:
-                pState.putString("State", "Settings");
-                break;
-            case PUBLIC_KEYS:
-                break;
-            case DERIVATION_PATH:
-                break;
+        case LOADING_WALLETS:
+            break;
+        case LOADING_CHAIN:
+            break;
+        case IN_PROGRESS:
+            break;
+        case WALLETS:
+            break;
+        case ADD_WALLET:
+            break;
+        case CREATE_WALLET:
+            break;
+        case RECOVER_WALLET:
+            break;
+        case IMPORT_BIP32:
+            break;
+        case IMPORT_PRIVATE_KEY:
+            break;
+        case VERIFY_SEED:
+            break;
+        case BACKUP_WALLET:
+            break;
+        case EDIT_WALLET:
+            break;
+        case TRANSACTION_HISTORY:
+            pState.putString("State", "History");
+            pState.putInt("Wallet", mCurrentWalletIndex);
+            break;
+        case TRANSACTION:
+            pState.putString("State", "Transaction");
+            pState.putString("Transaction", ((TextView)findViewById(R.id.id)).getText().toString());
+            pState.putInt("Wallet", mCurrentWalletIndex);
+            break;
+        case SCAN:
+            break;
+        case RECEIVE:
+            break;
+        case ADDRESS_LABELS:
+            break;
+        case ADDRESS_BOOK:
+            break;
+        case ENTER_PAYMENT_CODE:
+            break;
+        case CLIPBOARD_PAYMENT_CODE:
+            break;
+        case ENTER_PAYMENT_DETAILS:
+            break;
+        case AUTHORIZE:
+            break;
+        case INFO:
+            pState.putString("State", "Info");
+            break;
+        case HELP:
+            pState.putString("State", "Help");
+            break;
+        case SETTINGS:
+            pState.putString("State", "Settings");
+            break;
+        case PUBLIC_KEYS:
+            break;
+        case DERIVATION_PATH:
+            break;
         }
         super.onSaveInstanceState(pState);
     }
@@ -1203,31 +1191,31 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         switch(mBitcoin.status())
         {
-            default:
-            case 0: // Inactive
-                status.setText(R.string.inactive);
-                break;
-            case 1: // Loading Wallets
-                status.setText(R.string.loading_wallets);
-                break;
-            case 2: // Loading Chain
-                status.setText(R.string.loading_chain);
-                break;
-            case 3: // Finding peers
-                status.setText(R.string.finding_peers);
-                break;
-            case 4: // Connecting to peers
-                status.setText(R.string.connecting_to_peers);
-                break;
-            case 5: // Synchronizing
-                status.setText(R.string.requesting_blocks);
-                break;
-            case 6: // Synchronized
-                status.setText(R.string.monitoring);
-                break;
-            case 7: // Finding Transactions
-                status.setText(R.string.requesting_transactions);
-                break;
+        default:
+        case 0: // Inactive
+            status.setText(R.string.inactive);
+            break;
+        case 1: // Loading Wallets
+            status.setText(R.string.loading_wallets);
+            break;
+        case 2: // Loading Chain
+            status.setText(R.string.loading_chain);
+            break;
+        case 3: // Finding peers
+            status.setText(R.string.finding_peers);
+            break;
+        case 4: // Connecting to peers
+            status.setText(R.string.connecting_to_peers);
+            break;
+        case 5: // Synchronizing
+            status.setText(R.string.requesting_blocks);
+            break;
+        case 6: // Synchronized
+            status.setText(R.string.monitoring);
+            break;
+        case 7: // Finding Transactions
+            status.setText(R.string.requesting_transactions);
+            break;
         }
 
         TextView exchangeRate = findViewById(R.id.exchangeRate);
@@ -1583,14 +1571,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 switch(settings.intValue(Bitcoin.CHAIN_ID_NAME))
                 {
-                    default:
-                    case 0:
-                    case 2:
-                        chainSelection.setSelection(1); // SV
-                        break;
-                    case 1:
-                        chainSelection.setSelection(0); // ABC
-                        break;
+                default:
+                case 0:
+                case 2:
+                    chainSelection.setSelection(1); // SV
+                    break;
+                case 1:
+                    chainSelection.setSelection(0); // ABC
+                    break;
                 }
             }
             else
@@ -1838,7 +1826,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         if(mPaymentRequest == null)
         {
-            showMessage(getString(R.string.failed_payment_code), 2000);
+            showMessage(getString(R.string.failed_payment_request), 2000);
             displayWallets();
             return;
         }
@@ -1847,9 +1835,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         {
             displayProgress();
 
-            ProcessPaymentRequestTask processPaymentRequestTask = new ProcessPaymentRequestTask(this,
-              mPaymentRequest);
-            processPaymentRequestTask.execute();
+            GetPaymentRequest task = new GetPaymentRequest(this, mPaymentRequest);
+            task.execute();
             return;
         }
 
@@ -1917,13 +1904,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         String subtitle;
         switch(mPaymentRequest.type)
         {
-            default:
-            case PaymentRequest.TYPE_PUB_KEY_HASH:
-                subtitle = getString(R.string.pub_key_hash);
-                break;
-            case PaymentRequest.TYPE_SCRIPT_HASH:
-                subtitle = getString(R.string.script_hash);
-                break;
+        default:
+        case PaymentRequest.TYPE_PUB_KEY_HASH:
+            subtitle = getString(R.string.pub_key_hash);
+            break;
+        case PaymentRequest.TYPE_SCRIPT_HASH:
+            subtitle = getString(R.string.script_hash);
+            break;
         }
 
         ((TextView)sendView.findViewById(R.id.subtitle)).setText(subtitle);
@@ -2015,19 +2002,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                         switch(units.getSelectedItemPosition())
                         {
-                            case 0: // USD
-                                mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount /
-                                  mBitcoin.exchangeRate());
-                                break;
-                            case 1: // bits
-                                mPaymentRequest.amount = Bitcoin.satoshisFromBits(amount);
-                                break;
-                            case 2: // bitcoins
-                                mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount);
-                                break;
-                            default:
-                                mPaymentRequest.amount = 0;
-                                break;
+                        case 0: // USD
+                            mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount /
+                              mBitcoin.exchangeRate());
+                            break;
+                        case 1: // bits
+                            mPaymentRequest.amount = Bitcoin.satoshisFromBits(amount);
+                            break;
+                        case 2: // bitcoins
+                            mPaymentRequest.amount = Bitcoin.satoshisFromBitcoins(amount);
+                            break;
+                        default:
+                            mPaymentRequest.amount = 0;
+                            break;
                         }
 
                         satoshiAmount.setText(Bitcoin.satoshiText(mPaymentRequest.amount));
@@ -3395,14 +3382,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         switch(pUnitType)
         {
-            case Bitcoin.FIAT:
-                return mBitcoin.amountText(pSatoshis);
-            case Bitcoin.BITS:
-                return String.format(Locale.getDefault(), "%.2f", Bitcoin.bitsFromSatoshis(pSatoshis));
-            case Bitcoin.BITCOINS:
-                return String.format(Locale.getDefault(), "%.8f", Bitcoin.bitcoinsFromSatoshis(pSatoshis));
-            default:
-                return getString(R.string.not_available_abbreviation);
+        case Bitcoin.FIAT:
+            return mBitcoin.amountText(pSatoshis);
+        case Bitcoin.BITS:
+            return String.format(Locale.getDefault(), "%.2f", Bitcoin.bitsFromSatoshis(pSatoshis));
+        case Bitcoin.BITCOINS:
+            return String.format(Locale.getDefault(), "%.8f", Bitcoin.bitcoinsFromSatoshis(pSatoshis));
+        default:
+            return getString(R.string.not_available_abbreviation);
         }
     }
 
@@ -3472,16 +3459,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 switch(pPosition)
                 {
-                    case 0: // Priority
-                        mPaymentRequest.feeRate = 5.0;
-                        break;
-                    default:
-                    case 1: // Normal
-                        mPaymentRequest.feeRate = 2.0;
-                        break;
-                    case 2: // Low
-                        mPaymentRequest.feeRate = 1.0;
-                        break;
+                case 0: // Priority
+                    mPaymentRequest.feeRate = 5.0;
+                    break;
+                default:
+                case 1: // Normal
+                    mPaymentRequest.feeRate = 2.0;
+                    break;
+                case 2: // Low
+                    mPaymentRequest.feeRate = 1.0;
+                    break;
                 }
             }
 
@@ -4996,7 +4983,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
             else
             {
-                showMessage(getString(R.string.failed_payment_code), 2000);
+                showMessage(getString(R.string.failed_payment_request), 2000);
                 displayWallets();
             }
             break;
@@ -5987,7 +5974,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 }
 
                 displayProgress();
-                CreateTransactionTask task = new CreateTransactionTask(getApplicationContext(), mBitcoin, pin,
+                SendPaymentTask task = new SendPaymentTask(getApplicationContext(), mBitcoin, pin,
                   mCurrentWalletIndex, mPaymentRequest);
                 task.execute();
                 break;

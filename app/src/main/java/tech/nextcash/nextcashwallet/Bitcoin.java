@@ -810,13 +810,6 @@ public class Bitcoin
     public native SendResult sendOutputsPayment(int pWalletOffset, String pPassCode, Output[] pOutputs, double pFeeRate,
       boolean pUsePending, boolean pTransmit);
 
-    //TODO Generate a mnemonic sentence that can be used to create an HD key.
-    //public native String generateMnemonic();
-
-    //TODO Create an HD key from the mnemonic sentence and add it to be monitored.
-    // If pRecovered is true then the entire block chain will be searched for related transactions.
-    //public native void addKeyFromMnemonic(String pMnemonic, boolean pRecovered);
-
     public native boolean test();
 
     private static native void setupJNI();

@@ -20,15 +20,14 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
 
-public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer>
+public class SendPaymentTask extends AsyncTask<String, Integer, Integer>
 {
-    public static final String logTag = "FinishPaymentRequest";
+    public static final String logTag = "SendPaymentTask";
 
     private static final String PAYMENT_TYPE = "application/bitcoincash-payment";
     private static final String ACK_TYPE = "application/bitcoincash-paymentack";
@@ -36,46 +35,54 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
     private Context mContext;
     private Bitcoin mBitcoin;
     private int mWalletOffset;
-    private PaymentRequest mPaymentRequest;
+    private PaymentRequest mRequest;
+    private String mPassCode;
+    private SendResult mCreateResult;
+
     private HttpURLConnection mConnection;
-    private PaymentRequestBufferProtocols.Payment mProtocolPayment;
-    private PaymentRequestBufferProtocols.PaymentACK mProtocolAcknowledge;
     private String mMessage;
-    private byte mRawTransaction[];
 
-
-    public FinishPaymentRequestTask(Context pContext, Bitcoin pBitcoin, int pWalletOffset,
-      PaymentRequest pPaymentRequest, byte pRawTransaction[])
+    // Create transaction to send payment.
+    public SendPaymentTask(Context pContext, Bitcoin pBitcoin, String pPassCode, int pWalletOffset,
+      PaymentRequest pRequest)
     {
         mContext = pContext;
         mBitcoin = pBitcoin;
+        mPassCode = pPassCode;
         mWalletOffset = pWalletOffset;
-        mPaymentRequest = pPaymentRequest;
-        mMessage = null;
-        mRawTransaction = pRawTransaction;
+        mRequest = pRequest;
     }
 
-    private boolean sendPayment()
+    private boolean sendPaymentTransaction()
     {
-        if(!mPaymentRequest.protocolDetails.hasPaymentUrl())
-            return true;
+        if(mCreateResult.rawTransaction == null)
+        {
+            Log.e(logTag, "Returned null raw transaction when needed for payment URL");
+            return false;
+        }
+
+        if(!mRequest.protocolDetails.hasPaymentUrl())
+        {
+            Log.e(logTag, "Missing payment URL");
+            return false;
+        }
 
         try
         {
             // Build payment message
             PaymentRequestBufferProtocols.Payment.Builder paymentBuilder =
               PaymentRequestBufferProtocols.Payment.newBuilder();
-            if(mPaymentRequest.protocolDetails.hasMerchantData())
-                paymentBuilder.setMerchantData(mPaymentRequest.protocolDetails.getMerchantData());
+            if(mRequest.protocolDetails.hasMerchantData())
+                paymentBuilder.setMerchantData(mRequest.protocolDetails.getMerchantData());
 
-            if(mRawTransaction == null)
+            if(mCreateResult.rawTransaction == null)
             {
                 mMessage = mContext.getString(R.string.failed_transaction);
                 Log.e(logTag, "Failed to find payment transaction");
                 return false;
             }
 
-            paymentBuilder.addTransactions(ByteString.copyFrom(mRawTransaction));
+            paymentBuilder.addTransactions(ByteString.copyFrom(mCreateResult.rawTransaction));
 
             // Build refund output
             byte refundOutput[] = mBitcoin.getNextReceiveOutput(mWalletOffset, 0);
@@ -88,15 +95,15 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
 
             PaymentRequestBufferProtocols.Output.Builder refundBuilder =
               PaymentRequestBufferProtocols.Output.newBuilder();
-            refundBuilder.setAmount(mPaymentRequest.amount);
+            refundBuilder.setAmount(mRequest.amount);
             refundBuilder.setScript(ByteString.copyFrom(refundOutput));
 
             paymentBuilder.addRefundTo(refundBuilder.build());
 
-            mProtocolPayment = paymentBuilder.build();
+            PaymentRequestBufferProtocols.Payment payment = paymentBuilder.build();
 
             // Send payment info
-            URL url = new URL(mPaymentRequest.protocolDetails.getPaymentUrl());
+            URL url = new URL(mRequest.protocolDetails.getPaymentUrl());
             if(url.getProtocol().equals("https"))
                 mConnection = (HttpsURLConnection)url.openConnection();
             else if(url.getProtocol().equals("http"))
@@ -106,7 +113,7 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
             mConnection.setRequestProperty("user-agent", Bitcoin.userAgent());
             mConnection.setRequestMethod("POST");
 
-            mProtocolPayment.writeTo(mConnection.getOutputStream());
+            payment.writeTo(mConnection.getOutputStream());
             return true;
         }
         catch(MalformedURLException pException)
@@ -123,7 +130,7 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
         }
     }
 
-    private boolean checkAcknowledge()
+    private boolean checkPaymentAcknowledge()
     {
         try
         {
@@ -172,10 +179,11 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
                 return false;
             }
 
-            mProtocolAcknowledge = PaymentRequestBufferProtocols.PaymentACK.parseFrom(mConnection.getInputStream());
+            PaymentRequestBufferProtocols.PaymentACK acknowledge =
+              PaymentRequestBufferProtocols.PaymentACK.parseFrom(mConnection.getInputStream());
 
-            if(mProtocolAcknowledge.hasMemo())
-                mMessage = mProtocolAcknowledge.getMemo();
+            if(acknowledge.hasMemo())
+                mMessage = acknowledge.getMemo();
 
             return true;
         }
@@ -191,25 +199,95 @@ public class FinishPaymentRequestTask extends AsyncTask<String, Integer, Integer
     @Override
     protected Integer doInBackground(String... pStrings)
     {
-        if(!sendPayment())
-            return 1;
+        if(mRequest.protocolDetails != null && mRequest.specifiedOutputs != null)
+            mCreateResult = mBitcoin.sendOutputsPayment(mWalletOffset, mPassCode, mRequest.specifiedOutputs,
+              mRequest.feeRate, mRequest.requiresPending(), !mRequest.protocolDetails.hasPaymentUrl());
+        else if(mRequest.type == PaymentRequest.TYPE_PUB_KEY_HASH || mRequest.type == PaymentRequest.TYPE_SCRIPT_HASH)
+            mCreateResult = mBitcoin.sendStandardPayment(mWalletOffset, mPassCode, mRequest.address, mRequest.amount,
+              mRequest.feeRate, mRequest.requiresPending(), mRequest.sendMax);
+        else
+            mCreateResult = new SendResult(3);
 
-        if(!checkAcknowledge())
-            return 1;
+        if(mCreateResult.result != 0)
+            return mCreateResult.result;
 
-        return 0;
+        // Update transaction data
+        if(mCreateResult.transaction != null)
+        {
+            boolean updated = mBitcoin.updateTransactionData(mCreateResult.transaction, mWalletOffset);
+
+            String description = mRequest.description(" : ");
+            if(description != null && description.length() > 0)
+            {
+                if(mCreateResult.transaction.data.comment == null)
+                {
+                    mCreateResult.transaction.data.comment = description;
+                    updated = true;
+                }
+            }
+
+            if(updated)
+                mBitcoin.saveTransactionData();
+        }
+
+        // Send BIP-0070 payment transaction.
+        if(mRequest.protocolDetails != null && mRequest.protocolDetails.hasPaymentUrl())
+        {
+            if(!sendPaymentTransaction())
+                return 1;
+
+            if(!checkPaymentAcknowledge())
+                return 1;
+
+            return 0;
+        }
+        else
+            return mCreateResult.result;
     }
 
     @Override
     protected void onPostExecute(Integer pResult)
     {
         Intent finishIntent = new Intent(MainActivity.ACTIVITY_ACTION);
+
+        finishIntent.setAction(MainActivity.ACTION_CLEAR_PAYMENT);
+
         if(mMessage != null)
         {
             finishIntent.putExtra(MainActivity.ACTION_MESSAGE_STRING_FIELD, mMessage);
             finishIntent.putExtra(MainActivity.ACTION_MESSAGE_PERSISTENT_FIELD, true);
         }
-        finishIntent.setAction(MainActivity.ACTION_CLEAR_PAYMENT);
+        else
+        {
+            switch(pResult)
+            {
+            case 0: // Success
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.sent_payment);
+                break;
+            default:
+            case 1: // Unknown error
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_send_payment);
+                break;
+            case 2: // Insufficient Funds
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_insufficient_funds);
+                break;
+            case 3: // Invalid Address
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_invalid_address);
+                break;
+            case 4: // No Change Address
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_change_address);
+                break;
+            case 5: // Signing Failed
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_signing);
+                break;
+            case 6: // Below dust
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_dust);
+                break;
+            case 7: // Invalid outputs specified
+                finishIntent.putExtra(MainActivity.ACTION_MESSAGE_ID_FIELD, R.string.failed_outputs);
+                break;
+            }
+        }
 
         mContext.sendBroadcast(finishIntent);
         super.onPostExecute(pResult);
