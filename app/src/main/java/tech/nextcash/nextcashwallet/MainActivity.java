@@ -4022,6 +4022,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
+        gainLossView.findViewById(R.id.updateGainLossStartDate).setOnTouchListener(mButtonTouchListener);
+        gainLossView.findViewById(R.id.updateGainLossEndDate).setOnTouchListener(mButtonTouchListener);
+
         showView(R.id.nonScroll);
         mMode = Mode.GAIN_LOSS;
     }
@@ -5038,6 +5041,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case R.id.gainLossReport:
             displayGainLoss();
+            break;
+        case R.id.updateGainLossStartDate:
+            displayDateDialog(TextEntryMode.REPORT_START_DATE, mReportStartDate);
+            break;
+        case R.id.updateGainLossEndDate:
+            displayDateDialog(TextEntryMode.REPORT_END_DATE, mReportEndDate);
             break;
         case R.id.backupWallet:
             mSeedBackupOnly = true;
