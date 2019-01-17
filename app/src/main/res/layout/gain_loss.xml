@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        style="@style/HeadingText"
+        android:text="@string/gain_loss_report"/>
+
+    <TextView
+        android:id="@+id/subTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/title"
+        android:layout_centerHorizontal="true"
+        style="@style/SubHeadingText"/>
+
+    <RelativeLayout
+        android:id="@+id/startDateGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/subTitle">
+
+        <TextView
+            android:id="@+id/endDateLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            style="@style/SubHeadingText"
+            android:text="@string/start_date"/>
+
+        <TextView
+            android:id="@+id/startDate"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_toEndOf="@id/endDateLabel"
+            android:layout_toStartOf="@id/updateGainLossStartDate"
+            android:layout_centerVertical="true"
+            android:textAlignment="textEnd"/>
+
+        <tech.nextcash.nextcashwallet.TextButton
+            android:id="@+id/updateGainLossStartDate"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            style="@style/SmallButton"
+            android:text="@string/update"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/endDateGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/startDateGroup">
+
+        <TextView
+            android:id="@+id/startDateLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            style="@style/SubHeadingText"
+            android:text="@string/end_date"/>
+
+        <TextView
+            android:id="@+id/endDate"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_toEndOf="@id/startDateLabel"
+            android:layout_toStartOf="@id/updateGainLossEndDate"
+            android:layout_centerVertical="true"
+            android:textAlignment="textEnd"/>
+
+        <tech.nextcash.nextcashwallet.TextButton
+            android:id="@+id/updateGainLossEndDate"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            style="@style/SmallButton"
+            android:text="@string/update"/>
+
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/errorText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/endDateGroup"
+        android:textColor="@color/colorNegative"
+        android:text="@string/gain_loss_error"
+        android:visibility="gone"/>
+
+    <RelativeLayout
+        android:id="@+id/header"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/endDateGroup"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/dateTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:paddingEnd="5dp"
+            android:paddingStart="5dp"
+            android:text="@string/date"
+            style="@style/SubHeadingText"
+            android:textAlignment="textEnd"/>
+
+        <TextView
+            android:id="@+id/costDateTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/dateTitle"
+            android:paddingEnd="5dp"
+            android:paddingStart="5dp"
+            android:text="@string/cost_date"
+            style="@style/SubHeadingText"
+            android:textAlignment="textEnd"/>
+
+        <TextView
+            android:id="@+id/gainLossTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:paddingEnd="5dp"
+            android:paddingStart="5dp"
+            style="@style/SubHeadingText"
+            android:textAlignment="textEnd"
+            android:text="@string/gain_loss"/>
+
+    </RelativeLayout>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/gainLossItems"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/header"
+        android:layout_alignParentBottom="true">
+
+    </android.support.v7.widget.RecyclerView>
+
+</RelativeLayout>

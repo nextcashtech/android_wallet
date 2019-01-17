@@ -106,7 +106,7 @@
 
     <string name="wallet">Wallet</string>
     <string name="title_add_wallet">Add Wallet</string>
-    <string name="title_edit_wallet">Edit Wallet</string>
+    <string name="wallet_settings">Wallet Settings</string>
     <string name="title_wallet_history">Wallet History</string>
     <string name="add_wallet">Add Wallet</string>
     <string name="buy_bitcoin_cash">Buy Bitcoin Cash</string>
@@ -120,6 +120,14 @@
     <string name="create_new_key">Create New Wallet</string>
     <string name="recover_wallet">Recover Wallet</string>
     <string name="update_name">Update Name</string>
+    <string name="gain_loss">Gain/Loss</string>
+    <string name="gain_loss_report">Gain/Loss Report</string>
+    <string name="gain_loss_error">
+        There are differing \"exchange/cost types\".
+        Without appropriate conversion rates this report can\'t be generated.
+    </string>
+    <string name="start_date">Start Date</string>
+    <string name="end_date">End Date</string>
     <string name="backup_wallet">Backup Wallet</string>
     <string name="remove_wallet">Remove Wallet</string>
     <string name="import_bip0032_key">Import BIP-0032 Key</string>
@@ -248,6 +256,7 @@
     <string name="no_transactions">No Transactions</string>
     <string name="amount_title">Amount</string>
     <string name="date">Date</string>
+    <string name="cost_date">Cost Date</string>
     <string name="comment">Comment</string>
     <string name="add_comment">Add Comment</string>
     <string name="comment_hint">Enter TX Comment</string>
@@ -259,6 +268,9 @@
     <string name="cost_basis">Cost Basis</string>
     <string name="cost_basis_hint">Enter Manual Cost Basis</string>
     <string name="cost_date_hint">Enter Manual Cost Date</string>
+    <string name="report_start_date_hint">Enter Report Start Date</string>
+    <string name="report_end_date_hint">Enter Report End Date</string>
+    <string name="total">Total</string>
     <string name="cost_basis_cleared">Cost basis cleared</string>
     <string name="cost_basis_updated">Cost basis updated</string>
     <string name="cost_must_be_number">Cost basis must be a valid number</string>

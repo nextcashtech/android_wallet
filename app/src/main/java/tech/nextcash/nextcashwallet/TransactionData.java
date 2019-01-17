@@ -123,6 +123,30 @@ public class TransactionData
             notifiedDate = 0L;
         }
 
+        public double effectiveCost()
+        {
+            if(cost != 0.0)
+                return Math.abs(cost);
+            else
+                return Math.abs(exchangeRate * Bitcoin.bitcoinsFromSatoshis(amount));
+        }
+
+        public long effectiveDate()
+        {
+            if(costDate != 0L)
+                return costDate;
+            else
+                return date;
+        }
+
+        public String effectiveType()
+        {
+            if(costType != null)
+                return costType;
+            else
+                return exchangeType;
+        }
+
         public void read(DataInputStream pStream, int pVersion) throws IOException
         {
             hash = readString(pStream);

@@ -79,6 +79,11 @@
         android:background="#ddd" />
 
     <tech.nextcash.nextcashwallet.TextButton
+        android:id="@+id/gainLossReport"
+        style="@style/Button"
+        android:text="@string/gain_loss"/>
+
+    <tech.nextcash.nextcashwallet.TextButton
         android:id="@+id/backupWallet"
         style="@style/Button"
         android:text="@string/backup_wallet"/>

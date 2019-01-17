@@ -69,6 +69,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -104,11 +105,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
       mRequestExpiresUpdater, mRequestTransactionRunnable, mUndoDeleteRunnable, mConfirmDeleteRunnable;
 
     private enum Mode { LOADING_WALLETS, LOADING_CHAIN, IN_PROGRESS, WALLETS, ADD_WALLET, CREATE_WALLET, RECOVER_WALLET,
-      IMPORT_PRIVATE_KEY, IMPORT_BIP32, VERIFY_SEED, BACKUP_WALLET, EDIT_WALLET, TRANSACTION_HISTORY, TRANSACTION,
+      IMPORT_PRIVATE_KEY, IMPORT_BIP32, VERIFY_SEED, BACKUP_WALLET, WALLET_SETTINGS, TRANSACTION_HISTORY, TRANSACTION,
       SCAN, RECEIVE, ENTER_PAYMENT_CODE, CLIPBOARD_PAYMENT_CODE, ENTER_PAYMENT_DETAILS, AUTHORIZE, INFO, HELP,
-      SETTINGS, ADDRESS_LABELS, ADDRESS_BOOK, PUBLIC_KEYS, DERIVATION_PATH }
+      SETTINGS, ADDRESS_LABELS, ADDRESS_BOOK, PUBLIC_KEYS, DERIVATION_PATH, GAIN_LOSS }
     private enum TextEntryMode { NONE, SAVE_ADDRESS, LABEL_ADDRESS, RECEIVE_AMOUNT, RECEIVE_LABEL, RECEIVE_MESSAGE,
-      TRANSACTION_COMMENT, TRANSACTION_COST_AMOUNT, TRANSACTION_COST_DATE }
+      TRANSACTION_COMMENT, TRANSACTION_COST_AMOUNT, TRANSACTION_COST_DATE, REPORT_START_DATE, REPORT_END_DATE }
     private Mode mMode, mPreviousMode, mPreviousTransactionMode, mPreviousReceiveMode;
     private TextEntryMode mTextEntryMode;
     private boolean mWalletsNeedUpdated;
@@ -124,6 +125,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private String mKeysToLoad[];
     private int mSeedEntropyBytes;
     private long mRecoverDate;
+    private long mReportStartDate, mReportEndDate;
     private boolean mSeedIsBackedUp;
     private int mCurrentWalletIndex;
     private boolean mSeedBackupOnly;
@@ -255,6 +257,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mEnteredAmountWatcher = null;
         mTextEntryMode = TextEntryMode.NONE;
         mBIP32Mode = BIP32Mode.BIP32_CHAIN;
+        mReportStartDate = 0L;
+        mReportEndDate = 0L;
 
         mLargeButtonDownAnimation = new ScaleAnimation(1.0f, 0.97f, 1.0f, 0.90f,
           Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
@@ -899,7 +903,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case BACKUP_WALLET:
             break;
-        case EDIT_WALLET:
+        case WALLET_SETTINGS:
             break;
         case TRANSACTION_HISTORY:
             displayWalletHistory(); // Reload
@@ -933,6 +937,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case PUBLIC_KEYS:
             break;
         case DERIVATION_PATH:
+            break;
+        case GAIN_LOSS:
             break;
         }
     }
@@ -1047,7 +1053,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case BACKUP_WALLET:
             break;
-        case EDIT_WALLET:
+        case WALLET_SETTINGS:
             break;
         case TRANSACTION_HISTORY:
             pState.putString("State", "History");
@@ -1086,6 +1092,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case PUBLIC_KEYS:
             break;
         case DERIVATION_PATH:
+            break;
+        case GAIN_LOSS:
             break;
         }
         super.onSaveInstanceState(pState);
@@ -3964,6 +3972,60 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.RECOVER_WALLET;
     }
 
+    public synchronized void displayGainLoss()
+    {
+        LayoutInflater inflater = getLayoutInflater();
+        ViewGroup containerView = findViewById(R.id.nonScroll);
+
+        containerView.removeAllViews();
+
+        // Title
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null)
+        {
+            actionBar.setIcon(R.drawable.baseline_assessment_black_36dp);
+            actionBar.setTitle(" " + getString(R.string.gain_loss));
+            actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
+        }
+
+        ViewGroup gainLossView = (ViewGroup)inflater.inflate(R.layout.gain_loss, containerView, false);
+        containerView.addView(gainLossView);
+
+        ((TextView)gainLossView.findViewById(R.id.subTitle)).setText(mBitcoin.wallet(mCurrentWalletIndex).name);
+
+        if(mReportStartDate == 0L || mReportEndDate == 0L)
+        {
+            Transaction transactions[] = mBitcoin.wallet(mCurrentWalletIndex).transactions;
+            if(transactions.length > 0)
+                mReportStartDate = transactions[transactions.length - 1].data.date; // Oldest transaction
+            else
+                mReportStartDate = System.currentTimeMillis() / 1000L;
+            mReportEndDate = System.currentTimeMillis() / 1000L;
+        }
+
+        ((TextView)gainLossView.findViewById(R.id.startDate)).setText(
+          String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td", mReportStartDate * 1000L));
+        ((TextView)gainLossView.findViewById(R.id.endDate)).setText(
+          String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td", mReportEndDate * 1000L));
+
+        RecyclerView recyclerView = gainLossView.findViewById(R.id.gainLossItems);
+        GainLossAdapter adapter = new GainLossAdapter(getApplicationContext(), mBitcoin, mCurrentWalletIndex,
+          mReportStartDate, mReportEndDate);
+
+        if(!adapter.isValid())
+        {
+            recyclerView.setVisibility(View.GONE);
+            gainLossView.findViewById(R.id.header).setVisibility(View.GONE);
+            gainLossView.findViewById(R.id.errorText).setVisibility(View.VISIBLE);
+        }
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(adapter);
+
+        showView(R.id.nonScroll);
+        mMode = Mode.GAIN_LOSS;
+    }
+
     public synchronized void displayBackupWallet(String pPassCode)
     {
         LayoutInflater inflater = getLayoutInflater();
@@ -4187,17 +4249,32 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private synchronized void displayDateDialog(TextEntryMode pMode, long pDate)
     {
-        if(pMode != TextEntryMode.TRANSACTION_COST_DATE)
-        {
-            mTextEntryMode = TextEntryMode.NONE;
-            displayWallets();
-            return;
-        }
-
         RelativeLayout entryView = findViewById(R.id.dateDialog);
         DatePicker entry = entryView.findViewById(R.id.enteredDate);
 
-        ((TextView)entryView.findViewById(R.id.title)).setText(getString(R.string.cost_date_hint));
+        switch(pMode)
+        {
+        case NONE:
+        case SAVE_ADDRESS:
+        case LABEL_ADDRESS:
+        case RECEIVE_AMOUNT:
+        case RECEIVE_LABEL:
+        case RECEIVE_MESSAGE:
+        case TRANSACTION_COMMENT:
+        case TRANSACTION_COST_AMOUNT:
+            mTextEntryMode = TextEntryMode.NONE;
+            displayWallets();
+            return;
+        case TRANSACTION_COST_DATE:
+            ((TextView)entryView.findViewById(R.id.title)).setText(getString(R.string.cost_date_hint));
+            break;
+        case REPORT_START_DATE:
+            ((TextView)entryView.findViewById(R.id.title)).setText(getString(R.string.report_start_date_hint));
+            break;
+        case REPORT_END_DATE:
+            ((TextView)entryView.findViewById(R.id.title)).setText(getString(R.string.report_end_date_hint));
+            break;
+        }
 
         Calendar date;
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -4255,7 +4332,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mMode = Mode.AUTHORIZE;
     }
 
-    public synchronized void displayEditWallet()
+    public synchronized void displayWalletSettings()
     {
         Wallet wallet = mBitcoin.wallet(mCurrentWalletIndex);
         if(wallet == null)
@@ -4271,33 +4348,34 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         if(actionBar != null)
         {
             actionBar.setIcon(R.drawable.ic_edit_black_36dp);
-            actionBar.setTitle(" " + getString(R.string.title_edit_wallet));
+            actionBar.setTitle(" " + getString(R.string.wallet_settings));
             actionBar.setDisplayHomeAsUpEnabled(true); // Show the Up button in the action bar.
         }
 
-        ViewGroup editWallet = (ViewGroup)inflater.inflate(R.layout.edit_wallet, dialogView, false);
+        ViewGroup settingsView = (ViewGroup)inflater.inflate(R.layout.wallet_settings, dialogView, false);
 
-        editWallet.findViewById(R.id.updateWalletName).setOnTouchListener(mButtonTouchListener);
-        editWallet.findViewById(R.id.updateGap).setOnTouchListener(mButtonTouchListener);
-        editWallet.findViewById(R.id.backupWallet).setOnTouchListener(mButtonTouchListener);
-        editWallet.findViewById(R.id.displayPublicKeys).setOnTouchListener(mButtonTouchListener);
-        editWallet.findViewById(R.id.removeWallet).setOnTouchListener(mButtonTouchListener);
+        settingsView.findViewById(R.id.updateWalletName).setOnTouchListener(mButtonTouchListener);
+        settingsView.findViewById(R.id.updateGap).setOnTouchListener(mButtonTouchListener);
+        settingsView.findViewById(R.id.gainLossReport).setOnTouchListener(mButtonTouchListener);
+        settingsView.findViewById(R.id.backupWallet).setOnTouchListener(mButtonTouchListener);
+        settingsView.findViewById(R.id.displayPublicKeys).setOnTouchListener(mButtonTouchListener);
+        settingsView.findViewById(R.id.removeWallet).setOnTouchListener(mButtonTouchListener);
 
         // Set Name
-        ((EditText)editWallet.findViewById(R.id.name)).setText(wallet.name);
+        ((EditText)settingsView.findViewById(R.id.name)).setText(wallet.name);
 
         // Set Gap
-        ((EditText)editWallet.findViewById(R.id.addressGap))
+        ((EditText)settingsView.findViewById(R.id.addressGap))
           .setText(String.format(Locale.getDefault(), "%d", mBitcoin.getGap(mCurrentWalletIndex)));
 
         if(!wallet.isPrivate)
-            editWallet.findViewById(R.id.backupWallet).setVisibility(View.GONE);
+            settingsView.findViewById(R.id.backupWallet).setVisibility(View.GONE);
 
-        dialogView.addView(editWallet);
+        dialogView.addView(settingsView);
 
         showView(R.id.dialog);
         findViewById(R.id.mainScroll).setScrollY(0);
-        mMode = Mode.EDIT_WALLET;
+        mMode = Mode.WALLET_SETTINGS;
     }
 
     private void alignTransactionColumns(ViewGroup pView)
@@ -4958,6 +5036,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             else
                 showMessage(getString(R.string.failed_update_gap), 2000);
             break;
+        case R.id.gainLossReport:
+            displayGainLoss();
+            break;
         case R.id.backupWallet:
             mSeedBackupOnly = true;
             mAuthorizedTask = AuthorizedTask.BACKUP_KEY;
@@ -5293,8 +5374,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.walletHistory:
             displayWalletHistory();
             break;
-        case R.id.editWallet:
-            displayEditWallet();
+        case R.id.walletSettings:
+            displayWalletSettings();
             break;
         case R.id.walletTransaction:
         {
@@ -5730,13 +5811,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.dateDialogOkay:
         {
-            if(mTextEntryMode != TextEntryMode.TRANSACTION_COST_DATE)
-            {
-                findViewById(R.id.dateDialog).setVisibility(View.GONE);
-                mTextEntryMode = TextEntryMode.NONE;
-                break;
-            }
-
             DatePicker picker = findViewById(R.id.enteredDate);
             if(picker == null)
             {
@@ -5746,25 +5820,53 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 break;
             }
 
-            Calendar date;
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            {
-                date = new Calendar.Builder().setDate(picker.getYear(), picker.getMonth(), picker.getDayOfMonth())
-                  .setTimeOfDay(0, 0, 0).build();
-            }
-            else
-            {
-                date = Calendar.getInstance();
-                date.set(picker.getYear(), picker.getMonth(), picker.getDayOfMonth());
-            }
+            GregorianCalendar date = new GregorianCalendar();
+            date.set(Calendar.HOUR, 0);
+            date.set(Calendar.MINUTE, 0);
+            date.set(Calendar.SECOND, 0);
+            date.set(Calendar.YEAR, picker.getYear());
+            date.set(Calendar.MONTH, picker.getMonth());
+            date.set(Calendar.DAY_OF_MONTH, picker.getDayOfMonth());
 
-            mTransactionToModify.data.costDate = date.getTimeInMillis() / 1000L;
-            mBitcoin.saveTransactionData();
-            mBitcoin.triggerUpdate();
-            showMessage(getString(R.string.cost_basis_updated), 2000);
+            switch(mTextEntryMode)
+            {
+            case NONE:
+            case SAVE_ADDRESS:
+            case LABEL_ADDRESS:
+            case RECEIVE_AMOUNT:
+            case RECEIVE_LABEL:
+            case RECEIVE_MESSAGE:
+            case TRANSACTION_COMMENT:
+            case TRANSACTION_COST_AMOUNT:
+                findViewById(R.id.dateDialog).setVisibility(View.GONE);
+                mTextEntryMode = TextEntryMode.NONE;
+                break;
+            case TRANSACTION_COST_DATE:
+                mTransactionToModify.data.costDate = date.getTimeInMillis() / 1000L;
+                mBitcoin.saveTransactionData();
+                mBitcoin.triggerUpdate();
+                showMessage(getString(R.string.cost_basis_updated), 2000);
+                break;
+            case REPORT_START_DATE:
+                mReportStartDate = date.getTimeInMillis() / 1000L;
+                break;
+            case REPORT_END_DATE:
+                mReportEndDate = date.getTimeInMillis() / 1000L;
+                break;
+            }
 
             findViewById(R.id.dateDialog).setVisibility(View.GONE);
             mTextEntryMode = TextEntryMode.NONE;
+
+            // Update view
+            switch(mMode)
+            {
+            default:
+                break;
+            case GAIN_LOSS:
+                displayGainLoss();
+                break;
+            }
             break;
         }
         case R.id.closeMessage:
@@ -6104,9 +6206,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             displayCreateWallet();
             return;
         case BACKUP_WALLET:
-            displayEditWallet();
+            displayWalletSettings();
             return;
-        case EDIT_WALLET:
+        case WALLET_SETTINGS:
             break;
         case TRANSACTION_HISTORY:
             break;
@@ -6180,11 +6282,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case SETTINGS:
             break;
         case PUBLIC_KEYS:
-            displayEditWallet();
+            displayWalletSettings();
             return;
         case DERIVATION_PATH:
             if(mPreviousMode == Mode.VERIFY_SEED)
                 displayCreateWallet();
+            return;
+        case GAIN_LOSS:
+            displayWalletSettings();
             return;
         }
 
