@@ -28,7 +28,7 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
 {
-    public static final String logTag = "FiatRateRequestTask";
+    public static final String logTag = "ExchangeRateRequestTask";
 
     public static final String USE_COINBASE_RATE_NAME = "use_coinbase_rate";
     public static final String USE_COINMARKETCAP_RATE_NAME = "use_coinmarketcap_rate";
@@ -107,10 +107,13 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
         try
         {
             Settings settings = Settings.getInstance(mContext.getFilesDir());
+            String symbol;
             if(settings.intValue(Bitcoin.CHAIN_ID_NAME) == Bitcoin.CHAIN_ABC)
-                url = new URL("https://api.coinbase.com/v2/exchange-rates?currency=BCH");
+                symbol = "BCH";
             else
-                url = new URL("https://api.coinbase.com/v2/exchange-rates?currency=BSV");
+                symbol = "BSV";
+            url = new URL(String.format(Locale.US, "https://api.coinbase.com/v2/prices/%s-%s/spot", symbol,
+              mExchangeType));
         }
         catch(MalformedURLException pException)
         {
@@ -131,12 +134,8 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
                 {
                     BufferedReader response = new BufferedReader(new InputStreamReader(
                       connection.getInputStream()));
-                    String inputLine, text = "";
-                    while((inputLine = response.readLine()) != null)
-                        text += inputLine + '\n';
-
-                    JSONObject json = new JSONObject(text);
-                    result = json.getJSONObject("data").getJSONObject("rates").getDouble(mExchangeType);
+                    JSONObject json = new JSONObject(response.readLine());
+                    result = json.getJSONObject("data").getDouble("amount");
                     Log.i(logTag, String.format(Locale.getDefault(), "CoinBase %s rate found : %,f",
                       mExchangeType, result));
                 }
