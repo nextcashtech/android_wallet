@@ -30,5 +30,6 @@
     <color name="dialogBackground">#9000</color>
     <color name="disabled">#f999</color>
     <color name="enabled">#f000</color>
+    <color name="colorHeader">#f9d9</color>
     <color name="colorTotals">#f9ce</color>
 </resources>

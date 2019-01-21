@@ -233,8 +233,8 @@ public class TransactionData
 
             // Version
             //   2 - Add amount
-            //   3 - Add cost date
-            //   4 - Add notified date
+            //   3 - Add cost sendDate
+            //   4 - Add notified sendDate
             int version = stream.readInt();
             if(version < 0 || version > 4)
             {

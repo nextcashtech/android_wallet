@@ -18,7 +18,6 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitArray;
 import com.google.zxing.common.BitMatrix;
-import com.google.zxing.common.StringUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -122,9 +121,11 @@ public class Bitcoin
     public static final int BITS = 1;
     public static final int BITCOINS = 2;
 
+    public static final double SATOSHIS_PER_BITCOIN = 100000000.0;
+
     public static double bitcoinsFromSatoshis(long pSatoshis)
     {
-        return (double)pSatoshis / 100000000.0;
+        return (double)pSatoshis / SATOSHIS_PER_BITCOIN;
     }
 
     public static double bitsFromSatoshis(long pSatoshis)
@@ -134,7 +135,7 @@ public class Bitcoin
 
     public static long satoshisFromBitcoins(double pBitcoins)
     {
-        return (long)(pBitcoins * 100000000.0);
+        return (long)(pBitcoins * SATOSHIS_PER_BITCOIN);
     }
 
     public static double bitsFromBitcoins(double pBitcoins)
@@ -215,6 +216,29 @@ public class Bitcoin
         }
     }
 
+    public static String formatAmountCSV(double pAmount, String pExchangeType)
+    {
+        if(pExchangeType == null)
+            return null;
+
+        switch(pExchangeType)
+        {
+        default:
+        case "AUD":
+        case "CAD":
+        case "USD":
+            return String.format(Locale.getDefault(), "$%.2f", pAmount);
+        case "EUR":
+            return String.format(Locale.getDefault(), "€%.2f", pAmount);
+        case "GBP":
+            return String.format(Locale.getDefault(), "£%.2f", pAmount);
+        case "JPY":
+            return String.format(Locale.getDefault(), "¥%d", (int)pAmount);
+        case "KRW":
+            return String.format(Locale.getDefault(), "₩%d", (int)pAmount);
+        }
+    }
+
     public static double parseAmount(String pAmountText) throws NumberFormatException
     {
         pAmountText = pAmountText.trim();
@@ -223,15 +247,15 @@ public class Bitcoin
 
         switch(pAmountText.charAt(0))
         {
-            case '$':
-            case '€':
-            case '£':
-            case '¥':
-            case '₩':
-                pAmountText = pAmountText.substring(1);
-                break;
-            default:
-                break;
+        case '$':
+        case '€':
+        case '£':
+        case '¥':
+        case '₩':
+            pAmountText = pAmountText.substring(1);
+            break;
+        default:
+            break;
         }
 
         return Math.abs(Double.parseDouble(pAmountText));
@@ -649,7 +673,7 @@ public class Bitcoin
             result = true;
         }
 
-        // TODO Temporary Fix for issue with bad date being tagged on transaction.
+        // TODO Temporary Fix for issue with bad sendDate being tagged on transaction.
         if(pTransaction.date != 0 && pTransaction.block != null && pTransaction.count != -1 &&
           Math.abs(pTransaction.date - pTransaction.data.date) > 864000) // One day
             pTransaction.data.date = pTransaction.date;

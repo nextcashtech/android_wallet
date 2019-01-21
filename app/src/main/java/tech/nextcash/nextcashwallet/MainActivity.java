@@ -34,8 +34,10 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -66,6 +68,9 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -307,25 +312,25 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 switch(pEvent.getAction())
                 {
-                    case MotionEvent.ACTION_DOWN:
-                        pView.startAnimation(mButtonDownAnimation);
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        pView.startAnimation(mButtonUpAnimation);
-                        pView.performClick();
-                        break;
-                    case MotionEvent.ACTION_CANCEL:
-                        pView.clearAnimation();
-                        break;
-                    default:
-                        break;
+                case MotionEvent.ACTION_DOWN:
+                    pView.startAnimation(mButtonDownAnimation);
+                    break;
+                case MotionEvent.ACTION_UP:
+                    pView.startAnimation(mButtonUpAnimation);
+                    pView.performClick();
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                    pView.clearAnimation();
+                    break;
+                default:
+                    break;
                 }
                 return true;
             }
         };
 
         // Set listener for control buttons.
-        LinearLayout controls = findViewById(R.id.controls);
+        LinearLayout controls = findViewById(R.id.mainControls);
         for(int index = 0; index < controls.getChildCount(); index++)
             controls.getChildAt(index).setOnTouchListener(mButtonTouchListener);
 
@@ -627,7 +632,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         amountDialog.findViewById(R.id.textDialogOkay).setOnTouchListener(mButtonTouchListener);
         root.addView(amountDialog);
 
-        // Setup date dialog.
+        // Setup sendDate dialog.
         View dateDialog = inflater.inflate(R.layout.date_dialog, root, false);
         dateDialog.setVisibility(View.GONE);
         dateDialog.findViewById(R.id.dateDialogOkay).setOnTouchListener(mButtonTouchListener);
@@ -4012,21 +4017,88 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         GainLossAdapter adapter = new GainLossAdapter(getApplicationContext(), mBitcoin, mCurrentWalletIndex,
           mReportStartDate, mReportEndDate);
 
-        if(!adapter.isValid())
+        if(adapter.isValid())
         {
-            recyclerView.setVisibility(View.GONE);
-            gainLossView.findViewById(R.id.header).setVisibility(View.GONE);
+            gainLossView.findViewById(R.id.gainLossControls).setVisibility(View.VISIBLE);
+            gainLossView.findViewById(R.id.errorText).setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+        }
+        else
+        {
+            switch(adapter.status())
+            {
+            case MISMATCHED_EXCHANGE_TYPES: // Mismatched exchange types
+                ((TextView)gainLossView.findViewById(R.id.errorText)).setText(R.string.gain_loss_mismatch_error);
+                break;
+            default:
+            case INVALID_TRANSACTIONS:
+                ((TextView)gainLossView.findViewById(R.id.errorText)).setText(R.string.failed_gain_loss);
+                break;
+            }
+            gainLossView.findViewById(R.id.gainLossControls).setVisibility(View.GONE);
             gainLossView.findViewById(R.id.errorText).setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
         }
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setLayoutManager(new GridLayoutManager(this, GainLossAdapter.columnCount));
         recyclerView.setAdapter(adapter);
 
         gainLossView.findViewById(R.id.updateGainLossStartDate).setOnTouchListener(mButtonTouchListener);
         gainLossView.findViewById(R.id.updateGainLossEndDate).setOnTouchListener(mButtonTouchListener);
+        gainLossView.findViewById(R.id.exportGainLoss).setOnTouchListener(mButtonTouchListener);
+        gainLossView.findViewById(R.id.expandGainLossControls).setOnTouchListener(mButtonTouchListener);
 
         showView(R.id.nonScroll);
         mMode = Mode.GAIN_LOSS;
+    }
+
+    public void exportGainLoss()
+    {
+        RecyclerView recyclerView = findViewById(R.id.gainLossItems);
+        if(recyclerView == null)
+            return;
+
+        GainLossAdapter adapter = (GainLossAdapter)recyclerView.getAdapter();
+        if(!adapter.isValid())
+        {
+            Log.e(logTag, "Failed to export gain/loss : Invalid report");
+            showMessage(getString(R.string.failed_export_gain_loss), 2000);
+            return;
+        }
+
+        try
+        {
+            File path = new File(getApplicationContext().getFilesDir(), "reports");
+            if(!path.exists() && !path.mkdir())
+            {
+                Log.e(logTag, "Failed to export gain/loss : Failed to create directory");
+                showMessage(getString(R.string.failed_export_gain_loss), 2000);
+                return;
+            }
+
+            File file = new File(path, String.format(Locale.getDefault(), "%s_gain_loss_%s_%s.csv",
+              mBitcoin.wallet(mCurrentWalletIndex).name,
+              String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td", mReportStartDate * 1000L),
+              String.format(Locale.getDefault(), "%1$tY-%1$tm-%1$td", mReportEndDate * 1000L)));
+            FileOutputStream output = new FileOutputStream(file);
+            if(!adapter.writeData(getApplicationContext(), output))
+            {
+                showMessage(getString(R.string.failed_export_gain_loss), 2000);
+                return;
+            }
+            output.close();
+
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(FileProvider.getUriForFile(getApplicationContext(),
+              "tech.nextcash.fileprovider", file), "text/csv");
+            intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(intent);
+        }
+        catch(Exception pException)
+        {
+            Log.e(logTag, String.format(Locale.US, "Failed to export gain/loss : %s", pException.toString()));
+            showMessage(getString(R.string.failed_export_gain_loss), 2000);
+        }
     }
 
     public synchronized void displayBackupWallet(String pPassCode)
@@ -4695,7 +4767,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.main:
             findViewById(R.id.main).setVisibility(View.VISIBLE);
             findViewById(R.id.statusBar).setVisibility(View.VISIBLE);
-            findViewById(R.id.controls).setVisibility(View.VISIBLE);
+            findViewById(R.id.mainControls).setVisibility(View.VISIBLE);
             findViewById(R.id.dialog).setVisibility(View.GONE);
             findViewById(R.id.progress).setVisibility(View.GONE);
             findViewById(R.id.nonScroll).setVisibility(View.GONE);
@@ -4703,7 +4775,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.progress:
             findViewById(R.id.main).setVisibility(View.GONE);
             findViewById(R.id.statusBar).setVisibility(View.GONE);
-            findViewById(R.id.controls).setVisibility(View.GONE);
+            findViewById(R.id.mainControls).setVisibility(View.GONE);
             findViewById(R.id.dialog).setVisibility(View.GONE);
             findViewById(R.id.progress).setVisibility(View.VISIBLE);
             findViewById(R.id.nonScroll).setVisibility(View.GONE);
@@ -4711,7 +4783,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.dialog:
             findViewById(R.id.main).setVisibility(View.GONE);
             findViewById(R.id.statusBar).setVisibility(View.GONE);
-            findViewById(R.id.controls).setVisibility(View.GONE);
+            findViewById(R.id.mainControls).setVisibility(View.GONE);
             findViewById(R.id.dialog).setVisibility(View.VISIBLE);
             findViewById(R.id.progress).setVisibility(View.GONE);
             findViewById(R.id.nonScroll).setVisibility(View.GONE);
@@ -4719,7 +4791,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.nonScroll:
             findViewById(R.id.main).setVisibility(View.GONE);
             findViewById(R.id.statusBar).setVisibility(View.GONE);
-            findViewById(R.id.controls).setVisibility(View.GONE);
+            findViewById(R.id.mainControls).setVisibility(View.GONE);
             findViewById(R.id.dialog).setVisibility(View.GONE);
             findViewById(R.id.progress).setVisibility(View.GONE);
             findViewById(R.id.nonScroll).setVisibility(View.VISIBLE);
@@ -4853,7 +4925,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case R.id.enterRecoverSeed:
         {
-            // Get recover seed date
+            // Get recover seed sendDate
             DatePicker picker = findViewById(R.id.date);
             if(picker == null)
             {
@@ -4880,7 +4952,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
         case R.id.addPrivateKey:
         {
-            // Get recover seed date
+            // Get recover seed sendDate
             DatePicker picker = findViewById(R.id.date);
             if(picker == null)
             {
@@ -4936,7 +5008,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             break;
         case R.id.enterImportKey:
         {
-            // Get recover seed date
+            // Get recover seed sendDate
             DatePicker picker = findViewById(R.id.date);
             if(picker == null)
             {
@@ -5042,11 +5114,32 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         case R.id.gainLossReport:
             displayGainLoss();
             break;
+        case R.id.expandGainLossControls:
+        {
+            View controls = findViewById(R.id.gainLossControlsGroup);
+            if(controls != null)
+            {
+                if(controls.getVisibility() == View.GONE)
+                {
+                    controls.setVisibility(View.VISIBLE);
+                    ((ImageView)pView).setImageResource(R.drawable.ic_expand_less_black_36dp);
+                }
+                else
+                {
+                    controls.setVisibility(View.GONE);
+                    ((ImageView)pView).setImageResource(R.drawable.ic_expand_more_black_36dp);
+                }
+            }
+            break;
+        }
         case R.id.updateGainLossStartDate:
             displayDateDialog(TextEntryMode.REPORT_START_DATE, mReportStartDate);
             break;
         case R.id.updateGainLossEndDate:
             displayDateDialog(TextEntryMode.REPORT_END_DATE, mReportEndDate);
+            break;
+        case R.id.exportGainLoss:
+            exportGainLoss();
             break;
         case R.id.backupWallet:
             mSeedBackupOnly = true;

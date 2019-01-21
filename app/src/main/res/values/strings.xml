@@ -120,12 +120,17 @@
     <string name="create_new_key">Create New Wallet</string>
     <string name="recover_wallet">Recover Wallet</string>
     <string name="update_name">Update Name</string>
+    <string name="send_value">Send Value</string>
     <string name="gain_loss">Gain/Loss</string>
     <string name="gain_loss_report">Gain/Loss Report</string>
-    <string name="gain_loss_error">
+    <string name="gain_loss_mismatch_error">
         There are differing \"exchange/cost types\".
         Without appropriate conversion rates this report can\'t be generated.
     </string>
+    <string name="failed_gain_loss">
+        The gain/loss report failed to generate because of invalid transactions.
+    </string>
+    <string name="failed_export_gain_loss">Failed to export gain/loss report.</string>
     <string name="start_date">Start Date</string>
     <string name="end_date">End Date</string>
     <string name="backup_wallet">Backup Wallet</string>
@@ -266,6 +271,9 @@
     <string name="specify_label">Specify Label</string>
     <string name="specify_message">Specify Message</string>
     <string name="cost_basis">Cost Basis</string>
+    <string name="cost">Cost</string>
+    <string name="cost_exchange_rate">Cost Exch Rate</string>
+    <string name="send_exchange_rate">Send Exch Rate</string>
     <string name="cost_basis_hint">Enter Manual Cost Basis</string>
     <string name="cost_date_hint">Enter Manual Cost Date</string>
     <string name="report_start_date_hint">Enter Report Start Date</string>
@@ -322,6 +330,7 @@
     <string name="fee">Fee</string>
     <string name="estimated_fee">Estimated Fee</string>
     <string name="bitcoins_amount_title">bitcoins</string>
+    <string name="satoshis">Satoshis</string>
     <string name="confirmed_in_block">Confirmed in Block</string>
     <string name="unconfirmed">Unconfirmed</string>
     <string name="validated_by">Validated by</string>
@@ -412,7 +421,7 @@
     <string name="expires_in">Expires in</string>
     <string name="seconds_abbreviation">s</string>
 
-    <string name="title_exchange_currency">Exchange Currency</string>
+    <string name="exchange_currency">Exchange Currency</string>
     <string-array name="exchange_types">
         <item>AUD</item>
         <item>CAD</item>
@@ -486,6 +495,7 @@
     <string name="label">Label (Name)</string>
     <string name="message">Message</string>
     <string name="update">Update</string>
+    <string name="export">Export</string>
     <string name="scroll_left_right">Scroll Left and Right</string>
     <string name="seed_doesnt_match">Seed Doesn\'t Match</string>
     <string name="seed_matches">Seed Matches</string>
@@ -529,6 +539,8 @@
     </string-array>
     <string name="bitcoins">bitcoins</string>
     <string name="transaction">Transaction</string>
+    <string name="cost_transaction">Cost TX</string>
+    <string name="send_transaction">Send TX</string>
     <string name="id">ID</string>
     <string name="size">Size</string>
     <string name="bytes">bytes</string>
