@@ -1,3 +1,10 @@
+/**************************************************************************
+ * Copyright 2017-2019 NextCash, LLC                                      *
+ * Contributors :                                                         *
+ *   Curtis Ellis <curtis@nextcash.tech>                                  *
+ * Distributed under the MIT software license, see the accompanying       *
+ * file license.txt or http://www.opensource.org/licenses/mit-license.php *
+ **************************************************************************/
 package tech.nextcash.nextcashwallet;
 
 import android.util.Log;
@@ -20,7 +27,7 @@ public class TransactionData
     public TransactionData(File pDirectory)
     {
         mItems = new ArrayList<>();
-        mItemsHaveBeenAdded = false;
+        mIsModified = false;
         read(pDirectory);
     }
 
@@ -80,6 +87,7 @@ public class TransactionData
         String comment; // User added message.
 
         // Exchange rate and type at time of first seen
+        int chainID;
         double exchangeRate;
         String exchangeType;
 
@@ -87,8 +95,7 @@ public class TransactionData
         //   Not a rate.
         //   Amount for whole transaction.
         //   Always positive.
-        //   For "receives" represents original cost.
-        //   For "sends" represents value sent.
+        //   Represents value sent.
         double cost;
         String costType;
         long costDate;
@@ -98,28 +105,54 @@ public class TransactionData
         public Item()
         {
             hash = null;
+            date = 0L;
             amount = 0L;
             comment = null;
-            date = 0L;
+
+            chainID = Bitcoin.CHAIN_UNKNOWN;
             exchangeRate = 0.0;
             exchangeType = null;
+
             cost = 0.0;
             costType = null;
             costDate = 0L;
+
             notifiedDate = 0L;
         }
 
-        public Item(String pTransactionID, long pAmount)
+        public Item(Item pCopy)
+        {
+            hash = pCopy.hash;
+            date = pCopy.date;
+            amount = pCopy.amount;
+            comment = pCopy.comment;
+
+            chainID = pCopy.chainID;
+            exchangeRate = pCopy.exchangeRate;
+            exchangeType = pCopy.exchangeType;
+
+            cost = pCopy.cost;
+            costType = pCopy.costType;
+            costDate = pCopy.costDate;
+
+            notifiedDate = pCopy.notifiedDate;
+        }
+
+        public Item(String pTransactionID, long pAmount, int pChainID)
         {
             hash = pTransactionID;
+            date = System.currentTimeMillis() / 1000L;
             amount = pAmount;
             comment = null;
-            date = System.currentTimeMillis() / 1000L;
+
+            chainID = pChainID;
             exchangeRate = 0.0;
             exchangeType = null;
+
             cost = 0.0;
             costType = null;
             costDate = 0L;
+
             notifiedDate = 0L;
         }
 
@@ -168,6 +201,10 @@ public class TransactionData
                 notifiedDate = pStream.readLong();
             else
                 notifiedDate = date;
+            if(pVersion > 4)
+                chainID = pStream.readInt();
+            else
+                chainID = Bitcoin.CHAIN_UNKNOWN;
         }
 
         public void write(DataOutputStream pStream) throws IOException
@@ -182,41 +219,72 @@ public class TransactionData
             writeString(pStream, costType);
             pStream.writeLong(costDate);
             pStream.writeLong(notifiedDate);
+            pStream.writeInt(Bitcoin.CHAIN_UNKNOWN);
         }
     }
 
-    private ArrayList<Item> mItems;
-    private boolean mItemsHaveBeenAdded;
-
-    public boolean itemsAdded()
+    private Item copyForChain(Item pItem, int pChainID)
     {
-        return mItemsHaveBeenAdded;
+        if(pItem.chainID == Bitcoin.CHAIN_UNKNOWN)
+        {
+            pItem.chainID = pChainID;
+            mIsModified = true;
+            return pItem;
+        }
+
+        Item result = new Item(pItem);
+        result.chainID = pChainID;
+
+        result.exchangeRate = 0.0;
+        result.exchangeType = null;
+
+        result.cost = 0.0;
+        result.costType = null;
+        result.costDate = 0L;
+
+        mItems.add(result);
+        mIsModified = true;
+        return result;
     }
 
-    public synchronized Item getData(String pTransactionID, long pAmount)
+    private ArrayList<Item> mItems;
+    private boolean mIsModified;
+
+    public boolean isModified()
+    {
+        return mIsModified;
+    }
+
+    public synchronized Item getData(String pTransactionID, long pAmount, int pChainID)
     {
         if(pTransactionID == null)
             return null;
 
+        Item result = null;
         for(Item item : mItems)
-            if(item.hash.equals(pTransactionID))
+            if(item.hash.equals(pTransactionID) && (result == null || item.chainID == pChainID))
             {
-                if(pAmount == 0)
-                    return item; // Allow get when amount is not known.
-                else if(item.amount == 0)
+                if(pAmount == 0 || item.amount == 0 || item.amount == pAmount)
                 {
                     // Backwards compatible to before amount was retained.
-                    item.amount = pAmount;
-                    return item;
+                    if(item.amount == 0 && pAmount != 0)
+                        item.amount = pAmount;
+                    result = item; // Allow get when amount is not known.
                 }
-                else if(item.amount == pAmount)
-                    return item;
             }
 
+        if(result != null)
+        {
+            if(result.chainID == pChainID)
+                return result;
+            else
+                return copyForChain(result, pChainID);
+        }
+
         // Create new entry.
-        Item result = new Item(pTransactionID, pAmount);
+        result = new Item(pTransactionID, pAmount, pChainID);
         mItems.add(result);
-        mItemsHaveBeenAdded = true;
+        mIsModified = true;
         return result;
     }
 
@@ -235,8 +303,9 @@ public class TransactionData
             //   2 - Add amount
             //   3 - Add cost sendDate
             //   4 - Add notified sendDate
+            //   5 - Add chain ID
             int version = stream.readInt();
-            if(version < 0 || version > 4)
+            if(version < 0 || version > 5)
             {
                 Log.e(logTag, String.format("Unknown version : %d", version));
                 return false;
@@ -261,7 +330,7 @@ public class TransactionData
             return false;
         }
 
-        mItemsHaveBeenAdded = false;
+        mIsModified = false;
         return true;
     }
 
@@ -275,7 +344,7 @@ public class TransactionData
             DataOutputStream stream = new DataOutputStream(fileOutputStream);
 
             // Version
-            stream.writeInt(4);
+            stream.writeInt(5);
 
             // Count
             stream.writeInt(mItems.size());
@@ -299,7 +368,7 @@ public class TransactionData
             return false;
         }
 
-        mItemsHaveBeenAdded = false;
+        mIsModified = false;
         return true;
     }
 }

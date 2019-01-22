@@ -1,5 +1,5 @@
 /**************************************************************************
- * Copyright 2017-2018 NextCash, LLC                                      *
+ * Copyright 2017-2019 NextCash, LLC                                      *
  * Contributors :                                                         *
  *   Curtis Ellis <curtis@nextcash.tech>                                  *
  * Distributed under the MIT software license, see the accompanying       *
@@ -293,7 +293,7 @@ public class Bitcoin
     {
         // P2PKH input size
         //   Previous Transaction ID = 32 bytes
-        //   Previous Transction Output Index = 4 bytes
+        //   Previous Transaction Output Index = 4 bytes
         //   Signature push to stack = 75
         //       push size = 1 byte
         //       signature up to = 73 bytes
@@ -475,7 +475,7 @@ public class Bitcoin
     {
         if(mTransactionData == null)
             return null;
-        return mTransactionData.getData(pTransactionID, pAmount);
+        return mTransactionData.getData(pTransactionID, pAmount, mChangeID);
     }
 
     public boolean saveTransactionData()
@@ -576,7 +576,7 @@ public class Bitcoin
             // Initialize wallets
             walletsModified = true;
             mWallets = new Wallet[count];
-            for(int i=0;i<mWallets.length;i++)
+            for(int i = 0; i < mWallets.length; i++)
                 mWallets[i] = new Wallet();
         }
 
@@ -605,7 +605,7 @@ public class Bitcoin
             }
         }
 
-        if(mDirectory != null && mTransactionData != null && (dataUpdated || mTransactionData.itemsAdded()))
+        if(mDirectory != null && mTransactionData != null && (dataUpdated || mTransactionData.isModified()))
         {
             mTransactionData.save(mDirectory);
             mAddressLabels.save(mDirectory);
@@ -672,11 +672,6 @@ public class Bitcoin
             pTransaction.data.date = pTransaction.date;
             result = true;
         }
-
-        // TODO Temporary Fix for issue with bad sendDate being tagged on transaction.
-        if(pTransaction.date != 0 && pTransaction.block != null && pTransaction.count != -1 &&
-          Math.abs(pTransaction.date - pTransaction.data.date) > 864000) // One day
-            pTransaction.data.date = pTransaction.date;
 
         return result;
     }
