@@ -1,5 +1,5 @@
 /**************************************************************************
- * Copyright 2017-2018 NextCash, LLC                                      *
+ * Copyright 2017-2019 NextCash, LLC                                      *
  * Contributors :                                                         *
  *   Curtis Ellis <curtis@nextcash.tech>                                  *
  * Distributed under the MIT software license, see the accompanying       *
@@ -68,7 +68,6 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
