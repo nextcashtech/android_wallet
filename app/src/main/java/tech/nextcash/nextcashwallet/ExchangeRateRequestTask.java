@@ -50,8 +50,7 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
         URL url;
         try
         {
-            Settings settings = Settings.getInstance(mContext.getFilesDir());
-            if(settings.intValue(Bitcoin.CHAIN_ID_NAME) == Bitcoin.CHAIN_ABC)
+            if(mBitcoin.chainID() == Bitcoin.CHAIN_ABC)
                 url = new URL(String.format("https://api.coinmarketcap.com/v1/ticker/bitcoin-cash/?convert=%s",
                   mExchangeType));
             else
@@ -106,9 +105,8 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
         URL url;
         try
         {
-            Settings settings = Settings.getInstance(mContext.getFilesDir());
             String symbol;
-            if(settings.intValue(Bitcoin.CHAIN_ID_NAME) == Bitcoin.CHAIN_ABC)
+            if(mBitcoin.chainID() == Bitcoin.CHAIN_ABC)
                 symbol = "BCH";
             else
                 symbol = "BSV";
@@ -159,8 +157,7 @@ public class ExchangeRateRequestTask extends AsyncTask<String, Integer, Double>
         URL url;
         try
         {
-            Settings settings = Settings.getInstance(mContext.getFilesDir());
-            if(settings.intValue(Bitcoin.CHAIN_ID_NAME) == Bitcoin.CHAIN_ABC)
+            if(mBitcoin.chainID() == Bitcoin.CHAIN_ABC)
                 url = new URL(String.format("https://coinlib.io/api/v1/coin?key=a4c3d52c60dc7856&pref=%s&symbol=BCH",
                   mExchangeType));
             else

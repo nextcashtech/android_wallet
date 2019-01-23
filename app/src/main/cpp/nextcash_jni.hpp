@@ -75,8 +75,8 @@ extern "C"
     // Chain IDs
     //   1 = ABC
     //   2 = SV
-    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_chainID(JNIEnv *pEnvironment,
-                                                                             jobject pObject);
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_checkChainID(JNIEnv *pEnvironment,
+                                                                                  jobject pObject);
     JNIEXPORT jboolean JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_activateChain(JNIEnv *pEnvironment,
                                                                                        jobject pObject,
                                                                                        jint pChainID);

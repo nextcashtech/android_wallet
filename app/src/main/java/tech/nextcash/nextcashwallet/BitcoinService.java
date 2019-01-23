@@ -61,7 +61,6 @@ public class BitcoinService extends Service
     private boolean mIsStopped, mRestart, mChainInSync, mTransInSync;
     private HashMap<String, Integer> mTransactionNotificationIDs;
     private Bitmap mIcon;
-    private int mChainID;
 
 
     public class LocalBinder extends Binder
@@ -98,7 +97,6 @@ public class BitcoinService extends Service
         mTransInSync = false;
 
         Settings settings = Settings.getInstance(getFilesDir());
-        mChainID = settings.intValue(Bitcoin.CHAIN_ID_NAME);
 
         mBitcoinRunnable = new Runnable()
         {
@@ -112,7 +110,7 @@ public class BitcoinService extends Service
                 updateProgressNotification();
 
                 // Load daemon
-                mBitcoin.setup(getFilesDir().getPath() + "/bitcoin", mChainID);
+                mBitcoin.setup(getFilesDir().getPath() + "/bitcoin", mBitcoin.chainID());
 
                 // Start monitor thread
                 if(mMonitorThread == null || !mMonitorThread.isAlive())

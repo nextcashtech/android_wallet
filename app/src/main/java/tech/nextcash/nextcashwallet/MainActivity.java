@@ -339,11 +339,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             settings.setLongValue("beta_message", System.currentTimeMillis() / 1000);
         }
 
-        if(!settings.containsValue(Bitcoin.CHAIN_ID_NAME))
+        if(mBitcoin.chainID() == Bitcoin.CHAIN_UNKNOWN)
             mTicker = getResources().getStringArray(R.array.chain_tickers)[1];
         else
         {
-            switch(settings.intValue(Bitcoin.CHAIN_ID_NAME))
+            switch(mBitcoin.chainID())
             {
             default:
             case 0:
@@ -781,9 +781,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         updateLoading();
 
         Settings settings = Settings.getInstance(getApplicationContext().getFilesDir());
-        if(!settings.containsValue(Bitcoin.CHAIN_ID_NAME))
+        if(mBitcoin.chainID() == Bitcoin.CHAIN_UNKNOWN)
         {
-            int currentChain = mBitcoin.chainID();
+            int currentChain = mBitcoin.checkChainID();
             switch(currentChain)
             {
             default:
@@ -831,7 +831,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             return;
 
         Settings settings = Settings.getInstance(getApplicationContext().getFilesDir());
-        if(settings.intValue(Bitcoin.CHAIN_ID_NAME) == pChainID)
+        if(mBitcoin.chainID() == pChainID)
             return;
 
         mActivatingBranch = true;
@@ -869,7 +869,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     break;
                 }
 
-                settings.setIntValue(Bitcoin.CHAIN_ID_NAME, pResultChainID);
+                mBitcoin.setChainID(pResultChainID);
                 scheduleExchangeRateUpdate();
                 updateStatus();
             }
@@ -1579,9 +1579,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         Spinner chainSelection = settingsView.findViewById(R.id.chainOptions);
         if(mBitcoin.chainIsLoaded())
         {
-            if(settings.containsValue(Bitcoin.CHAIN_ID_NAME))
+            if(mBitcoin.chainID() != Bitcoin.CHAIN_UNKNOWN)
             {
-                switch(settings.intValue(Bitcoin.CHAIN_ID_NAME))
+                switch(mBitcoin.chainID())
                 {
                 default:
                 case 0:
@@ -3350,7 +3350,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         Spinner derivationMethodSpinner = createWallet.findViewById(R.id.derivationSpinner);
         derivationMethodSpinner.setOnItemSelectedListener(this);
 
-        switch(mBitcoin.chain())
+        switch(mBitcoin.chainID())
         {
         default:
         case Bitcoin.CHAIN_UNKNOWN:
@@ -3926,7 +3926,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         mReceivingIndex = 0;
         mChangeIndex = 1;
 
-        switch(mBitcoin.chain())
+        switch(mBitcoin.chainID())
         {
         default:
         case Bitcoin.CHAIN_UNKNOWN:

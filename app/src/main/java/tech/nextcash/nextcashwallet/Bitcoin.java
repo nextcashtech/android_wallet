@@ -35,10 +35,10 @@ public class Bitcoin
     public static final String PIN_CREATED_NAME = "pin_created";
     public static final String EXCHANGE_TYPE_NAME = "exchange_type";
     public static final String EXCHANGE_RATE_NAME = "exchange_rate";
-    public static final String CHAIN_ID_NAME = "chain_id";
     public static final int QR_WIDTH = 200;
 
     private static final String logTag = "Bitcoin";
+    private static final String CHAIN_ID_NAME = "chain_id";
     private static final int sSampleBlockHeight = 526256;
     private static final long sSampleTime = 1523978805;
     private static final long sSecondsPerBlock = 600;
@@ -54,6 +54,7 @@ public class Bitcoin
     private int mChangeID;
     private double mExchangeRate;
     private String mExchangeType;
+    private int mChainID;
 
     public boolean appIsOpen;
     public boolean walletsModified;
@@ -93,6 +94,8 @@ public class Bitcoin
             mExchangeType = mSettings.value(EXCHANGE_TYPE_NAME);
         else
             mExchangeType = "USD";
+
+        mChainID = mSettings.intValue(CHAIN_ID_NAME);
     }
 
     public synchronized double exchangeRate()
@@ -353,7 +356,7 @@ public class Bitcoin
     public static final int CHAIN_ABC = 1;
     public static final int CHAIN_SV = 2;
 
-    public native int chainID();
+    public native int checkChainID();
     public static String chainName(int pChainID)
     {
         switch(pChainID)
@@ -475,7 +478,7 @@ public class Bitcoin
     {
         if(mTransactionData == null)
             return null;
-        return mTransactionData.getData(pTransactionID, pAmount, mChangeID);
+        return mTransactionData.getData(pTransactionID, pAmount, mChainID);
     }
 
     public boolean saveTransactionData()
@@ -712,7 +715,7 @@ public class Bitcoin
 
     public long coinIndex()
     {
-        switch(mSettings.intValue(CHAIN_ID_NAME))
+        switch(chainID())
         {
         case CHAIN_ABC:
             return COIN_ABC;
@@ -723,9 +726,15 @@ public class Bitcoin
         }
     }
 
-    public int chain()
+    public int chainID()
     {
-        return mSettings.intValue(CHAIN_ID_NAME);
+        return mChainID;
+    }
+
+    public void setChainID(int pChainID)
+    {
+        mSettings.setIntValue(CHAIN_ID_NAME, pChainID);
+        mChainID = pChainID;
     }
 
     public static long[] accountDerivationPath(int pDerivationMethod, long pCoin, long pAccount)

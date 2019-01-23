@@ -321,7 +321,9 @@ public class TransactionData
             {
                 newItem = new Item();
                 newItem.read(stream, version);
-                mItems.add(newItem);
+                // TODO Remove this if statement
+                if(newItem.chainID >= 0 && newItem.chainID <= 2) // Only load valid chain IDs.
+                    mItems.add(newItem);
             }
         }
         catch(IOException pException)

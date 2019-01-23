@@ -810,8 +810,8 @@ extern "C"
         return JNI_TRUE;
     }
 
-    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_chainID(JNIEnv *pEnvironment,
-                                                                             jobject pObject)
+    JNIEXPORT jint JNICALL Java_tech_nextcash_nextcashwallet_Bitcoin_checkChainID(JNIEnv *pEnvironment,
+                                                                                  jobject pObject)
     {
         BitCoin::Daemon *daemon = getDaemon(pEnvironment, pObject);
         if(daemon == NULL)
